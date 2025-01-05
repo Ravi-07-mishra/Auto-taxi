@@ -1,0 +1,11 @@
+/* Ensure the map container takes up full width and height of the screen */
+.map-container {
+    width: 100vw;  /* Full viewport width */
+    height: 100vh; /* Full viewport height */
+  }
+  
+  .leaflet-container {
+    width: 100%;
+    height: 100%;
+  }
+  

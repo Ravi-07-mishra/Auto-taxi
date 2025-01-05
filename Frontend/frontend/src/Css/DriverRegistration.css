@@ -1,0 +1,126 @@
+/* DriverRegistrationForm.css */
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: #f5f7fa; /* Light gray background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh; /* Ensure the body takes full height of the viewport */
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box; /* Prevent layout issues due to margin/padding */
+}
+
+.container {
+  width: 100%;
+  max-width: 600px;
+  padding: 30px;
+  background-color: #ffffff; /* White background */
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  box-sizing: border-box;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef); /* Soft gradient background */
+}
+
+h2 {
+  font-size: 2rem;
+  color: #333;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+input, button {
+  padding: 12px;
+  font-size: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #f1f3f5; /* Light background for input fields */
+}
+
+input::placeholder {
+  color: #999;
+}
+
+input:focus, button:focus {
+  border-color: #3498db;
+  box-shadow: 0 0 5px rgba(52, 152, 219, 0.4);
+}
+
+input:disabled {
+  background-color: #e9ecef; /* Light gray for disabled input */
+  cursor: not-allowed;
+}
+
+button {
+  background-color: #3498db; /* Primary color */
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+button:hover:not(:disabled) {
+  background-color: #2980b9;
+  transform: scale(1.05);
+}
+
+button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+p {
+  color: #e74c3c;
+  font-size: 0.875rem;
+  text-align: left;
+  margin-top: 10px;
+}
+
+input[type="file"] {
+  padding: 10px;
+}
+
+button[type="button"] {
+  background-color: #f39c12; /* Button for "Get My Location" */
+}
+
+button[type="button"]:hover {
+  background-color: #e67e22;
+}
+
+.error {
+  color: #e74c3c;
+  font-size: 0.875rem;
+  text-align: left;
+  margin-bottom: 10px; /* Adjusted margin */
+}
+
+/* Responsiveness */
+@media (max-width: 768px) {
+  .container {
+    padding: 20px;
+  }
+
+  h2 {
+    font-size: 1.8rem;
+  }
+
+  input, button {
+    font-size: 0.9rem;
+  }
+}
