@@ -1,0 +1,261 @@
+/* Importing necessary styles */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;800&display=swap');
+@import "leaflet/dist/leaflet.css";
+
+/* Root Variables */
+:root {
+  --primary: #1aac83;
+  --error: #e7195a;
+  --background: #f9f9f9;
+  --text-main: #222;
+  --text-secondary: #555;
+  --border-color: #ddd;
+  --shadow: rgba(0, 0, 0, 0.1);
+}
+
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Poppins", sans-serif;
+  line-height: 1.6;
+  background: var(--background);
+  color: var(--text-main);
+  padding: 20px;
+}
+
+a {
+  text-decoration: none;
+  color: var(--primary);
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: darken(var(--primary), 10%);
+}
+
+/* General Layout */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Header */
+header {
+  background: #fff;
+  border-bottom: 1px solid var(--border-color);
+  padding: 15px 0;
+  margin-bottom: 30px;
+}
+
+header .container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+header a {
+  font-weight: 500;
+  font-size: 1.2rem;
+  color: var(--text-main);
+}
+
+/* Main Content */
+.pages {
+  background: #fff;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px var(--shadow);
+  margin-bottom: 40px;
+}
+
+/* Homepage Grid */
+.home {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .home {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Workout Details */
+.workout-details {
+  background: #fff;
+  padding: 20px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 2px 5px var(--shadow);
+  margin-bottom: 20px;
+}
+
+.workout-details h4 {
+  font-size: 1.5rem;
+  color: var(--primary);
+  margin-bottom: 10px;
+}
+
+.workout-details p {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+.workout-details span {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: var(--background);
+  border-radius: 50%;
+  padding: 8px;
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.workout-details span:hover {
+  background: var(--primary);
+  color: #fff;
+}
+
+/* Forms */
+form {
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px var(--shadow);
+}
+
+form label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+form input,
+form button {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 20px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  font-size: 1rem;
+}
+
+form input:focus {
+  border-color: var(--primary);
+  outline: none;
+}
+
+form button {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+form button:hover {
+  background: darken(var(--primary), 10%);
+}
+
+div.error {
+  background: #ffecec;
+  color: var(--error);
+  border: 1px solid var(--error);
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+/* Navbar */
+nav {
+  display: flex;
+  align-items: center;
+}
+
+nav a,
+nav button {
+  margin-left: 15px;
+}
+
+nav button {
+  background: transparent;
+  color: var(--primary);
+  border: 2px solid var(--primary);
+  padding: 8px 15px;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+nav button:hover {
+  background: var(--primary);
+  color: #fff;
+}
+/* Navbar Styles */
+.custom-navbar {
+  background: #1aac83;
+  padding: 15px 20px;
+  color: #fff;
+  font-family: "Poppins", sans-serif;
+}
+
+.navbar-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.navbar-brand a {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #fff;
+  text-decoration: none;
+}
+
+.navbar-links {
+  display: flex;
+  gap: 15px;
+}
+
+.navbar-links a {
+  color: #fff;
+  text-decoration: none;
+  font-size: 1rem;
+}
+
+.auth-links {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.auth-links span {
+  font-size: 0.9rem;
+}
+
+.logout-btn {
+  background: #fff;
+  color: #1aac83;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.logout-btn:hover {
+  background: #f1f1f1;
+}
