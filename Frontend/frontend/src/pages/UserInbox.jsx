@@ -1,11 +1,11 @@
 import React, { useEffect, useState,useRef } from 'react';
 import io from 'socket.io-client';
 import { useParams } from 'react-router-dom';
-import { useAuthContext } from '../hooks/UseAuthContext';
+import { useAuth } from '../Context/userContext';
 import '../Css/Inbox.css'
 const UserInbox = () => {
     const { bookingId } = useParams(); // Get bookingId from route params
-    const {user} = useAuthContext();
+    const {user} = useAuth();
   const [Chat, setChat] = useState([]);
   const socketRef = useRef(null);
 

@@ -1,146 +1,48 @@
-/* DriverDashboard.css */
-
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
-body {
-  font-family: 'Roboto', sans-serif;
-  background-color: #f1f3f5;
-  margin: 0;
-  padding: 0;
-  display: block; /* Remove flex for full screen use */
-  height: 100vh; /* Ensure full height for the body */
-}
-html, body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-}
 .dashboard-container {
-  width: 100%; /* Ensure full width */
-  max-width: 1600px;
-  margin: 20px auto; /* Centering the container */
-  padding: 40px;
-  background-color: #ffffff;
-  border-radius: 15px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-  overflow: auto; /* Allow scrolling if necessary */
+  padding-top: 80px; /* Space for Navbar */
 }
 
-
-.dashboard-container:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 12px 50px rgba(0, 0, 0, 0.15);
+.hover\\:shadow-lg:hover {
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  width: 300px;
 }
 
-h2 {
-  color: #2e3b4e; /* Darker shade for header */
-  font-size: 2.5rem;
-  font-weight: 700;
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-.welcome-message {
-  color: #6c757d; /* Slightly faded color for less emphasis */
-  font-size: 1.3rem;
-  text-align: center;
-  margin-bottom: 35px;
-}
-
-.booking-requests,
-.bookings {
-  margin-bottom: 40px;
-}
-
-.booking-requests h3,
-.bookings h3 {
-  color: #495057; /* Slightly darker text for section titles */
-  font-size: 1.6rem;
-  font-weight: 500;
-  margin-bottom: 20px;
-}
-
-.request-card,
-.booking-card {
-  background-color: #f9f9f9;
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  padding: 25px;
-  margin-bottom: 25px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-}
-
-.request-card:hover,
-.booking-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
-}
-
-.request-card p,
-.booking-card p {
-  color: #6c757d;
-  margin: 0 0 12px 0;
-}
-
-button {
-  background-image: linear-gradient(to right, #007bff, #00c6ff); /* Modern gradient */
-  border: none;
-  color: white;
-  padding: 12px 24px;
-  font-size: 16px;
-  margin-right: 15px;
-  cursor: pointer;
+.border {
   border-radius: 8px;
-  transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-button:hover {
-  background-image: linear-gradient(to right, #0056b3, #0091d4);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+.mt-4 {
+  margin-top: 1rem;
 }
 
-button:active {
-  background-color: #004085;
+.mb-4 {
+  margin-bottom: 1rem;
 }
 
-button.logout {
-  background-color: #e74c3c; /* Red color for logout button */
+.mb-6 {
+  margin-bottom: 1.5rem;
 }
 
-button.logout:hover {
-  background-color: #c0392b;
+.mb-8 {
+  margin-bottom: 2rem;
 }
 
-button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
+.text-lg {
+  font-size: 1.125rem;
 }
 
-.logout {
-  font-size: 16px;
+.text-xl {
+  font-size: 1.25rem;
+}
+
+.text-2xl {
+  font-size: 1.5rem;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.font-semibold {
   font-weight: 600;
-  text-transform: uppercase;
-}
-
-@media (max-width: 768px) {
-  .dashboard-container {
-    padding: 20px; /* Adjust padding for smaller screens */
-    width: 100%; /* Full width utilization */
-  }
-  h2 {
-    font-size: 1.8rem; /* Adjust for smaller screens */
-  }
-  .welcome-message {
-    font-size: 1.1rem;
-  }
-
-  button {
-    padding: 10px 20px;
-    font-size: 14px;
-  }
-
-  .request-card,
-  .booking-card {
-    padding: 20px;
-  }
 }

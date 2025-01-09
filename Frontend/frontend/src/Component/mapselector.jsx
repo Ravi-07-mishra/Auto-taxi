@@ -1,7 +1,11 @@
-import React from "react";
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import React, { useState,useEffect } from "react";
+import { MapContainer, TileLayer, Marker, useMapEvents,Polyline } from "react-leaflet";
 
-const MapSelector = ({ pickupLocation, destinationLocation, setDestinationLocation }) => {
+const MapSelector = ({
+  pickupLocation,
+  destinationLocation,
+  setDestinationLocation,
+}) => {
   const MapClickHandler = () => {
     useMapEvents({
       click: (event) => {
@@ -15,11 +19,16 @@ const MapSelector = ({ pickupLocation, destinationLocation, setDestinationLocati
   return (
     <MapContainer
       center={[
-        pickupLocation.lat || 22.7195687, // Default to Indore if location not yet available
+        pickupLocation.lat || 22.7195687,
         pickupLocation.lng || 75.8577258,
       ]}
       zoom={13}
-      style={{ width: "100%", height: "400px" }}
+      style={{
+        width: "100%",
+        height: "400px",
+        borderRadius: "8px",
+        border: "2px solid #3f51b5",
+      }}
     >
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
       <MapClickHandler />
@@ -32,5 +41,6 @@ const MapSelector = ({ pickupLocation, destinationLocation, setDestinationLocati
     </MapContainer>
   );
 };
+
 
 export default MapSelector;

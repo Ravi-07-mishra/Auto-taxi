@@ -1,18 +1,17 @@
-import React, { useEffect, useState ,useRef} from "react";
+import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import MapSelector from "../Component/mapselector";
-import { useAuthContext } from "../hooks/UseAuthContext";
 import { useNavigate } from "react-router-dom";
 import io from "socket.io-client";
-
-import "../Css/BookDrive.css";
+import { TextField, Button, CircularProgress } from "@mui/material";
+import { useAuth } from "../Context/userContext";
 
 const Bookdrive = () => {
-  const { user } = useAuthContext();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const socketRef = useRef(null);
   const [formData, setFormData] = useState({
-    userId: user ? user.id : "",
+    userId: user ? user._id : "",
     pickupLocation: { lat: "", lng: "" },
     destinationLocation: { lat: "", lng: "" },
   });
@@ -23,7 +22,7 @@ const Bookdrive = () => {
     if (user) {
       setFormData((prev) => ({
         ...prev,
-        userId: user.id,
+        userId: user._id,
       }));
     }
   }, [user]);
@@ -59,91 +58,116 @@ const Bookdrive = () => {
 
   // Handle socket events
   useEffect(() => {
-    const socket = io('http://localhost:3000'); // Initialize the socket connection
-    socketRef.current = socket;
-
-    socket.on('connect', () => {
-        console.log('Socket connected with ID:', socket.id);
-        if (formData.userId) {
-            socket.emit('setUserSocketId', formData.userId);
-        }
+    socketRef.current = io("http://localhost:3000", {
+      transports: ["websocket", "polling"],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
     });
 
-    socket.on('bookingAccepted', (data) => {
-        console.log('Booking accepted event received:', data);
-        if (data && data.paymentPageUrl) {
-            navigate(data.paymentPageUrl);
-        } else {
-            console.error('Payment page URL missing in bookingAccepted event data');
-        }
+    const socket = socketRef.current;
+
+    socket.on("connect", () => {
+      console.log("Socket connected with ID:", socket.id);
+      if (formData.userId) {
+        socket.emit("setUserSocketId", formData.userId);
+      }
+    });
+
+    socket.on("bookingAccepted", (data) => {
+      console.log("Booking accepted event received:", data);
+      alert("Booking successful!");
+      if (data && data.paymentPageUrl) {
+        navigate(data.paymentPageUrl);
+      } else {
+        console.error(
+          "Payment page URL missing in bookingAccepted event data"
+        );
+      }
     });
 
     return () => {
-        socket.disconnect();
-        console.log('Socket disconnected');
+      socket.disconnect();
+      console.log("Socket disconnected");
     };
-}, [formData.userId, navigate]);
+  }, [formData.userId, navigate]);
 
-  
-  
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const response = await axios.post("http://localhost:3000/api/user/booking", formData);
-      console.log("Booking Response:", response); // Add this log
+      const response = await axios.post(
+        "http://localhost:3000/api/user/booking",
+        formData
+      );
+      console.log("Booking Response:", response);
       alert("Booking successful!");
-      // navigate("/bookings");
       setLoading(false);
     } catch (error) {
       console.error("Booking error:", error.response || error);
       alert(error.response?.data?.msg || "Booking failed. Please try again.");
-    } 
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="container">
+    <div className="flex justify-center items-center min-h-screen bg-gray-100">
       {user ? (
-        <form onSubmit={handleSubmit}>
-          <label htmlFor="userId">UserId</label>
-          <input
-            type="text"
-            name="userId"
-            placeholder="User Id"
-            value={formData.userId || ""} // Ensure a default value to avoid uncontrolled inputs
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg"
+        >
+          <h2 className="text-2xl font-semibold text-gray-700 mb-4">
+            Book a Drive
+          </h2>
+          <TextField
+            label="User ID"
+            value={formData.userId || ""}
+            fullWidth
             disabled
+            margin="normal"
+            variant="outlined"
           />
 
-          <label htmlFor="pickupLocation">Pickup Location</label>
-          <input
-            type="text"
-            id="pickupLocation"
+          <TextField
+            label="Pickup Location"
             value={
               formData.pickupLocation.lat && formData.pickupLocation.lng
                 ? `Lat: ${formData.pickupLocation.lat}, Lng: ${formData.pickupLocation.lng}`
                 : "Fetching location..."
             }
-            readOnly
+            fullWidth
+            disabled
+            margin="normal"
+            variant="outlined"
           />
 
-          <MapSelector
-            pickupLocation={formData.pickupLocation}
-            destinationLocation={formData.destinationLocation}
-            setDestinationLocation={(location) =>
-              setFormData((prev) => ({
-                ...prev,
-                destinationLocation: location,
-              }))
-            }
-          />
+          <div className="my-4">
+            <MapSelector
+              pickupLocation={formData.pickupLocation}
+              destinationLocation={formData.destinationLocation}
+              setDestinationLocation={(location) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  destinationLocation: location,
+                }))
+              }
+            />
+          </div>
 
-          <button type="submit" disabled={loading}>
-            {loading ? "Booking..." : "Submit"}
-          </button>
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            fullWidth
+            disabled={loading}
+          >
+            {loading ? <CircularProgress size={24} color="inherit" /> : "Submit"}
+          </Button>
         </form>
       ) : (
-        <h2>Please login to book a drive</h2>
+        <h2 className="text-xl font-semibold">Please login to book a drive</h2>
       )}
     </div>
   );
