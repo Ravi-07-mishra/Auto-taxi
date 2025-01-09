@@ -1,14 +1,15 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { useParams } from 'react-router-dom';
-import { useDriverAuthContext } from '../hooks/usedriverauthContext';
+
 import '../Css/Inbox.css';  // Import the CSS file
+import { useDriverAuth } from '../Context/driverContext';
 
 const DriverInbox = () => {
     const { bookingId } = useParams();
     const [chat, setChat] = useState([]);
     const socketRef = useRef(null);
-    const { driver } = useDriverAuthContext();
+    const { driver } = useDriverAuth();
 
     useEffect(() => {
         const fetchChatHistory = async () => {

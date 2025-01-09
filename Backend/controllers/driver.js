@@ -3,6 +3,8 @@ const Driver = require('../Models/drivermodel');
 const validDrivers = require('../data');
 const bcrypt = require('bcryptjs');
 const Booking = require('../Models/Bookingmodel');
+const { createToken } = require('../utiils/token-manager');
+const { DRIVER_COOKIE_NAME } = require('../utiils/constants');
 
 // Registration Controller for Driver
 const Register = async (req, res) => {
@@ -72,11 +74,22 @@ const Register = async (req, res) => {
             licenseDocPath,
             location: { lat, lng }, // Save the location here
         });
-
+        if (req.signedCookies[DRIVER_COOKIE_NAME]) {
+            res.clearCookie(DRIVER_COOKIE_NAME, { path: "/", domain: "localhost", httpOnly: true, signed: true });
+        }
+        
+const token = createToken(newDriver._id.toString(), newDriver.email, "7d")
+const expires = new Date();
+expires.setDate(expires.getDate()+7);
+res.cookie(DRIVER_COOKIE_NAME,token,{path: "/", domain: "localhost",expires,
+    httpOnly: true,
+    signed: true,
+  });
         // Send a success response with the created driver details
         res.status(201).json({
             msg: 'Driver registered successfully.',
-            driver: newDriver
+            driver: newDriver,
+            token: token
         });
 
     } catch (error) {
@@ -120,11 +133,22 @@ const Login = async (req, res) => {
         if (!isMatch) {
             return res.status(401).json({ msg: 'Incorrect Password' });
         }
+        if (req.signedCookies[DRIVER_COOKIE_NAME]) {
+            res.clearCookie(DRIVER_COOKIE_NAME, { path: "/", domain: "localhost", httpOnly: true, signed: true });
+        }
+          const token = createToken(driver._id.toString(),driver.email,"7d");
+          const expires = new Date();
+          expires.setDate(expires.getDate()+7);
+          res.cookie(DRIVER_COOKIE_NAME,token,{path: "/", domain: "localhost",expires,
+            httpOnly: true,
+            signed: true,
+          });
 
         // Successful login
-        res.status(200).json({
+        res.status(201).json({
             msg: 'Login successful',
-            user: { id: driver._id, email: driver.email }, // Send user info as needed
+            driver: driver,
+            token: token, // Include the token in the response
         });
     } catch (error) {
         console.error(error);
@@ -148,5 +172,27 @@ const GetAllBookingRequests = async (req, res) => {
       res.status(500).json({ error: error.message });
     }
   };
+  
+     const verifyDriver = async(req,res)=>{
+         try {
+           
+           const driver = await Driver.findById( res.locals.jwtDriverData.id);
+           if(!driver){
+             return res.status(401).send("Driver not registered or token is wrong");
+           }
+         if(driver._id.toString()!== res.locals.jwtDriverData.id){
+           return res.status(401).send("Permissions didn't match");
+         }
+         console.log(driver._id.toString(),res.locals.jwtDriverData.id)
+           
+           return res.status(200).json({message: "Successful login",driver:driver});
+           
+             
+         } catch (error) {
+             return res.status(200).json({
+                 message: "ERROR",cause: error.message
+             })
+         }
+         }    
   const updateAvailability = async (req, res) => { const { driverId, isAvailable } = req.body; try { const driver = await Driver.findByIdAndUpdate(driverId, { isAvailable }, { new: true }); if (!driver) { return res.status(404).json({ msg: 'Driver not found' }); } res.status(200).json({ msg: 'Driver availability updated', driver }); } catch (error) { console.error('Error updating availability:', error); res.status(500).json({ msg: 'Server error' }); } };
-module.exports = { Register, GetallDrivers, Login, GetAllBookingRequests,updateAvailability };
+module.exports = { Register, GetallDrivers, Login, GetAllBookingRequests,updateAvailability,verifyDriver };

@@ -62,12 +62,23 @@ console.log(drivers);
       
 
       // Wait for driver's response within 5 minutes
-      const isAccepted = await new Promise((resolve) => {
-        setTimeout(async () => {
-          const updatedBooking = await Booking.findById(booking._id);
-          resolve(updatedBooking.isAccepted || false);
-        }, 5 * 60 * 1000); // 5 minutes
-      });
+    // Wait for driver's response within 5 minutes
+const isAccepted = await new Promise((resolve) => {
+  setTimeout(async () => {
+    try {
+      const updatedBooking = await Booking.findById(booking._id);
+      if (updatedBooking) {
+        resolve(updatedBooking.isAccepted || false);
+      } else {
+        resolve(false); // Booking not found
+      }
+    } catch (error) {
+      console.error("Error checking booking status:", error);
+      resolve(false); // Resolve as not accepted on error
+    }
+  }, 5 * 60 * 1000); // 5 minutes
+});
+
 
       if (isAccepted) {
         if (!responseSent) {

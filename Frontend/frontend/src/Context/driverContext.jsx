@@ -1,42 +1,81 @@
-import { createContext, useReducer, useEffect } from "react";
-import React from "react";
-// Create the context
-export const DriverAuthContext = createContext();
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { checkDriverAuthStatus, loginDriver, logoutDriver, registerDriver } from "../helpers/help-tools";
 
-// Define the reducer function
-export const authReducer = (state, action) => {
-    switch (action.type) {
-        case 'LOGIN':
-            return { driver: action.payload };
-        case 'LOGOUT':
-            return { driver: null };
-        default:
-            return state;
-    }
-};
+const AuthContext = createContext(null);
 
-// Context provider component
-export const DriverAuthContextProvider = ({ children }) => {
-    const [state, dispatch] = useReducer(authReducer, {
-        driver: null,
-    });
+export const DriverAuthProvider = ({ children }) => {
+    const [driver, setDriver] = useState(null);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-    // Load driver from localStorage on component mount
     useEffect(() => {
-        const driver = JSON.parse(localStorage.getItem('driver'));
-        if (driver) {
-            dispatch({
-                type: 'LOGIN',
-                payload: driver,
-            });
+        async function checkStatus() {
+            try {
+                const data = await checkDriverAuthStatus();
+                if (data && data.driver) {
+                    setDriver(data.driver); // Assuming the backend sends a `driver` object
+                    setIsLoggedIn(true);
+                }
+            } catch (error) {
+                console.error("Error checking auth status:", error.message);
+            }
         }
+        checkStatus();
     }, []);
 
-    console.log('Driver context state:', state);
+    const login = async (email, password) => {
+        try {
+            const data = await loginDriver(email, password); // Ensure loginDriver returns the expected response
+            if (data && data.driver) {
+                localStorage.setItem("token", data.token); // Store the token
+                setDriver(data.driver); // Store driver info
+                setIsLoggedIn(true);
+            }
+            return data; // Return the response data for further use
+        } catch (error) {
+            console.error("Login failed:", error.message);
+            throw error; // Ensure error is thrown for proper handling
+        }
+    };
+    
 
-    return (
-        <DriverAuthContext.Provider value={{ ...state, dispatch }}>
-            {children}
-        </DriverAuthContext.Provider>
-    );
+    const signup = async (formData) => {
+        try {
+            const data = await registerDriver(formData);
+            if (data && data.driver) {
+                localStorage.setItem("token", data.token); // Store the token in localStorage
+                setDriver(data.driver); // Store the entire driver object from the response
+                setIsLoggedIn(true);
+            }
+            return data;
+        } catch (error) {
+            console.error("Signup failed:", error.message);
+            throw new Error("Signup failed");
+        }
+    };
+
+    const logout = async () => {
+        try {
+            await logoutDriver();
+            setIsLoggedIn(false);
+            setDriver(null);
+            localStorage.removeItem("token"); // Remove the token from localStorage
+            window.location.reload();
+        } catch (error) {
+            console.error("Logout failed:", error.message);
+        }
+    };
+
+    const value = {
+        driver,
+        isLoggedIn,
+        login,
+        logout,
+        signup,
+    };
+
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useDriverAuth = () => {
+    return useContext(AuthContext);
 };
