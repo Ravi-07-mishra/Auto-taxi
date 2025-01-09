@@ -1,35 +1,68 @@
-import { createContext,useReducer,useEffect } from "react";
 import React from "react";
-export const AuthContext = createContext();
-
-export const authReducer = (state,action) =>{
-    switch (action.type){
-    case 'LOGIN': 
-    return {
-        user: action.payload
-    } 
-    case 'LOGOUT' :
-        return {
-            user: null
+import { createContext, useContext, useEffect, useState } from "react";
+import { loginUser, signupUser, checkAuthStatus, logoutUser } from "../helpers/help-tools";
+const AuthContext = createContext(null);
+export const AuthProvider = ({ children }) => {
+    const [user, setUser] = useState(null);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+  
+    useEffect(() => {
+      async function checkStatus() {
+        const data = await checkAuthStatus();
+        if (data) {
+          setUser(data.user);  // Assuming the backend sends a `user` object with all user info
+          setIsLoggedIn(true);
         }
-    default:
-        return state;
-} }
-
-export const AuthContextProvider = ({children})=>{
-    const [state,dispatch] = useReducer(authReducer, {
-        user: null
-    });
-    useEffect(()=>{
-        const user = JSON.parse(localStorage.getItem('user'));
-        if(user){
-            dispatch({type:'LOGIN',payload:user})
+      }
+      checkStatus();
+    }, []);
+  
+    const login = async (email, password) => {
+      try {
+        const data = await loginUser(email, password);
+        if (data) {
+          localStorage.setItem("token", data.token); 
+          setUser(data.user);  
+          setIsLoggedIn(true);
         }
-    },[]);
-    console.log('Auth Contexts state:',state);
-    return (
-        <AuthContext.Provider value={{...state,dispatch}}>
-            {children}
-        </AuthContext.Provider>
-    )
-}
+        return data;
+      } catch (error) {
+        console.error("Login failed:", error.message);
+      }
+    };
+  
+    const signup = async (name, email, password, otp) => {
+      try {
+        const data = await signupUser(name, email, password, otp);
+        if (data) {
+          localStorage.setItem("token", data.token);  
+          setUser(data.user);  
+          setIsLoggedIn(true);
+        }
+        return data;
+      } catch (error) {
+        console.error("Signup failed:", error.message);
+      }
+    };
+  
+    const logout = async () => {
+      await logoutUser();
+      setIsLoggedIn(false);
+      setUser(null);
+      window.location.reload();
+    };
+  
+    const value = {
+      user,
+      isLoggedIn,
+      login,
+      logout,
+      signup,
+    };
+  
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  };
+  
+  export const useAuth = () => {
+      return useContext(AuthContext);
+  };

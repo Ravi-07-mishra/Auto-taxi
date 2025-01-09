@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import DropIn from "braintree-web-drop-in-react";
-import { useAuthContext } from "../hooks/UseAuthContext";
+import { useAuth } from "../Context/userContext";
 
 export const Payment = () => {
-  const { user } = useAuthContext();
+  const { user } = useAuth();
   const [clientToken, setClientToken] = useState('');
   const [instance, setInstance] = useState(null);
   const [loading, setLoading] = useState(false);

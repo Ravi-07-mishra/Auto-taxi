@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
-import Navbars from "../Component/Navbar";
 import { useNavigate } from "react-router-dom";
-import { useAuthContext } from "../hooks/UseAuthContext";
-import "../Css/UserHome.css"; // Importing the CSS file
+import { useAuth } from "../Context/userContext";
 import MapComponent from "../Component/map";
+import { Card, CardContent, Typography, Button, Grid } from '@mui/material';
 
 const UserHome = () => {
-  const { user } = useAuthContext();
+  const auth = useAuth();
   const [bookings, setBookings] = useState([]);
   const [showDashboard, setShowDashboard] = useState(false);
   const navigate = useNavigate();
@@ -14,38 +13,37 @@ const UserHome = () => {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const response = await fetch(`/api/user/${user.id}`);
+        const response = await fetch(`/api/user/${auth.user?.id}`);
         const json = await response.json();
-        setBookings(json.bookings || []); // Ensure we are setting bookings correctly
+        setBookings(json.bookings || []);
       } catch (error) {
         console.log("Error fetching bookings:", error);
       }
     };
 
-    if (user?.id) {
+    if (auth.user?.id) {
       fetchBookings();
     }
-  }, [user?.id]);
+  }, [auth.user?.id]);
 
   const openInbox = (bookingId) => {
     navigate(`/user/inbox/${bookingId}`);
   };
 
   const toggleDashboard = (e) => {
-    e.preventDefault(); // Prevent default button behavior
+    e.preventDefault();
     setShowDashboard(!showDashboard);
   };
 
   return (
-    <div>
-      <Navbars />
+    <div className="container mx-auto px-4 py-8">
       <div className="user-home-container">
         <div className="welcome-message">
-          {user ? <h2>Welcome, {user.name || "User"}!</h2> : <h2>Please Login</h2>}
+          {auth.user ? <h2>Welcome, {auth.user.name || "User"}!</h2> : <h2>Please Login</h2>}
         </div>
         <div className="bookings-section">
           <h3>Bookings</h3>
-          <button onClick={toggleDashboard}>
+          <button className="btn btn-primary" onClick={toggleDashboard}>
             {showDashboard ? "Hide Dashboard" : "Show Dashboard"}
           </button>
           {showDashboard && (
@@ -54,16 +52,22 @@ const UserHome = () => {
             </div>
           )}
           {bookings.length > 0 ? (
-            <div className="bookings-list">
+            <Grid container spacing={2}>
               {bookings.map((booking) => (
-                <div key={booking._id} className="booking-card">
-                  <p>
-                    <strong>Booking ID:</strong> {booking._id}
-                  </p>
-                  <button onClick={() => openInbox(booking._id)}>Open Inbox</button>
-                </div>
+                <Grid item xs={12} sm={6} md={4} key={booking._id}>
+                  <Card>
+                    <CardContent>
+                      <Typography variant="h5" component="div">
+                        Booking ID: {booking._id}
+                      </Typography>
+                      <Button variant="contained" color="primary" onClick={() => openInbox(booking._id)}>
+                        Open Inbox
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </Grid>
               ))}
-            </div>
+            </Grid>
           ) : (
             <p>No bookings available.</p>
           )}

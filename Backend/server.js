@@ -4,6 +4,8 @@ const cors = require('cors');
 const http = require('http');
 const socketIo = require('socket.io');
 const app = express();
+const cookieParser = require('cookie-parser');
+const morgan = require('morgan')
 const Chat = require('./Models/Chatmodel');
 const ChatRouter = require('./Routes/Chat');
 const Booking = require('./Models/Bookingmodel');
@@ -18,12 +20,7 @@ const server = http.createServer(app);
 
 // Initialize socket.io with CORS settings
 const io = socketIo(server, {
-    cors: {
-        origin: 'http://localhost:5173',  // The frontend URL
-        methods: ['GET', 'POST'],
-        allowedHeaders: ['Content-Type'],
-        credentials: true,
-    },
+    cors: { origin: 'http://localhost:5173', methods: ['GET', 'POST'], allowedHeaders: ['Content-Type'], credentials: true, }, transports: ['websocket'],
     pingTimeout: 60000,  // Adjust as necessary
     pingInterval: 25000,
 });
@@ -39,6 +36,8 @@ app.use(cors({
 }));
 
 // API routes
+app.use(cookieParser(process.env.COOKIE_SECRET));
+app.use(morgan("dev"));
 app.use('/api/user', UserRouter);
 app.use('/api/driver', DriverRouter);
 app.use('/api/chat', ChatRouter);
@@ -110,6 +109,7 @@ io.on('connection', (socket) => {
     // Handle booking acceptance
     socket.on('acceptBooking', async (data) => {
         try {
+            console.log('Booking accepted')
             const { bookingId, price } = data;
             const booking = await Booking.findById(bookingId);
     
