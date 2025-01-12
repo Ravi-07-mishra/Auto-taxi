@@ -65,6 +65,7 @@ export const registerDriver = async (driverData) => {
             headers: { 'Accept': 'application/json' },
             withCredentials: true,
         });
+        
 
         if (res.status !== 201) throw new Error('Unable to register driver');
         return res.data;
@@ -85,11 +86,4 @@ export const checkDriverAuthStatus = async () => {
     }
 };
 
-export const logoutDriver = async () => {
-    try {
-        await axios.post('http://localhost:3000/api/driver/logout', {}, { withCredentials: true });
-    } catch (error) {
-        console.error(error.message);
-        throw error;
-    }
-};
+

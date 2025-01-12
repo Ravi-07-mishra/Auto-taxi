@@ -1,7 +1,7 @@
 const User = require('../Models/Usermodel')
 const otpGenerator = require('otp-generator');
 const sendOtpEmail = require('../utiils/mailer');
-const OTP = require('../Models/otpModel')
+const OTP = require('../Models/otpModel');
 const otpController = require('./otpController')
 const bcrypt = require('bcryptjs');
 const { createToken } = require('../utiils/token-manager');
@@ -60,18 +60,16 @@ const userlogin = async (req, res) => {
     const { email, password } = req.body;
   
     try {
-        // Validate input
+       
         if (!email || !password) {
             return res.status(400).json({ msg: 'Please fill all the fields' });
         }
   
-        // Check if user exists
         const user = await User.findOne({ email });
         if (!user) {
             return res.status(404).json({ msg: 'This email is not registered with us' });
         }
   
-        // Compare password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(401).json({ msg: 'Incorrect Password' });
@@ -87,11 +85,11 @@ const userlogin = async (req, res) => {
         expires.setDate(expires.getDate() + 7);
         res.cookie(COOKIE_NAME, token, { path: "/", domain: "localhost", expires, httpOnly: true, signed: true });
   
-        // Successful login
+       
         return res.status(201).json({
             msg: 'Login successful',
-            user: user,  // Send the entire user object
-            token: token,  // You may also include the token for frontend use
+            user: user, 
+            token: token,  
         });
   
     } catch (error) {
@@ -119,11 +117,11 @@ const userlogin = async (req, res) => {
 
         console.log(user._id.toString(), res.locals.jwtData.id);
 
-        // Return the user object along with a success message
+        
         return res.status(200).json({
             success: true,
             message: "User authenticated successfully",
-            user: user,  // Full user object
+            user: user, 
         });
 
     } catch (error) {
