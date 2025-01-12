@@ -191,6 +191,36 @@ io.on('connection', (socket) => {
             socket.emit('chatError', 'Failed to send message.');
         }
     });
+    socket.on('markMessageAsSeen', async (data) => {
+        const { messageId, userId } = data;
+        try {
+            const chatMessage = await Chat.findById(messageId);
+            if (!chatMessage) {
+                return socket.emit('chatError', 'Message not found.');
+            }
+    
+            // Check if the user has already seen the message
+            if (!chatMessage.seenBy.includes(userId)) {
+                // Add the user to the seenBy array
+                chatMessage.seenBy.push(userId);
+                await chatMessage.save();
+                console.log(`Message ${messageId} marked as seen by user ${userId}`);
+    
+                // Emit the updated message to the room
+                const bookingId = chatMessage.booking;
+                if (io.sockets.adapter.rooms.has(bookingId)) {
+                    io.to(bookingId).emit('messageSeen', {
+                        messageId,
+                        userId,
+                        seenBy: chatMessage.seenBy,
+                    });
+                }
+            } 
+        } catch (error) {
+            console.error('Error marking message as seen:', error);
+            socket.emit('chatError', 'Failed to mark message as seen.');
+        }
+    });
 
     // Handle disconnection
     socket.on('disconnect', (reason) => {

@@ -4,41 +4,55 @@ import { useDriverAuth } from '../Context/driverContext';
 import { useNavigate } from 'react-router-dom';
 import { Button, Grid, Card, CardContent, Typography } from "@mui/material";
 import '../Css/DriverDashboard.css'
+import { useSubscription } from '../Context/SubscriptionContext';
+
 const DriverDashboard = () => {
   const [driverId, setDriverId] = useState('');
   const [bookingRequests, setBookingRequests] = useState([]);
+  const {subscription} = useSubscription();
+  
   const [bookings, setBookings] = useState([]);
+  
   const { driver } = useDriverAuth();
   const socketRef = useRef(null);
   const navigate = useNavigate();
+  const isSubscriptionValid =
+  subscription.isSubscribed && new Date(subscription.expiryDate) > new Date();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      // Redirect to login if not authenticated
+      if (!driver) {
+        navigate('/driverlogin');
+      } else {
+        setDriverId(driver._id);
+        console.log('Driver ID set to:', driver._id);
+      }
+    }, 5000); // Wait for 5 seconds (5000 milliseconds)
+  
+    return () => clearTimeout(timeout); // Cleanup the timeout on component unmount
+  }, [driver, navigate]);
 
   useEffect(() => {
-    if (driver) {
-      const id = driver._id;
-      setDriverId(id);
-      console.log('Driver ID set to:', id);
-    }
-  }, [driver]);
-
-  useEffect(() => {
-    if (!driverId) return;
+    if (!driverId || !isSubscriptionValid) return;
 
     const fetchBookings = async () => {
       try {
         const response = await fetch(`/api/driver/${driverId}`);
         const json = await response.json();
         setBookings(json.bookings || []);
-        console.log('Fetched bookings:', json.bookings || []);
       } catch (error) {
         console.error('Error fetching bookings:', error);
       }
     };
 
     fetchBookings();
-  }, [driverId]);
+  }, [driverId, isSubscriptionValid]);
 
   useEffect(() => {
-    if (!driverId) return;
+    if (!driverId ) return;
+
 
     socketRef.current = io('http://localhost:3000', {
       transports: ['websocket', 'polling'],
@@ -59,7 +73,6 @@ const DriverDashboard = () => {
         setBookingRequests((prev) => [...prev, data]);
       }
     });
-
     socket.on('connect_error', (error) => {
       console.error('Socket connection error:', error);
     });
@@ -71,15 +84,15 @@ const DriverDashboard = () => {
     socket.on('reconnect_attempt', () => {
       console.log('Reconnecting to socket...');
     });
-
     const updateDriverLocation = () => {
-      if (driver && driver.location) {
+      if (driver && driver.location && driver.location.lat && driver.location.lng) {
         socket.emit('driverLocation', {
           id: driverId,
           lat: driver.location.lat,
           lng: driver.location.lng,
         });
       } else {
+        // Fallback location
         socket.emit('driverLocation', {
           id: driverId,
           lat: 20.2960587, // Default latitude
@@ -87,15 +100,15 @@ const DriverDashboard = () => {
         });
       }
     };
+    
 
     updateDriverLocation();
-
     return () => {
       socket.off('BookingRequest');
       socket.disconnect();
       console.log('Socket disconnected on cleanup.');
     };
-  }, [driverId, driver]);
+  }, [driverId,driver]);
 
   const handleAccept = (bookingId) => {
     const socket = socketRef.current;
@@ -132,88 +145,123 @@ const DriverDashboard = () => {
       console.error('Error updating availability:', error);
     }
   };
+  const openInbox = (bookingId) => {
+    navigate(`/driver/inbox/${bookingId}`);
+  };
 
   const logout = () => {
     localStorage.removeItem('driver');
-    dispatch({ type: 'LOGOUT' });
     navigate('/login');
   };
-  return (
-    <div className="dashboard-container p-4">
-      <h2 className="text-2xl font-bold mb-4">Driver Dashboard</h2>
-      {driver && <p className="text-lg mb-6">Welcome, {driver.email}!</p>}
 
-      {/* Booking Requests */}
-      <div className="mb-8">
-        <h3 className="text-xl font-semibold mb-4">Booking Requests</h3>
-        <Grid container spacing={2}>
-          {bookingRequests.length > 0 ? (
-            bookingRequests.map((req) => (
-              <Grid item  xs={12} sm={8} md={15}  key={req.bookingId} width={"400px"}>
-                <Card className="hover:shadow-lg border border-gray-300">
-                  <CardContent>
-                    <Typography variant="body1">
-                      <strong>Pickup:</strong>{" "}
-                      {JSON.stringify(req.pickupLocation)}
-                    </Typography>
-                    <Typography variant="body1">
-                      <strong>Destination:</strong>{" "}
-                      {JSON.stringify(req.destinationLocation)}
-                    </Typography>
-                    <div className="mt-4 flex justify-between">
-                      <Button
-                        variant="contained"
-                        color="success"
-                        onClick={() => handleAccept(req.bookingId)}
-                      >
-                        Accept
-                      </Button>
-                      <Button
-                        variant="contained"
-                        color="error"
-                        onClick={() => handleDecline(req.bookingId)}
-                      >
-                        Decline
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))
-          ) : (
-            <p>No booking requests at the moment.</p>
-          )}
-        </Grid>
+  if (!isSubscriptionValid) {
+    return (
+      <div
+        className="flex items-center justify-center h-screen bg-cover bg-center"
+        style={{ backgroundImage: 'url("your-image.jpg")' }}
+      >
+        <div className="bg-white bg-opacity-50 p-8 rounded-lg shadow-xl w-full max-w-lg text-center">
+          <h2 className="text-2xl font-bold text-gray-800">Your subscription is inactive or expired.</h2>
+          <Button variant="contained" color="primary" onClick={() => navigate('/subscription')} className="mt-4">
+            Renew Subscription
+          </Button>
+        </div>
       </div>
+    );
+  }
 
-      {/* Bookings */}
-      <div>
-        <h3 className="text-xl font-semibold mb-4">Bookings</h3>
-        <Grid container spacing={2}>
-          {bookings.length > 0 ? (
-            bookings.map((booking) => (
-              <Grid item xs={12} sm={8} md={15} key={booking._id} width={"100%"}>
-                <Card className="hover:shadow-lg border border-gray-300">
-                  <CardContent>
-                    <Typography variant="body1">
-                      <strong>Booking ID:</strong> {booking._id}
-                    </Typography>
+  return (
+    <div
+      className="bg-cover bg-center min-h-screen"
+      style={{
+        backgroundImage: 'url("driverbg.jpg")', // Replace with your image URL
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
+      {/* Top Content (Heading and Welcome Message) */}
+      <div className="flex items-center justify-center h-full pt-16">
+        <div className="bg-white bg-opacity-70 p-8 rounded-lg shadow-xl w-full max-w-3xl">
+          <h2 className="text-4xl font-bold text-gray-800 text-center mb-4">Driver Dashboard</h2>
+          <p className="text-xl text-gray-600 text-center">Welcome, {driver?.name}!</p>
+        </div>
+      </div>
+      <section className="py-20 bg-transparent">
+        <div className="container mx-auto text-center px-4">
+          <h1 className="text-5xl font-extrabold text-white drop-shadow-lg">
+            Driver Dashboard
+          </h1>
+          <p className="text-blue-100 mt-4 text-lg">
+            Welcome, {driver?.name}. Manage your bookings and requests with ease.
+          </p>
+        </div>
+      </section>
+      {/* Booking Requests Section */}
+     {/* Booking Requests Section */}
+     <section className="py-12 bg-transparent">
+        <div className="container mx-auto text-center px-4">
+          <h2 className="text-3xl font-bold text-white mb-8">Booking Requests</h2>
+          <div className="flex flex-wrap justify-center">
+            {bookingRequests.map((req) => (
+              <div
+                key={req.bookingId}
+                className="mb-6 w-full md:w-1/2 lg:w-1/3 p-4"
+              >
+                <div className="bg-transparent p-6 rounded-lg shadow-xl backdrop-blur-md">
+                  <Typography variant="body1" className="text-gray-800">
+                    Pickup: Lat: {req.pickupLocation.lat}, Lng: {req.pickupLocation.lng}
+                  </Typography>
+                  <Typography variant="body1" className="text-gray-800">
+                    Destination: Lat: {req.destinationLocation.lat}, Lng: {req.destinationLocation.lng}
+                  </Typography>
+                  <div className="flex mt-4 justify-center">
+                    <Button onClick={() => handleAccept(req.bookingId)} className="mr-2 bg-green-500 text-white">
+                      Accept
+                    </Button>
+                    <Button onClick={() => handleDecline(req.bookingId)} className="bg-red-500 text-white">
+                      Decline
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+      {/* Bookings Section */}
+      <section className="py-12 bg-transparent">
+        <div className="container mx-auto text-center px-4">
+          <h2 className="text-3xl font-bold text-white mb-8">Your Bookings</h2>
+          <div className="flex flex-wrap justify-center">
+            {bookings.map((booking) => (
+              <div
+                key={booking._id}
+                className="mb-6 w-full md:w-1/2 lg:w-1/3 p-4"
+              >
+                <div className="bg-transparent p-6 rounded-lg shadow-xl backdrop-blur-md">
+                  <Typography variant="body1" className="text-gray-800">
+                    Booking ID: {booking._id}
+                  </Typography>
+                  <div className="flex justify-center mt-4">
                     <Button
-                      className="mt-4"
-                      variant="contained"
-                      color="primary"
-                      onClick={() => navigate(`/inbox/${booking._id}`)}
+                      onClick={() =>  openInbox(booking._id)}
+                      className="bg-blue-500 text-white"
                     >
                       Open Inbox
                     </Button>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))
-          ) : (
-            <p>No bookings available.</p>
-          )}
-        </Grid>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+
+      {/* Footer (Toggle Availability and Logout) */}
+      <div className="flex justify-between px-8 py-4">
+        <Button onClick={toggleAvailability} className="bg-blue-500 text-white">Toggle Availability</Button>
+        <Button onClick={logout} className="bg-red-500 text-white">Logout</Button>
       </div>
     </div>
   );

@@ -1,46 +1,78 @@
-import React, { useState,useEffect } from "react";
-import { MapContainer, TileLayer, Marker, useMapEvents,Polyline } from "react-leaflet";
+import React, { useState, useEffect } from "react";
+import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 
 const MapSelector = ({
   pickupLocation,
+  setPickupLocation,
   destinationLocation,
   setDestinationLocation,
 }) => {
+  const [pickupName, setPickupName] = useState("Fetching pickup location...");
+  const [destinationName, setDestinationName] = useState("Select destination location on the map");
+
+  const fetchLocationName = async (lat, lng, setNameCallback) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
+      );
+      const data = await response.json();
+      if (data && data.display_name) {
+        setNameCallback(data.display_name);
+      } else {
+        setNameCallback("Unknown Location");
+      }
+    } catch (error) {
+      console.error("Error fetching location name:", error);
+      setNameCallback("Error fetching location name");
+    }
+  };
+
+  useEffect(() => {
+    if (pickupLocation.lat && pickupLocation.lng) {
+      fetchLocationName(pickupLocation.lat, pickupLocation.lng, setPickupName);
+    }
+  }, [pickupLocation]);
+
   const MapClickHandler = () => {
     useMapEvents({
       click: (event) => {
         const { lat, lng } = event.latlng;
         setDestinationLocation({ lat, lng });
+        fetchLocationName(lat, lng, setDestinationName);
       },
     });
     return null;
   };
 
   return (
-    <MapContainer
-      center={[
-        pickupLocation.lat || 22.7195687,
-        pickupLocation.lng || 75.8577258,
-      ]}
-      zoom={13}
-      style={{
-        width: "100%",
-        height: "400px",
-        borderRadius: "8px",
-        border: "2px solid #3f51b5",
-      }}
-    >
-      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-      <MapClickHandler />
-      {pickupLocation.lat && pickupLocation.lng && (
-        <Marker position={[pickupLocation.lat, pickupLocation.lng]} />
-      )}
-      {destinationLocation.lat && destinationLocation.lng && (
-        <Marker position={[destinationLocation.lat, destinationLocation.lng]} />
-      )}
-    </MapContainer>
+    <div className="flex flex-col items-center gap-4">
+      <div className="w-full h-96 rounded-lg overflow-hidden shadow-lg border-2 border-blue-600">
+        <MapContainer
+          center={[pickupLocation.lat || 22.7195687, pickupLocation.lng || 75.8577258]}
+          zoom={13}
+          style={{ width: "100%", height: "100%" }}
+        >
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          <MapClickHandler />
+          {pickupLocation.lat && pickupLocation.lng && (
+            <Marker position={[pickupLocation.lat, pickupLocation.lng]} />
+          )}
+          {destinationLocation.lat && destinationLocation.lng && (
+            <Marker position={[destinationLocation.lat, destinationLocation.lng]} />
+          )}
+        </MapContainer>
+      </div>
+
+      <div className="w-full p-4 bg-gray-100 rounded-lg shadow mt-4">
+        <p className="text-sm font-medium text-gray-700">
+          <span className="font-semibold">Pickup Location:</span> {pickupName}
+        </p>
+        <p className="text-sm font-medium text-gray-700 mt-2">
+          <span className="font-semibold">Destination Location:</span> {destinationName}
+        </p>
+      </div>
+    </div>
   );
 };
-
 
 export default MapSelector;

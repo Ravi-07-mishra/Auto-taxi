@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { checkDriverAuthStatus, loginDriver, logoutDriver, registerDriver } from "../helpers/help-tools";
-
+import { checkDriverAuthStatus, loginDriver, registerDriver } from "../helpers/help-tools";
+import axios from "axios";
 const AuthContext = createContext(null);
 
 export const DriverAuthProvider = ({ children }) => {
@@ -12,7 +12,7 @@ export const DriverAuthProvider = ({ children }) => {
             try {
                 const data = await checkDriverAuthStatus();
                 if (data && data.driver) {
-                    setDriver(data.driver); // Assuming the backend sends a `driver` object
+                    setDriver(data.driver); 
                     setIsLoggedIn(true);
                 }
             } catch (error) {
@@ -24,16 +24,16 @@ export const DriverAuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            const data = await loginDriver(email, password); // Ensure loginDriver returns the expected response
+            const data = await loginDriver(email, password); 
             if (data && data.driver) {
-                localStorage.setItem("token", data.token); // Store the token
-                setDriver(data.driver); // Store driver info
+                localStorage.setItem("token", data.token); 
+                setDriver(data.driver); 
                 setIsLoggedIn(true);
             }
-            return data; // Return the response data for further use
+            return data; 
         } catch (error) {
             console.error("Login failed:", error.message);
-            throw error; // Ensure error is thrown for proper handling
+            throw error; 
         }
     };
     
@@ -42,8 +42,8 @@ export const DriverAuthProvider = ({ children }) => {
         try {
             const data = await registerDriver(formData);
             if (data && data.driver) {
-                localStorage.setItem("token", data.token); // Store the token in localStorage
-                setDriver(data.driver); // Store the entire driver object from the response
+                localStorage.setItem("token", data.token); 
+                setDriver(data.driver); 
                 setIsLoggedIn(true);
             }
             return data;
@@ -55,16 +55,28 @@ export const DriverAuthProvider = ({ children }) => {
 
     const logout = async () => {
         try {
-            await logoutDriver();
-            setIsLoggedIn(false);
-            setDriver(null);
-            localStorage.removeItem("token"); // Remove the token from localStorage
-            window.location.reload();
+          // Send logout request to the server with POST method
+          await axios.post('http://localhost:3000/api/driver/logout', {}, { withCredentials: true });
+      
+          // Remove token from localStorage
+          localStorage.removeItem("token");
+      
+          // Clear authentication state
+          setIsLoggedIn(false);
+          setDriver(null);
+      
+          // Ensure cookie is removed (fallback, optional)
+          document.cookie = "driver_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      
+          // Redirect to the login page
+          navigate('/login');
         } catch (error) {
-            console.error("Logout failed:", error.message);
+          console.error("Logout failed:", error.message);
         }
-    };
-
+      };
+      
+    
+    
     const value = {
         driver,
         isLoggedIn,

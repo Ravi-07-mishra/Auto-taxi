@@ -3,7 +3,6 @@ import { Typography } from '@mui/material';
 import { useAuth } from '../Context/userContext';
 import { useLocation } from 'react-router-dom';
 
-// A reusable component for navigation links
 const NavLink = ({ href, text, currentPath }) => {
   const baseStyle =
     "block py-2 px-3 rounded md:p-0 text-gray-900 dark:text-white hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-600 dark:hover:bg-gray-700";
@@ -113,7 +112,7 @@ const Navbar2 = () => {
               <NavLink href="/userHome" text="User Dashboard" currentPath={location.pathname} />
             </li>
             <li>
-              <NavLink href="/bookdrive" text="Book Drive" currentPath={location.pathname} />
+              <NavLink href="/userbookdrive" text="Book Drive" currentPath={location.pathname} />
             </li>
           
           </ul>

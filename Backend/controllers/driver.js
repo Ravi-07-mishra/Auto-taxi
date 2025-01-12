@@ -5,19 +5,17 @@ const bcrypt = require('bcryptjs');
 const Booking = require('../Models/Bookingmodel');
 const { createToken } = require('../utiils/token-manager');
 const { DRIVER_COOKIE_NAME } = require('../utiils/constants');
+const Subscriptionmodel = require('../Models/Subscriptionmodel');
 
-// Registration Controller for Driver
 const Register = async (req, res) => {
     try {
-        // Destructure the fields from the request body
         const { name, email, aadhaar_number, driving_license_number, vehicle_license_number, date_of_birth, password, licenseDoc, lat, lng } = req.body;
 
-        // Validate the required fields
         if (!name || !email || !aadhaar_number || !driving_license_number || !vehicle_license_number || !date_of_birth || !password || !lat || !lng) {
             return res.status(400).json({ msg: "All fields must be filled out." });
         }
 
-        // Check if the Aadhaar, License, and Vehicle License match the same person in the valid driver list
+       
         const isValidDriver = validDrivers.some(driver => 
             driver.name === name &&
             driver.aadhaar_number === aadhaar_number &&
@@ -30,7 +28,6 @@ const Register = async (req, res) => {
             return res.status(400).json({ msg: 'Invalid or mismatched driver details.' });
         }
 
-        // Check if the driver already exists in the database
         const existingDriverByEmail = await Driver.findOne({ email });
         if (existingDriverByEmail) {
             return res.status(400).json({ msg: 'Driver with this email is already registered.' });
@@ -51,18 +48,15 @@ const Register = async (req, res) => {
             return res.status(400).json({ msg: 'Driver with this Vehicle License number is already registered.' });
         }
 
-        // Hash the password
         const salt = await bcrypt.genSalt(10);
         const hash = await bcrypt.hash(password, salt);
 
-        // Handle license document upload if required
         let licenseDocPath = "";
         if (licenseDoc) {
-            // Assuming the file is being uploaded via a form, you'd handle it like this:
-            licenseDocPath = `/uploads/${licenseDoc.name}`;  // Path where the file will be saved
+            licenseDocPath = `/uploads/${licenseDoc.name}`;  
         }
 
-        // Create a new driver with the provided details, including location (lat, lng)
+        
         const newDriver = await Driver.create({
             name,
             email,
@@ -72,7 +66,7 @@ const Register = async (req, res) => {
             vehicle_license_number,
             date_of_birth,
             licenseDocPath,
-            location: { lat, lng }, // Save the location here
+            location: { lat, lng }, 
         });
         if (req.signedCookies[DRIVER_COOKIE_NAME]) {
             res.clearCookie(DRIVER_COOKIE_NAME, { path: "/", domain: "localhost", httpOnly: true, signed: true });
@@ -85,7 +79,6 @@ res.cookie(DRIVER_COOKIE_NAME,token,{path: "/", domain: "localhost",expires,
     httpOnly: true,
     signed: true,
   });
-        // Send a success response with the created driver details
         res.status(201).json({
             msg: 'Driver registered successfully.',
             driver: newDriver,
@@ -93,8 +86,8 @@ res.cookie(DRIVER_COOKIE_NAME,token,{path: "/", domain: "localhost",expires,
         });
 
     } catch (error) {
-        // Catch and handle errors
-        console.error(error); // Log error for debugging
+       
+        console.error(error); 
         res.status(500).json({ msg: 'Error registering driver. Please try again later.', error: error.message });
     }
 };
@@ -117,18 +110,16 @@ const Login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // Validate input
+       
         if (!email || !password) {
             return res.status(400).json({ msg: 'Please fill all the fields' });
         }
 
-        // Check if the user exists
         const driver = await Driver.findOne({ email });
         if (!driver) {
             return res.status(404).json({ msg: 'User not found' });
         }
 
-        // Compare passwords
         const isMatch = await bcrypt.compare(password, driver.password);
         if (!isMatch) {
             return res.status(401).json({ msg: 'Incorrect Password' });
@@ -144,11 +135,10 @@ const Login = async (req, res) => {
             signed: true,
           });
 
-        // Successful login
         res.status(201).json({
             msg: 'Login successful',
             driver: driver,
-            token: token, // Include the token in the response
+            token: token, 
         });
     } catch (error) {
         console.error(error);
@@ -195,4 +185,55 @@ const GetAllBookingRequests = async (req, res) => {
          }
          }    
   const updateAvailability = async (req, res) => { const { driverId, isAvailable } = req.body; try { const driver = await Driver.findByIdAndUpdate(driverId, { isAvailable }, { new: true }); if (!driver) { return res.status(404).json({ msg: 'Driver not found' }); } res.status(200).json({ msg: 'Driver availability updated', driver }); } catch (error) { console.error('Error updating availability:', error); res.status(500).json({ msg: 'Server error' }); } };
-module.exports = { Register, GetallDrivers, Login, GetAllBookingRequests,updateAvailability,verifyDriver };
+  const GetSubscriptionStatus = async (req, res) => {
+    const { driverId } = req.params; // Fixed req.params access
+    try {
+      const subscription = await Subscriptionmodel.findOne({ driver_id: driverId }); // Ensure driver_id is used
+      if (!subscription) {
+        return res.status(404).json({
+          message: "No subscription history found for this driver ID",
+        });
+      }
+  
+      // Check the subscription status
+      if (subscription.status === "active") {
+        return res.status(200).json({
+          isSubscribed: true,
+          planId: subscription.plan_id,
+          expiryDate: subscription.subscription_end_date,
+          status: "active",
+        });
+      }
+  
+      return res.status(200).json({
+        isSubscribed: false,
+        planId: subscription.plan_id,
+        expiryDate: subscription.subscription_end_date,
+        status: subscription.status, // Can be "expired" or "canceled"
+      });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  };
+  const Logout = async (req, res) => {
+    try {
+      // Check if the signed cookie exists
+      if (req.signedCookies[DRIVER_COOKIE_NAME]) {
+        // Clear the cookie
+        res.clearCookie(DRIVER_COOKIE_NAME, {
+          path: '/',   // Ensure the path matches where the cookie is set
+          httpOnly: true,
+          signed: true,
+        });
+      }
+      res.status(200).send('Logged out');
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({
+        msg: 'Error logging out',
+      });
+    }
+  };
+  
+  
+module.exports = { Register, GetallDrivers, Login, GetAllBookingRequests,updateAvailability,verifyDriver,GetSubscriptionStatus,Logout };

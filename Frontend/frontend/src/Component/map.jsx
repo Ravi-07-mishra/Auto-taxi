@@ -2,29 +2,29 @@ import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { io } from 'socket.io-client';
 import L from 'leaflet';
-import 'leaflet/dist/leaflet.css'; // Importing Leaflet CSS for better styling
-import '../Css/MapComponent.css'; // Import custom CSS for full screen
+import 'leaflet/dist/leaflet.css'; 
+import '../Css/MapComponent.css'; 
 
 const MapComponent = () => {
   const [driverLocations, setDriverLocations] = useState({});
 
   useEffect(() => {
-    const socket = io('http://localhost:3000'); // Use environment variable for flexibility
+    const socket = io('http://localhost:3000'); 
 
-    // Listen for location updates
+    
     socket.on('updateLocations', (locations) => {
       console.log('Received locations:', locations); // Debugging log
       setDriverLocations(locations);
     });
 
-    // Cleanup on component unmount
+   
     return () => {
       socket.off('updateLocations');
       socket.disconnect();
     };
   }, []);
 
-  // Leaflet custom icon (ensure marker is displayed properly)
+  
   const markerIcon = new L.Icon({
     iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
     iconSize: [25, 41],
@@ -37,16 +37,16 @@ const MapComponent = () => {
   return (
     <div className="map-container">
       <MapContainer
-        center={[22.7195687, 75.8577258]} // Default coordinates (adjust as needed)
+        center={[22.7195687, 75.8577258]} 
         zoom={13}
-        style={{ height: '400px', width: '100%' }} // Fixed height for the card map
+        style={{ height: '400px', width: '100%' }} 
         className="leaflet-container"
       >
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         
         {Object.keys(driverLocations).map(driverId => {
           const { lat, lng } = driverLocations[driverId];
-          console.log(`Rendering marker for driver ${driverId} at [${lat}, ${lng}]`); // Debugging log
+          console.log(`Rendering marker for driver ${driverId} at [${lat}, ${lng}]`); 
           return (
             <Marker key={driverId} position={[lat, lng]} icon={markerIcon}>
               <Popup>
