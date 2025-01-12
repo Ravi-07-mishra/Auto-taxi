@@ -2,7 +2,8 @@ const braintree = require('braintree');
 const Booking = require('../Models/Bookingmodel');
 const Payment = require('../Models/Paymentmodel');
 require('dotenv').config();
-
+const subscriptionPlans = require('../SubscriptionPlan');
+const Subscriptionmodel = require('../Models/Subscriptionmodel');
 const gateway = new braintree.BraintreeGateway({
     environment: braintree.Environment.Sandbox,
     merchantId: process.env.BRAINTREE_MERCHANT_ID,
@@ -16,7 +17,7 @@ const braintreeTokenController = async (req, res) => {
             if (err) {
                 return res.status(500).json({ error: err.message });
             }
-            res.json({ clientToken: response.clientToken });
+            res.status(200).json({ clientToken: response.clientToken });
         });
     } catch (error) {
         console.error(error);
@@ -34,16 +35,17 @@ const braintreePaymentController = async (req, res) => {
         }
 
         gateway.transaction.sale({
-            amount: booking.price,
+            amount: 100,
             paymentMethodNonce: nonce,
             options: {
                 submitForSettlement: true,
             },
         }, async (err, result) => {
             if (err) {
+                console.error("Transaction error:", err);
                 return res.status(500).json({ error: err.message });
             }
-
+            console.log("Transaction result:", result);
             if (result.success) {
                 const payment = new Payment({
                     user: booking.user,
@@ -62,5 +64,63 @@ const braintreePaymentController = async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 };
-
-module.exports = { braintreeTokenController, braintreePaymentController };
+const ShowSubscriptionPlans  = async(req,res)=>{
+try {
+    res.status(200).json({plans: subscriptionPlans})
+} catch (error) {
+    res.status(500).send({ message: "Failed to fetch plans." });  
+}
+}
+const Subscription = async (req, res) => {
+    const { paymentMethodNonce, planId, driverId } = req.body;
+  
+    if (!paymentMethodNonce || !planId || !driverId) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+  
+    try {
+      // Step 1: Create a customer in Braintree
+      const customerResult = await gateway.customer.create({
+        paymentMethodNonce,
+      });
+  
+      if (!customerResult.success) {
+        return res.status(500).json({ error: "Failed to create customer" });
+      }
+  
+      const paymentMethodToken = customerResult.customer.paymentMethods[0].token;
+  
+      // Step 2: Create a subscription
+      const subscriptionResult = await gateway.subscription.create({
+        paymentMethodToken,
+        planId,
+      });
+  
+      if (!subscriptionResult.success) {
+        return res.status(500).json({ error: "Failed to create subscription" });
+      }
+  
+      // Step 3: Save subscription data to the database
+      const subscriptionData = {
+        driver_id: driverId,
+        braintree_subscription_id: subscriptionResult.subscription.id,
+        plan_id: planId,
+        subscription_start_date: new Date(subscriptionResult.subscription.billingPeriodStartDate),
+        subscription_end_date: new Date(subscriptionResult.subscription.billingPeriodEndDate),
+        status: "active",
+      };
+  
+      const newSubscription = new Subscriptionmodel(subscriptionData);
+      await newSubscription.save();
+  
+      res.json({
+        success: true,
+        message: "Subscription created successfully",
+        subscription: newSubscription,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "An error occurred during subscription" });
+    }
+  };
+module.exports = { braintreeTokenController, braintreePaymentController , ShowSubscriptionPlans,Subscription};

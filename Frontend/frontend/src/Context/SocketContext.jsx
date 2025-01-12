@@ -1,15 +1,14 @@
 import React, { createContext, useContext, useRef, useEffect, useState } from 'react';
 import io from 'socket.io-client';
 
-// Create the context
+
 const SocketContext = createContext();
 
-// Custom hook for consuming the context
 export const useSocket = () => {
   return useContext(SocketContext);
 };
 
-// Provider for the context
+
 export const SocketProvider = ({ children }) => {
   const socketRef = useRef(null);
   const [isSocketInitialized, setIsSocketInitialized] = useState(false);

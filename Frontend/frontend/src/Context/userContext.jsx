@@ -10,7 +10,7 @@ export const AuthProvider = ({ children }) => {
       async function checkStatus() {
         const data = await checkAuthStatus();
         if (data) {
-          setUser(data.user);  // Assuming the backend sends a `user` object with all user info
+          setUser(data.user); 
           setIsLoggedIn(true);
         }
       }

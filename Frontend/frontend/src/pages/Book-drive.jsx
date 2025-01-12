@@ -112,13 +112,13 @@ const Bookdrive = () => {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
+    <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-blue-50 via-gray-100 to-blue-50">
       {user ? (
         <form
           onSubmit={handleSubmit}
-          className="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg"
+          className="bg-white p-8 rounded-lg shadow-md w-full max-w-lg border border-gray-200"
         >
-          <h2 className="text-2xl font-semibold text-gray-700 mb-4">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">
             Book a Drive
           </h2>
           <TextField
@@ -128,6 +128,8 @@ const Bookdrive = () => {
             disabled
             margin="normal"
             variant="outlined"
+            InputLabelProps={{ className: "text-gray-700" }}
+            className="mb-4"
           />
 
           <TextField
@@ -141,9 +143,11 @@ const Bookdrive = () => {
             disabled
             margin="normal"
             variant="outlined"
+            InputLabelProps={{ className: "text-gray-700" }}
+            className="mb-6"
           />
 
-          <div className="my-4">
+          <div className="my-6">
             <MapSelector
               pickupLocation={formData.pickupLocation}
               destinationLocation={formData.destinationLocation}
@@ -162,12 +166,19 @@ const Bookdrive = () => {
             color="primary"
             fullWidth
             disabled={loading}
+            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 disabled:opacity-50"
           >
-            {loading ? <CircularProgress size={24} color="inherit" /> : "Submit"}
+            {loading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              "Submit"
+            )}
           </Button>
         </form>
       ) : (
-        <h2 className="text-xl font-semibold">Please login to book a drive</h2>
+        <h2 className="text-xl font-semibold text-gray-700">
+          Please login to book a drive
+        </h2>
       )}
     </div>
   );

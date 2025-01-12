@@ -3,12 +3,12 @@ const Driver = require("../Models/drivermodel");
 const { calculateDistance } = require("../utiils/Calculatedistance");
 
 const DoBooking = async (req, res) => {
-  let responseSent = false; // Ensure responseSent is declared upfront
+  let responseSent = false; 
 
   try {
     const { userId, pickupLocation, destinationLocation } = req.body;
 
-    // Validate inputs
+   
     const validateLocation = (location) =>
       location && typeof location.lat === "number" && typeof location.lng === "number";
 
@@ -16,13 +16,13 @@ const DoBooking = async (req, res) => {
       return res.status(400).json({ msg: "All fields are required and must be valid." });
     }
 
-    // Fetch available drivers
+   
     const drivers = await Driver.find({ isAvailable: true });
     if (drivers.length === 0) {
       return res.status(404).json({ msg: "No drivers available at the moment." });
     }
 console.log(drivers);
-    // Sort drivers by distance
+   
     const driversWithDistance = drivers
       .filter((driver) => driver.location?.lat && driver.location?.lng)
       .map((driver) => ({
@@ -33,11 +33,11 @@ console.log(drivers);
 
     driversWithDistance.sort((a, b) => a.distance - b.distance);
 
-    // Try booking with drivers one by one
+    
     for (const { driver } of driversWithDistance) {
       console.log(`Trying to book driver: ${driver.name} (${driver.socketId})`);
 
-      // Create a booking record
+      
       const booking = await Booking.create({
         user: userId,
         pickupLocation,
@@ -61,8 +61,7 @@ console.log(drivers);
       }
       
 
-      // Wait for driver's response within 5 minutes
-    // Wait for driver's response within 5 minutes
+   
 const isAccepted = await new Promise((resolve) => {
   setTimeout(async () => {
     try {
@@ -70,13 +69,13 @@ const isAccepted = await new Promise((resolve) => {
       if (updatedBooking) {
         resolve(updatedBooking.isAccepted || false);
       } else {
-        resolve(false); // Booking not found
+        resolve(false); 
       }
     } catch (error) {
       console.error("Error checking booking status:", error);
-      resolve(false); // Resolve as not accepted on error
+      resolve(false); 
     }
-  }, 5 * 60 * 1000); // 5 minutes
+  }, 5 * 60 * 1000); 
 });
 
 
@@ -89,10 +88,10 @@ const isAccepted = await new Promise((resolve) => {
             bookingId: booking._id,
           });
         }
-        break; // Stop trying other drivers if booking is accepted
+        break; 
       } else {
         console.log(`Driver ${driver.name} did not respond. Trying next driver...`);
-        await Booking.findByIdAndDelete(booking._id); // Cleanup booking if not accepted
+        await Booking.findByIdAndDelete(booking._id); 
       }
     }
 
@@ -114,10 +113,10 @@ const getallUserBookings = async (req, res) => {
   try {
     const { userId } = req.params;
     console.log('User ID from request:', userId);  // Log the userId
-    // Convert userId to ObjectId
+   
     const userObjectId = new mongoose.Types.ObjectId(userId);
-    console.log('Converted ObjectId:', userObjectId);  // Log the ObjectId
-    // Query bookings with the converted ObjectId
+    console.log('Converted ObjectId:', userObjectId);  
+    
     const bookings = await Booking.find({ user: userObjectId, status: 'Accepted' });
 
     if (!bookings || bookings.length === 0) {
@@ -137,14 +136,22 @@ const getallUserBookings = async (req, res) => {
   }
 };
 
-const getallDriverBookings = async(req,res)=>{
+const getallDriverBookings = async (req, res) => {
   try {
     const { driverId } = req.params;
-    console.log('driver ID from request:', driverId);  // Log the userId
-    // Convert userId to ObjectId
+    console.log('Driver ID from request:', driverId);
+
+    // Validate if the driverId is a valid ObjectId (24 characters hex string)
+    if (!mongoose.Types.ObjectId.isValid(driverId)) {
+      return res.status(400).json({
+        msg: 'Invalid driver ID format',
+      });
+    }
+
     const driverObjectId = new mongoose.Types.ObjectId(driverId);
-    console.log('Converted ObjectId:', driverObjectId);  // Log the ObjectId
-    // Query bookings with the converted ObjectId
+    console.log('Converted ObjectId:', driverObjectId);
+
+    // Proceed with finding the bookings
     const bookings = await Booking.find({ driver: driverObjectId, status: 'Accepted' });
 
     if (!bookings || bookings.length === 0) {
@@ -162,7 +169,50 @@ const getallDriverBookings = async(req,res)=>{
       msg: 'An error occurred while retrieving bookings',
     });
   }
-}
+};
+const Review = async (req, res) => {
+  try {
+    const { bookingId, review, rating } = req.body;
 
+    // Validate the rating value (ensure it's between 1 and 5)
+    if (rating < 1 || rating > 5) {
+      return res.status(400).json({ message: 'Rating must be between 1 and 5' });
+    }
 
-module.exports = { DoBooking,getallDriverBookings,getallUserBookings };
+    // Find the booking by ID
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    // Find the driver by ID (using booking driver reference)
+    const driver = await Driver.findById(booking.driver);
+
+    if (!driver) {
+      return res.status(404).json({ message: 'Driver not found' });
+    }
+
+    // Update the booking with the new review and rating
+    booking.review = review;
+    booking.rating = rating;
+
+    // Update driver's ratings: Calculate new average and update number of ratings
+    const totalRatings = driver.numRatings * driver.avgRating + rating;
+    const newNumRatings = driver.numRatings + 1;
+    const newAvgRating = totalRatings / newNumRatings;
+
+    driver.numRatings = newNumRatings;
+    driver.avgRating = newAvgRating;
+
+    // Save the updated booking and driver
+    await booking.save();
+    await driver.save();
+
+    return res.status(200).json({ message: 'Review submitted successfully', booking });
+  } catch (error) {
+    console.error('Error submitting review:', error);
+    return res.status(500).json({ message: 'Server error. Please try again later.' });
+  }
+};
+module.exports = { DoBooking,getallDriverBookings,getallUserBookings,Review };
