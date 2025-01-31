@@ -1,7 +1,5 @@
-import { Button, Typography, Box } from "@mui/material";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { IoSendSharp } from "react-icons/io5";
 import toast from "react-hot-toast";
 
 const Sendotp = () => {
@@ -34,132 +32,76 @@ const Sendotp = () => {
   };
 
   return (
-    <Box
-  sx={{
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    minHeight: "100vh", // Full viewport height
-    width: "100%",
-    background: "rgba(0,0,0,0.8)", // Optional background for the viewport
-  }}
->
-  <Box
-    sx={{
-      width: "100%",
-      maxWidth: "400px",
-      padding: "2rem",
-      borderRadius: "12px",
-      background: "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05))",
-      boxShadow: "0px 8px 20px rgba(0, 0, 0, 0.3)",
-      backdropFilter: "blur(15px)",
-      color: "white",
-      textAlign: "center",
-      transition: "all 0.3s ease-in-out",
-      "&:hover": {
-        boxShadow: "0px 12px 25px rgba(0, 0, 0, 0.5)",
-        transform: "scale(1.03)",
-      },
-    }}
-  >
-      <form onSubmit={handleSubmit}>
-        <Typography
-          variant="h4"
-          sx={{
-            marginBottom: "1rem",
-            fontWeight: "bold",
-            textTransform: "uppercase",
-            letterSpacing: "2px",
-          }}
+    <div
+      className="relative w-full h-screen bg-cover bg-center text-white"
+      style={{ backgroundImage: 'url("homepage.jpg")' }}
+    >
+      {/* Top Navigation */}
+      <div className="absolute top-0 left-0 w-full flex justify-between items-center px-8 py-4">
+        {/* Logo */}
+        <img src="/logo.png" alt="Company Logo" className="h-12" />
+
+        {/* Sign-in Button */}
+        <button
+          onClick={() => navigate("/userlogin")}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-lg px-6 py-2 rounded-lg shadow-lg"
         >
-          Send OTP
-        </Typography>
-        <Typography
-          variant="body1"
-          sx={{
-            marginBottom: "1.5rem",
-            color: "rgba(255, 255, 255, 0.8)",
-            fontSize: "0.9rem",
-          }}
-        >
-          Enter your email to receive a one-time password
-        </Typography>
-        <Box
-          sx={{
-            position: "relative",
-            marginBottom: "1rem",
-          }}
-        >
-          <input
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            placeholder="Enter your email"
-            style={{
-              width: "100%",
-              padding: "0.75rem 2.5rem",
-              fontSize: "1rem",
-              borderRadius: "8px",
-              border: "1px solid rgba(255,255,255,0.3)",
-              background: "rgba(0,0,0,0.5)",
-              color: "white",
-              outline: "none",
-              transition: "all 0.3s ease",
-            }}
-            onFocus={(e) => (e.target.style.borderColor = "#ffffff")}
-            onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.3)")}
-          />
-          <svg
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "10px",
-              transform: "translateY(-50%)",
-              width: "20px",
-              height: "20px",
-              fill: "rgba(255,255,255,0.6)",
-            }}
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 16"
+          Sign In
+        </button>
+      </div>
+
+      {/* Main Content */}
+      <div
+        className="flex flex-col justify-center items-center h-full text-center px-4"
+        style={{ fontFamily: "Work Sans, sans-serif" }}
+      >
+        {/* Heading */}
+        <h1 className="text-6xl md:text-7xl font-bold mb-4" style={{ fontWeight: "bold" }}>
+          Start Saving Money by Registering for <span className="text-green-400">AutoDrive</span>
+        </h1>
+
+        {/* Additional Text Below Heading */}
+        <p className="text-lg text-gray-200 mb-8">
+          Start with a negligible platform fee and save more on every drive.
+        </p>
+
+        {/* Email Form */}
+        <form onSubmit={handleSubmit} className="w-full max-w-md p-6 rounded-lg shadow-xl backdrop-blur-lg">
+          <div className="relative mb-6">
+            {/* Email Input */}
+            <input
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              placeholder="Email Address"
+              className="w-full p-3 pl-10 rounded-lg border border-gray-700 bg-transparent text-white focus:outline-none focus:border-blue-500 placeholder-gray-400"
+            />
+            
+            {/* Email Icon */}
+            <svg
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 16"
+              fill="currentColor"
+            >
+              <path d="m10.036 8.278 9.258-7.79A1.979 1.979 0 0 0 18 0H2A1.987 1.987 0 0 0 .641.541l9.395 7.737Z" />
+              <path d="M11.241 9.817c-.36.275-.801.425-1.255.427-.428 0-.845-.138-1.187-.395L0 2.6V14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2.5l-8.759 7.317Z" />
+            </svg>
+          </div>
+          <button
+            type="submit"
+            className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-extrabold text-lg rounded-lg transition-all duration-300"
           >
-            <path d="m10.036 8.278 9.258-7.79A1.979 1.979 0 0 0 18 0H2A1.987 1.987 0 0 0 .641.541l9.395 7.737Z" />
-            <path d="M11.241 9.817c-.36.275-.801.425-1.255.427-.428 0-.845-.138-1.187-.395L0 2.6V14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2.5l-8.759 7.317Z" />
-          </svg>
-        </Box>
-        <Button
-          type="submit"
-          sx={{
-            width: "100%",
-            padding: "0.75rem",
-            borderRadius: "8px",
-            background: "linear-gradient(135deg, #4caf50, #81c784)",
-            color: "white",
-            fontWeight: "bold",
-            fontSize: "1rem",
-            textTransform: "none",
-            transition: "all 0.3s ease",
-            "&:hover": {
-              background: "linear-gradient(135deg, #388e3c, #66bb6a)",
-              boxShadow: "0px 5px 15px rgba(0,0,0,0.2)",
-            },
-          }}
-          endIcon={<IoSendSharp />}
-        >
-          Send OTP
-        </Button>
-        {error && (
-          <Typography
-            variant="body2"
-            sx={{ color: "red", marginTop: "1rem", fontWeight: "500" }}
-          >
-            {error}
-          </Typography>
-        )}
-      </form>
-      </Box>
-    </Box>
+            Send OTP
+          </button>
+          {error && (
+            <p className="text-red-500 font-medium mt-4">{error}</p>
+          )}
+        </form>
+      </div>
+    </div>
   );
 };
 

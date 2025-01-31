@@ -1,83 +1,104 @@
-import React, { useState } from "react";
-import { Avatar, Typography, Menu, MenuItem } from "@mui/material";
-import { useLocation } from "react-router-dom";
-import { useDriverAuth } from "../Context/driverContext";
-import DriverLogin from "../pages/Driverlogin";
-import DriverRegistrationForm from "../pages/Register";
+import React, { useState, useEffect } from "react"
+import { Avatar, Menu, MenuItem } from "@mui/material"
+import { useLocation } from "react-router-dom"
+import { useDriverAuth } from "../Context/driverContext"
+import DriverLogin from "../pages/Driverlogin"
+import DriverRegistrationForm from "../pages/Register"
 
 const NavLink = ({ href, text, currentPath }) => {
-  const baseStyle =
-    "block py-3 px-4 rounded md:p-0 text-2xl text-gray-900 dark:text-white hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-600 dark:hover:bg-gray-700"; // Increased to text-2xl
-  const activeStyle = "text-white bg-blue-600 md:bg-transparent md:text-blue-600";
-
+  const isActive = currentPath === href
   return (
-    <a href={href} className={`${baseStyle} ${currentPath === href ? activeStyle : ""}`}>
+    <a href={href} className={`navbar-link ${isActive ? "active" : ""} py-2 px-4 rounded hover:text-white`}>
       {text}
     </a>
-  );
-};
-
+  )
+}
 
 const DriverNavbar = () => {
-  const auth = useDriverAuth();
-  const location = useLocation();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-  const [anchorEl, setAnchorEl] = useState(null);
+  const auth = useDriverAuth()
+  const location = useLocation()
+  const [isLoginOpen, setIsLoginOpen] = useState(false)
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false)
+  const [anchorEl, setAnchorEl] = useState(null)
+  const [navbarStyle, setNavbarStyle] = useState({
+    background: "transparent",
+  })
 
-  const toggleMenu = () => setIsMenuOpen((prev) => !prev);
-  const handleAvatarClick = (event) => setAnchorEl(event.currentTarget);
-  const handleMenuClose = () => setAnchorEl(null);
+  const handleAvatarClick = (event) => setAnchorEl(event.currentTarget)
+  const handleMenuClose = () => setAnchorEl(null)
+  const toggleLogin = () => setIsLoginOpen((prev) => !prev)
+  const toggleRegister = () => setIsRegisterOpen((prev) => !prev)
 
-  const driverName = auth.driver?.name || "D";
-  const driverInitial = driverName.charAt(0).toUpperCase();
+  const driverName = auth.driver?.name || "D"
+  const driverInitial = driverName.charAt(0).toUpperCase()
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 50) {
+        setNavbarStyle({
+          background: "linear-gradient(to bottom right, #262529, #363b3f, #383e42, #141920)",
+          opacity: 0.95,
+          transition: "background 0.5s ease",
+        })
+      } else {
+        setNavbarStyle({
+          background: "transparent",
+          transition: "background 0.5s ease",
+        })
+      }
+    }
+
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
 
   return (
     <>
-      <nav className="bg-white dark:bg-gray-900 fixed w-full z-20 top-0 start-0 border-b border-gray-200 dark:border-gray-600 shadow-lg">
-        <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
-          {/* Logo Section */}
-          <a href="/" className="flex items-center space-x-3 rtl:space-x-reverse">
-            <img src="logo.png" className="h-10" alt="Auto Taxi Logo" />
-            <Typography
-              sx={{
-                display: { md: "block", sm: "none", xs: "none" },
-                fontWeight: 800,
-                fontSize: "24px", // Increased font size for the logo
-                textShadow: "2px 2px 20px rgba(0, 0, 0, 0.3)",
-              }}
-            >
-              <span style={{ fontSize: "28px" }}>Auto </span>TAXI
-            </Typography>
-          </a>
+      <nav className="fixed w-full z-20 top-0 left-0" style={{ ...navbarStyle, marginBottom: "20px" }}>
+        <div className="flex items-center p-4">
+          {/* Left Section: Title */}
+          <h1
+            className="text-2xl text-white"
+            style={{
+              fontFamily: "'Concert One', sans-serif",
+              fontWeight: "400",
+              marginLeft: "10px",
+            }}
+          >
+            Auto Drive
+          </h1>
 
-          {/* Right Section */}
-          <div className="flex md:order-2 space-x-3 md:space-x-0 rtl:space-x-reverse">
+          {/* Navigation Links */}
+          <div style={{ display: "flex", marginLeft: "50px", gap: "30px" }}>
+            <NavLink href="/driverDashboard" text="Driver Dashboard" currentPath={location.pathname} />
+            <NavLink href="/driverpage" text="Home" currentPath={location.pathname} />
+          
+            <NavLink href="/Aboutus" text="About us" currentPath={location.pathname} />
+          </div>
+
+          {/* Right Section: Avatar/Buttons */}
+          <div
+            className="flex space-x-4"
+            style={{
+              position: "absolute",
+              right: "10px",
+            }}
+          >
             {auth.driver ? (
               <>
-                {/* Avatar and Dropdown */}
-                <Avatar
-                  sx={{
-                    bgcolor: "blue",
-                    cursor: "pointer",
-                  }}
-                  onClick={handleAvatarClick}
-                >
-                  {driverInitial}
-                </Avatar>
+                <Avatar 
+  sx={{ bgcolor: "#2563EB", cursor: "pointer" }} 
+  onClick={handleAvatarClick}
+  src={`http://localhost:3000/${auth.driver.profileImage}` || ""}
+>
+  {!auth.driver.profileImage && driverInitial}
+</Avatar>
                 <Menu
                   anchorEl={anchorEl}
                   open={Boolean(anchorEl)}
                   onClose={handleMenuClose}
-                  anchorOrigin={{
-                    vertical: "bottom",
-                    horizontal: "right",
-                  }}
-                  transformOrigin={{
-                    vertical: "top",
-                    horizontal: "right",
-                  }}
+                  anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                  transformOrigin={{ vertical: "top", horizontal: "right" }}
                 >
                   <MenuItem onClick={handleMenuClose}>
                     <a href="/driverprofile">Profile</a>
@@ -87,74 +108,26 @@ const DriverNavbar = () => {
               </>
             ) : (
               <>
-                <button
-                  onClick={() => setIsLoginOpen(true)}
-                  className="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-800"
-                >
+                <button onClick={toggleLogin} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
                   Login
                 </button>
                 <button
-                  onClick={() => setIsRegisterOpen(true)}
-                  className="text-white bg-gray-600 hover:bg-gray-700 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-gray-500 dark:hover:bg-gray-600 dark:focus:ring-gray-800"
+                  onClick={toggleRegister}
+                  className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
                 >
                   Register
                 </button>
               </>
             )}
-
-            {/* Hamburger Menu (Responsive) */}
-            <button
-              onClick={toggleMenu}
-              className="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-500 rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
-              aria-controls="navbar-sticky"
-              aria-expanded={isMenuOpen}
-            >
-              <span className="sr-only">Open main menu</span>
-              <svg
-                className="w-5 h-5"
-                aria-hidden="true"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 17 14"
-              >
-                <path
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M1 1h15M1 7h15M1 13h15"
-                />
-              </svg>
-            </button>
-          </div>
-
-          {/* Navigation Links */}
-          <div
-            className={`items-center justify-between ${
-              isMenuOpen ? "block" : "hidden"
-            } w-full md:flex md:w-auto md:order-1`}
-            id="navbar-sticky"
-          >
-            <ul className="flex flex-col p-4 md:p-0 mt-4 font-medium text-lg md:text-xl border border-gray-100 rounded-lg bg-gray-50 md:space-x-8 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0 md:bg-white dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
-              <li>
-                <NavLink href="/driverDashboard" text="Driver Dashboard" currentPath={location.pathname} />
-              </li>
-              <li>
-                <NavLink href="/driverpage" text="Home" currentPath={location.pathname} />
-              </li>
-            </ul>
           </div>
         </div>
       </nav>
 
       {/* Login Modal */}
       {isLoginOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg relative">
-            <button
-              onClick={() => setIsLoginOpen(false)}
-              className="absolute top-3 right-3 text-black hover:text-red-500"
-            >
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
+          <div className="bg-gray-900 p-8 rounded-2xl relative">
+            <button onClick={toggleLogin} className="absolute top-3 right-3 text-white hover:text-red-500">
               ✕
             </button>
             <DriverLogin />
@@ -164,12 +137,9 @@ const DriverNavbar = () => {
 
       {/* Register Modal */}
       {isRegisterOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg relative">
-            <button
-              onClick={() => setIsRegisterOpen(false)}
-              className="absolute top-3 right-3 text-black hover:text-red-500"
-            >
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
+          <div className="bg-gray-900 p-8 rounded-2xl relative">
+            <button onClick={toggleRegister} className="absolute top-3 right-3 text-white hover:text-red-500">
               ✕
             </button>
             <DriverRegistrationForm />
@@ -177,7 +147,8 @@ const DriverNavbar = () => {
         </div>
       )}
     </>
-  );
-};
+  )
+}
 
-export default DriverNavbar;
+export default DriverNavbar
+
