@@ -63,6 +63,7 @@ const driverSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  profileImage: { type: String, default: '' },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Driver', driverSchema);

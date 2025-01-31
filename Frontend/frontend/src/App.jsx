@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from "react-route
 import Sendotp from "./pages/Sendotp";
 import Signup from "./pages/Signup";
 import DriverRegistrationForm from "./pages/Register";
+import '@fortawesome/fontawesome-free/css/all.min.css';
 
 import UserDashboard from "./pages/UserDashboard";
 import DriverLogin from "./pages/Driverlogin";
@@ -26,6 +27,16 @@ import Navbar2 from "./Component/Navbar2";
 import DriverNavbar from "./Component/DriverNavbar";
 import ProfilePage from "./pages/DriverProfile";
 import RatingPage from "./Component/Ratingsystem";
+import DriverProfilePage from "./pages/DriverProfile";
+import UserHomes from "./pages/userHome2";
+
+import UserProfile from "./pages/UserProfile";
+import DrivePage from "./pages/DrivePage";
+import Home from "./pages/Home";
+import CalendarPage from "./pages/CalendarPage";
+import BookingPage from "./Component/BookingPage";
+import EditProfilePage from "./Component/EditProfile";
+import UserProfilePage from "./pages/UserProfile";
 const Navbar = () => {
   const location = useLocation();
 
@@ -59,11 +70,20 @@ const App = () => {
           <Route path="/driverdashboard" element={<DriverDashboard />} />
           <Route path="/userbookdrive" element={<BookDrive />} />
           <Route path="/driver/inbox/:bookingId" element={<DriverInbox />} />
+          <Route path="/driver/drive/:bookingId" element={<DrivePage />} />
           <Route path="/user/inbox/:bookingId" element={<UserInbox />} />
           <Route path="/payment/:bookingId" element={<Payment />} />
           <Route path="/userhomepage" element={<HomePage />} />
           <Route path="/driverpage" element={<DriverHomePage />} />
+          <Route path="/home" element={<Home/>}/>
+          
           <Route path="/driverprofile" element={<ProfilePage/>} />
+          <Route path="/userprofile" element={<UserProfile/>} />
+      
+      <Route path="/userHome2" element={<UserHomes/>}/>
+      <Route path="/BookingPage" element={<BookingPage/>}/>
+      <Route path="/userprofile" element={<UserProfilePage/>}/>
+      <Route path="/driveredit-profile" element={<EditProfilePage/>}/>
         </Routes>
       </Router>
     </SocketProvider>

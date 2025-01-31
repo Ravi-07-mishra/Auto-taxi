@@ -3,12 +3,11 @@ const Driver = require("../Models/drivermodel");
 const { calculateDistance } = require("../utiils/Calculatedistance");
 
 const DoBooking = async (req, res) => {
-  let responseSent = false; 
+  let responseSent = false;
 
   try {
     const { userId, pickupLocation, destinationLocation } = req.body;
 
-   
     const validateLocation = (location) =>
       location && typeof location.lat === "number" && typeof location.lng === "number";
 
@@ -16,38 +15,36 @@ const DoBooking = async (req, res) => {
       return res.status(400).json({ msg: "All fields are required and must be valid." });
     }
 
-   
     const drivers = await Driver.find({ isAvailable: true });
     if (drivers.length === 0) {
       return res.status(404).json({ msg: "No drivers available at the moment." });
     }
-console.log(drivers);
-   
+    console.log(drivers);
+
     const driversWithDistance = drivers
       .filter((driver) => driver.location?.lat && driver.location?.lng)
       .map((driver) => ({
         driver,
         distance: calculateDistance(pickupLocation, driver.location),
       }));
-      console.log('driversWithDistance:', driversWithDistance);
+    console.log('driversWithDistance:', driversWithDistance);
 
     driversWithDistance.sort((a, b) => a.distance - b.distance);
 
-    
     for (const { driver } of driversWithDistance) {
       console.log(`Trying to book driver: ${driver.name} (${driver.socketId})`);
 
-      
+      // Create booking with 'Pending' status
       const booking = await Booking.create({
         user: userId,
         pickupLocation,
         destinationLocation,
         driver: driver._id,
       });
-      console.log(`Driver details:`, driver);
-      console.log(`Driver's socketId:`, driver.socketId);
-      
-    
+
+      console.log(`Booking created: ${booking._id}`);
+
+      // Emit booking request to driver
       if (driver.socketId && global.io) {
         global.io.to(driver.socketId).emit("BookingRequest", {
           bookingId: booking._id,
@@ -59,26 +56,25 @@ console.log(drivers);
       } else {
         console.log(`Driver ${driver.name} does not have a socketId, or global.io is undefined. Skipping booking request.`);
       }
-      
 
-   
-const isAccepted = await new Promise((resolve) => {
-  setTimeout(async () => {
-    try {
-      const updatedBooking = await Booking.findById(booking._id);
-      if (updatedBooking) {
-        resolve(updatedBooking.isAccepted || false);
-      } else {
-        resolve(false); 
-      }
-    } catch (error) {
-      console.error("Error checking booking status:", error);
-      resolve(false); 
-    }
-  }, 5 * 60 * 1000); 
-});
+      // Wait for 30 seconds to allow driver to respond
+      const isAccepted = await new Promise((resolve) => {
+        setTimeout(async () => {
+          try {
+            const updatedBooking = await Booking.findById(booking._id);
+            if (updatedBooking) {
+              resolve(updatedBooking.status === 'Accepted');
+            } else {
+              resolve(false);
+            }
+          } catch (error) {
+            console.error("Error checking booking status:", error);
+            resolve(false);
+          }
+        }, 30 * 1000); // 30 seconds timeout
+      });
 
-
+      // Check if the booking was accepted
       if (isAccepted) {
         if (!responseSent) {
           responseSent = true;
@@ -88,24 +84,25 @@ const isAccepted = await new Promise((resolve) => {
             bookingId: booking._id,
           });
         }
-        break; 
+        break;
       } else {
         console.log(`Driver ${driver.name} did not respond. Trying next driver...`);
-        await Booking.findByIdAndDelete(booking._id); 
+        await Booking.findByIdAndDelete(booking._id); // Only delete if not accepted
       }
     }
 
     if (!responseSent) {
       responseSent = true;
-      res.status(404).json({ msg: "No drivers responded to the booking request." });
+      return res.status(404).json({ msg: "No drivers responded to the booking request." });
     }
   } catch (error) {
     console.error("Booking error:", error);
     if (!responseSent) {
-      res.status(500).json({ msg: "Error creating booking", error: error.message });
+      return res.status(500).json({ msg: "Error creating booking", error: error.message });
     }
   }
 };
+
 
 const mongoose = require('mongoose');
 
@@ -215,4 +212,104 @@ const Review = async (req, res) => {
     return res.status(500).json({ message: 'Server error. Please try again later.' });
   }
 };
-module.exports = { DoBooking,getallDriverBookings,getallUserBookings,Review };
+const getBooking = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+
+    // Validate bookingId as a MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(bookingId)) {
+      return res.status(400).json({
+        message: 'Invalid booking ID format',
+      });
+    }
+
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({
+        message: 'No booking found with this ID',
+      });
+    }
+    console.log(booking);
+
+    return res.status(200).json({
+      booking,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+const GetCompletedBookings = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const bookings = await Booking.find({ user: userId, status: 'Completed' })
+    if(!bookings){
+      return res.status(400).json({
+        message: 'No completed booking exists with such userId'
+      })
+    }
+
+
+   return res.status(200).json({
+    message: 'Here are you completed Bookings',
+    bookings
+   })
+  } catch (error) {
+    console.error('Error fetching completed bookings:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+}
+const CompleteBooking = async (req, res) => {
+  const { bookingId } = req.params;
+
+  try {
+    const booking = await Booking.findById(id);
+
+    if (!booking) {
+      return res.status(404).json({
+        message: "No booking with such ID exists",
+      });
+    }
+
+    if (booking.status === "Completed") {
+      return res.status(400).json({
+        message: "This booking has already been completed",
+      });
+    }
+
+    if (booking.driver.toString() !== req.user.id) {
+      return res.status(403).json({
+        message: "Unauthorized to complete this booking",
+      });
+    }
+
+    booking.status = "Completed";
+    await booking.save();
+
+    return res.status(200).json({
+      message: "Ride ended successfully",
+      booking: {
+        id: booking._id,
+        status: booking.status,
+        pickupLocation: booking.pickupLocation,
+        destinationLocation: booking.destinationLocation,
+        price: booking.price,
+        driver: booking.driver,
+        user: booking.user,
+      },
+    });
+  } catch (error) {
+    console.error("Error completing booking:", error);
+    return res.status(500).json({
+      error: "Server error, please try again later",
+    });
+  }
+};
+
+
+
+module.exports = { DoBooking,getallDriverBookings,getallUserBookings,Review ,getBooking,GetCompletedBookings,CompleteBooking};

@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import axios from "axios"; // Ensure axios is imported
+import axios from "axios"; 
 import { useDriverAuth } from "./driverContext";
 
 const SubscriptionContext = createContext(null);
 
 export const SubscriptionAuthProvider = ({ children }) => {
-  const { driver } = useDriverAuth(); // Ensure driver context is properly used
+  const { driver } = useDriverAuth();
   const [subscription, setSubscription] = useState({
     isSubscribed: false,
     planId: null,

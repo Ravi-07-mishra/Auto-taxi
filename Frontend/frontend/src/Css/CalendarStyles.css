@@ -1,0 +1,52 @@
+.react-calendar {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  font-family: Arial, sans-serif;
+  color: white;
+}
+
+.react-calendar__tile {
+  background: transparent;
+  border-radius: 8px;
+  color: white;
+  height: 100%;
+}
+
+.react-calendar__tile--active {
+  background: #00ff00; /* Active tile color */
+  color: black;
+}
+
+.react-calendar__tile--has-booking {
+  background-color: #28a745; /* Green background for dates with bookings */
+  color: white;
+}
+
+.react-calendar__tile:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+  .navbar-link {
+    padding: 8px 16px;
+    font-size: 16px;
+    font-weight: 600;
+    font-family: 'Source Code Pro', monospace;
+    transition: all 0.3s ease;
+    border-radius: 12px;
+  }
+
+  .navbar-link:hover {
+    background-color: white;
+    color: black;
+    border-radius: 12px;
+    padding: 8px 16px;
+  }
+
+  .navbar-link.active {
+    background: linear-gradient(to bottom right, #262529, #363b3f, #383e42, #141920);
+    color: white;
+    border-radius: 12px;
+    padding: 8px 16px;
+  }

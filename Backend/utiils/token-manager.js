@@ -45,6 +45,7 @@ const verifyDriverToken = async (req, res, next) => {
             }
             console.log("Token verification successful");
             res.locals.jwtDriverData = decoded;
+            
             next();
         });
     } catch (error) {
