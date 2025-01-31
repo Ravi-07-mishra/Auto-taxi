@@ -1,0 +1,41 @@
+/* BookingPage.css */
+
+.book-container {
+    position: relative;
+    width: 100%;
+    max-height: 24rem; /* Ensure this height is enough */
+    min-height: 20rem; /* Minimum height for the container */
+    overflow: hidden; /* Prevent overflow */
+  }
+  
+  .book-page {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+  }
+  
+  .fade-enter {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  
+  .fade-enter-active {
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 600ms ease, transform 600ms ease;
+  }
+  
+  .fade-exit {
+    opacity: 1;
+    transform: scale(1);
+  }
+  
+  .fade-exit-active {
+    opacity: 0;
+    transform: scale(1.1);
+    transition: opacity 600ms ease, transform 600ms ease;
+  }
+  

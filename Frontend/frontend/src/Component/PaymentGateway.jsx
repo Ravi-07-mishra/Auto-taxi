@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import React from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import io from 'socket.io-client';
 
 const Payment = () => {
   const [values, setValues] = useState({
@@ -12,9 +13,80 @@ const Payment = () => {
     errors: "",
     instance: null,
   });
+  const socketRef = useRef(null);
   const { bookingId } = useParams();
   const [loading, setLoading] = useState(false);
   const { clientToken, success, errors, instance } = values;
+  const navigate = useNavigate();
+
+  // Establish socket connection and emit payment completion after payment
+  useEffect(() => {
+    // Only initiate the socket connection when payment has been completed
+    socketRef.current = io('http://localhost:3000', {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
+
+    const socket = socketRef.current;
+
+    socket.on('connect', () => {
+      console.log('Socket connected:', socket.id);
+    });
+
+    // Cleanup the socket connection on component unmount
+    return () => {
+      socket.disconnect();
+      console.log('Socket disconnected on cleanup.');
+    };
+  }, []); // This effect should run only once, after the component mounts.
+
+  const handlePayment = async () => {
+    if (!instance) {
+      setValues((prevValues) => ({
+        ...prevValues,
+        errors: "Payment instance not initialized.",
+      }));
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { nonce } = await instance.requestPaymentMethod();
+      const { data } = await axios.post(
+        "http://localhost:3000/api/payment/braintree/pay",
+        {
+          nonce,
+          bookingId,
+        }
+      );
+
+      setValues((prevValues) => ({
+        ...prevValues,
+        success: "Payment completed successfully.",
+      }));
+      // Show toast notification
+      toast.success("Booking successful!");
+
+      // Emit 'Paymentcompleted' event to the driver after payment completion
+      if (socketRef.current) {
+        socketRef.current.emit('Paymentcompleted', { bookingId });
+        console.log('Payment completed event emitted:', bookingId);
+      }
+
+      // Navigate to the Driver's Drive Page
+      navigate('/userhome');
+    } catch (error) {
+      setValues((prevValues) => ({
+        ...prevValues,
+        errors: "Payment failed. Please try again.",
+      }));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchClientToken = async () => {
@@ -36,7 +108,7 @@ const Payment = () => {
     };
 
     fetchClientToken();
-  }, []);
+  }, []); // Fetch client token only once when the component mounts.
 
   useEffect(() => {
     const loadBraintreeScript = () => {
@@ -87,44 +159,7 @@ const Payment = () => {
     };
 
     loadBraintreeScript();
-  }, [clientToken]);
-
-  const handlePayment = async () => {
-    if (!instance) {
-      setValues((prevValues) => ({
-        ...prevValues,
-        errors: "Payment instance not initialized.",
-      }));
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const { nonce } = await instance.requestPaymentMethod();
-      const { data } = await axios.post(
-        "http://localhost:3000/api/payment/braintree/pay",
-        {
-          nonce,
-          bookingId,
-        }
-      );
-
-      setValues((prevValues) => ({
-        ...prevValues,
-        success: "Payment completed successfully.",
-      }));
-      // Show toast notification
-      toast.success("Booking successful!");
-    } catch (error) {
-      setValues((prevValues) => ({
-        ...prevValues,
-        errors: "Payment failed. Please try again.",
-      }));
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [clientToken]); // Re-run the script load if the client token changes.
 
   return (
     <div className="payment-container">

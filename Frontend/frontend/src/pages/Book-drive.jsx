@@ -1,33 +1,39 @@
-import React, { useEffect, useState, useRef } from "react";
-import axios from "axios";
-import MapSelector from "../Component/mapselector";
-import { useNavigate } from "react-router-dom";
-import io from "socket.io-client";
-import { TextField, Button, CircularProgress } from "@mui/material";
-import { useAuth } from "../Context/userContext";
+import React, { useEffect, useState, useRef } from "react"
+import axios from "axios"
+import MapSelector from "../Component/mapselector"
+import { useNavigate } from "react-router-dom"
+import io from "socket.io-client"
+import { TextField, Button, CircularProgress, Typography } from "@mui/material"
+import { useAuth } from "../Context/userContext"
+import { MapPin, Navigation, Search, Calendar, ArrowRight } from "lucide-react"
+
+// OpenCage Geocoder API Key
+const OPEN_CAGE_API_KEY = import.meta.env.VITE_OPEN_CAGE_API_KEY
 
 const Bookdrive = () => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const socketRef = useRef(null);
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const socketRef = useRef(null)
   const [formData, setFormData] = useState({
     userId: user ? user._id : "",
     pickupLocation: { lat: "", lng: "" },
     destinationLocation: { lat: "", lng: "" },
-  });
-  const [loading, setLoading] = useState(false);
+  })
+  const [loading, setLoading] = useState(false)
+  const [pickupSuggestions, setPickupSuggestions] = useState([])
+  const [destinationSuggestions, setDestinationSuggestions] = useState([])
+  const [pickupQuery, setPickupQuery] = useState("")
+  const [destinationQuery, setDestinationQuery] = useState("")
 
-  // Update userId in formData when user changes
   useEffect(() => {
     if (user) {
       setFormData((prev) => ({
         ...prev,
         userId: user._id,
-      }));
+      }))
     }
-  }, [user]);
+  }, [user])
 
-  // Fetch current location for pickup
   useEffect(() => {
     const fetchLocation = () => {
       navigator.geolocation.getCurrentPosition(
@@ -38,116 +44,259 @@ const Bookdrive = () => {
               lat: position.coords.latitude,
               lng: position.coords.longitude,
             },
-          }));
+          }))
         },
         (error) => {
-          console.error("Error fetching location:", error);
-          alert(
-            "Unable to fetch your location. Please set it manually on the map."
-          );
-        }
-      );
-    };
+          console.error("Error fetching location:", error)
+          alert("Unable to fetch your location. Please set it manually on the map.")
+        },
+      )
+    }
 
     if ("geolocation" in navigator) {
-      fetchLocation();
+      fetchLocation()
     } else {
-      alert("Geolocation is not supported by your browser.");
+      alert("Geolocation is not supported by your browser.")
     }
-  }, []);
+  }, [])
 
-  // Handle socket events
   useEffect(() => {
     socketRef.current = io("http://localhost:3000", {
       transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
-    });
+    })
 
-    const socket = socketRef.current;
+    const socket = socketRef.current
 
     socket.on("connect", () => {
-      console.log("Socket connected with ID:", socket.id);
+      console.log("Socket connected with ID:", socket.id)
       if (formData.userId) {
-        socket.emit("setUserSocketId", formData.userId);
+        socket.emit("setUserSocketId", formData.userId)
       }
-    });
+    })
 
     socket.on("bookingAccepted", (data) => {
-      console.log("Booking accepted event received:", data);
-      alert("Booking successful!");
+      console.log("Booking accepted event received:", data)
+      alert("Booking successful!")
       if (data && data.paymentPageUrl) {
-        navigate(data.paymentPageUrl);
+        navigate(data.paymentPageUrl)
       } else {
-        console.error(
-          "Payment page URL missing in bookingAccepted event data"
-        );
+        console.error("Payment page URL missing in bookingAccepted event data")
       }
-    });
+    })
 
     return () => {
-      socket.disconnect();
-      console.log("Socket disconnected");
-    };
-  }, [formData.userId, navigate]);
+      socket.disconnect()
+      console.log("Socket disconnected")
+    }
+  }, [formData.userId, navigate])
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+    e.preventDefault()
+    setLoading(true)
 
     try {
-      const response = await axios.post(
-        "http://localhost:3000/api/user/booking",
-        formData
-      );
-      console.log("Booking Response:", response);
-      alert("Booking successful!");
-      setLoading(false);
+      const response = await axios.post("http://localhost:3000/api/user/booking", formData)
+      console.log("Booking Response:", response)
+      alert("Booking successful!")
+      setLoading(false)
     } catch (error) {
-      console.error("Booking error:", error.response || error);
-      alert(error.response?.data?.msg || "Booking failed. Please try again.");
-      setLoading(false);
+      console.error("Booking error:", error.response || error)
+      alert(error.response?.data?.msg || "Booking failed. Please try again.")
+      setLoading(false)
     }
-  };
+  }
+
+  const fetchLocationSuggestions = async (query, type) => {
+    try {
+      const response = await axios.get(`http://localhost:3000/api/geocode`, {
+        params: { query },
+      })
+
+      const results = response.data.results
+
+      if (type === "pickup") {
+        setPickupSuggestions(results)
+      } else {
+        setDestinationSuggestions(results)
+      }
+    } catch (error) {
+      console.error("Error fetching suggestions:", error)
+    }
+  }
+
+  const handleLocationChange = (e, type) => {
+    const query = e.target.value
+    if (type === "pickup") {
+      setPickupQuery(query)
+    } else {
+      setDestinationQuery(query)
+    }
+
+    if (query.length > 2) {
+      fetchLocationSuggestions(query, type)
+    } else {
+      if (type === "pickup") {
+        setPickupSuggestions([])
+      } else {
+        setDestinationSuggestions([])
+      }
+    }
+  }
+
+  const handleLocationSelect = (selectedLocation, type) => {
+    const location = {
+      lat: selectedLocation.geometry.lat,
+      lng: selectedLocation.geometry.lng,
+    }
+    if (type === "pickup") {
+      setFormData((prev) => ({ ...prev, pickupLocation: location }))
+      setPickupQuery(selectedLocation.formatted)
+    } else {
+      setFormData((prev) => ({ ...prev, destinationLocation: location }))
+      setDestinationQuery(selectedLocation.formatted)
+    }
+
+    if (type === "pickup") {
+      setPickupSuggestions([])
+    } else {
+      setDestinationSuggestions([])
+    }
+  }
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-blue-50 via-gray-100 to-blue-50">
+    <div className="min-h-screen bg-[#121212] text-white pt-16">
+      {" "}
+      {/* Added pt-16 for navbar space */}
       {user ? (
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white p-8 rounded-lg shadow-md w-full max-w-lg border border-gray-200"
-        >
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">
-            Book a Drive
-          </h2>
-          <TextField
-            label="User ID"
-            value={formData.userId || ""}
-            fullWidth
-            disabled
-            margin="normal"
-            variant="outlined"
-            InputLabelProps={{ className: "text-gray-700" }}
-            className="mb-4"
-          />
+        <div className="container mx-auto px-4 py-8 space-y-8">
+          <div className="text-center">
+            <Typography variant="h2" className="text-white font-bold text-4xl md:text-5xl mb-2">
+              Book Your Ride
+            </Typography>
+            <Typography variant="body1" className="text-gray-400">
+              Enter your journey details below
+            </Typography>
+          </div>
 
-          <TextField
-            label="Pickup Location"
-            value={
-              formData.pickupLocation.lat && formData.pickupLocation.lng
-                ? `Lat: ${formData.pickupLocation.lat}, Lng: ${formData.pickupLocation.lng}`
-                : "Fetching location..."
-            }
-            fullWidth
-            disabled
-            margin="normal"
-            variant="outlined"
-            InputLabelProps={{ className: "text-gray-700" }}
-            className="mb-6"
-          />
+          <div className="max-w-5xl mx-auto">
+            <form
+              onSubmit={handleSubmit}
+              className="bg-[#1E1E1E]/80 backdrop-blur-md p-6 rounded-2xl shadow-[0_0_15px_rgba(192,255,62,0.1)] border border-[#2A2A2A]"
+            >
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1 relative group">
+                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#C0FF3E]">
+                    <MapPin size={20} />
+                  </div>
+                  <TextField
+                    label="Pickup Location"
+                    onChange={(e) => handleLocationChange(e, "pickup")}
+                    value={pickupQuery || ""}
+                    fullWidth
+                    variant="outlined"
+                    InputLabelProps={{
+                      className: "text-gray-400 pl-10",
+                      shrink: true,
+                    }}
+                    InputProps={{
+                      className: "rounded-xl bg-[#2A2A2A] text-white pl-12",
+                      sx: {
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "#3A3A3A",
+                        },
+                        "&:hover .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "#C0FF3E",
+                        },
+                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "#C0FF3E",
+                        },
+                      },
+                    }}
+                  />
+                  {pickupSuggestions.length > 0 && (
+                    <div className="relative w-full mt-2 bg-[#2A2A2A] rounded-xl shadow-lg z-[99999] border border-[#3A3A3A] max-h-60 overflow-auto">
 
-          <div className="my-6">
+                      {pickupSuggestions.map((suggestion) => (
+                        <div
+                          key={suggestion.place_id}
+                          className="p-3 cursor-pointer hover:bg-[#3A3A3A] transition-colors duration-200 flex items-center gap-2"
+                          onClick={() => handleLocationSelect(suggestion, "pickup")}
+                        >
+                          <MapPin size={16} className="text-[#C0FF3E]" />
+                          {suggestion.formatted}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 relative group">
+                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#C0FF3E]">
+                    <Navigation size={20} />
+                  </div>
+                  <TextField
+                    label="Destination"
+                    onChange={(e) => handleLocationChange(e, "destination")}
+                    value={destinationQuery || ""}
+                    fullWidth
+                    variant="outlined"
+                    InputLabelProps={{
+                      className: "text-gray-400 pl-10",
+                      shrink: true,
+                    }}
+                    InputProps={{
+                      className: "rounded-xl bg-[#2A2A2A] text-white pl-12",
+                      sx: {
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "#3A3A3A",
+                        },
+                        "&:hover .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "#C0FF3E",
+                        },
+                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "#C0FF3E",
+                        },
+                      },
+                    }}
+                  />
+                  {destinationSuggestions.length > 0 && (
+                    <div className="relative w-full mt-2 bg-[#2A2A2A] rounded-xl shadow-lg z-[100] border border-[#3A3A3A]">
+                      {destinationSuggestions.map((suggestion) => (
+                        <div
+                          key={suggestion.place_id}
+                          className="p-3 cursor-pointer hover:bg-[#3A3A3A] transition-colors duration-200 flex items-center gap-2"
+                          onClick={() => handleLocationSelect(suggestion, "destination")}
+                        >
+                          <Navigation size={16} className="text-[#C0FF3E]" />
+                          {suggestion.formatted}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="min-w-[120px] h-[56px] bg-[#C0FF3E] hover:bg-[#B0EF2E] text-black font-medium rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(192,255,62,0.3)]"
+                >
+                  {loading ? (
+                    <CircularProgress size={24} className="text-black" />
+                  ) : (
+                    <>
+                      <ArrowRight size={20} />
+                      <span>Book Drive</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+
+          <div className="w-full h-[500px] rounded-2xl position-relative overflow-hidden shadow-lg border z-[1000] border-[#2A2A2A]">
             <MapSelector
               pickupLocation={formData.pickupLocation}
               destinationLocation={formData.destinationLocation}
@@ -159,29 +308,20 @@ const Bookdrive = () => {
               }
             />
           </div>
-
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            fullWidth
-            disabled={loading}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 disabled:opacity-50"
-          >
-            {loading ? (
-              <CircularProgress size={24} color="inherit" />
-            ) : (
-              "Submit"
-            )}
-          </Button>
-        </form>
+        </div>
       ) : (
-        <h2 className="text-xl font-semibold text-gray-700">
-          Please login to book a drive
-        </h2>
+        <div className="w-full h-[calc(100vh-4rem)] flex items-center justify-center">
+          <Typography
+            variant="h5"
+            className="text-white text-center font-semibold bg-[#1E1E1E]/80 p-8 rounded-xl backdrop-blur-md border border-[#2A2A2A]"
+          >
+            Please login to book a drive
+          </Typography>
+        </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default Bookdrive;
+export default Bookdrive
+

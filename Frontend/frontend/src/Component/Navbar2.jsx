@@ -1,15 +1,14 @@
-import React, { useState } from 'react';
-import { Typography } from '@mui/material';
-import { useAuth } from '../Context/userContext';
-import { useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { useAuth } from "../Context/userContext";
+import { useLocation } from "react-router-dom";
+import Calendar from "react-calendar";
+import "react-calendar/dist/Calendar.css";
+import "../Css/CalendarStyles.css";
 
 const NavLink = ({ href, text, currentPath }) => {
-  const baseStyle =
-    "block py-2 px-3 rounded md:p-0 text-gray-900 dark:text-white hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-600 dark:hover:bg-gray-700";
-  const activeStyle = "text-white bg-blue-600 md:bg-transparent md:text-blue-600";
-
+  const isActive = currentPath === href;
   return (
-    <a href={href} className={`${baseStyle} ${currentPath === href ? activeStyle : ""}`}>
+    <a href={href} className={`navbar-link ${isActive ? "active" : ""}`}>
       {text}
     </a>
   );
@@ -18,107 +17,120 @@ const NavLink = ({ href, text, currentPath }) => {
 const Navbar2 = () => {
   const auth = useAuth();
   const location = useLocation();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [completedBookings, setCompletedBookings] = useState([]);
+  const [navbarStyle, setNavbarStyle] = useState({ background: "transparent" });
 
-  const toggleMenu = () => {
-    setIsMenuOpen((prev) => !prev);
-  };
+  const toggleCalendar = () => setIsCalendarOpen((prev) => !prev);
+
+  useEffect(() => {
+    const fetchCompletedBookings = async () => {
+      try {
+        const response = await fetch(`/api/user/completedBookings/${auth.user._id}`);
+        const data = await response.json();
+        if (Array.isArray(data.bookings)) {
+          setCompletedBookings(data.bookings);
+        } else {
+          setCompletedBookings([]);
+        }
+      } catch (error) {
+        console.error("Error fetching completed bookings:", error);
+        setCompletedBookings([]);
+      }
+    };
+
+    if (auth.user) {
+      fetchCompletedBookings();
+    }
+  }, [auth.user]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setNavbarStyle(
+        window.scrollY > 50
+          ? {
+              background:
+                "linear-gradient(to bottom right, #262529, #363b3f, #383e42, #141920)",
+              opacity: 0.95,
+              transition: "background 0.5s ease",
+            }
+          : { background: "transparent", transition: "background 0.5s ease" }
+      );
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
-    <nav className="bg-white dark:bg-gray-900 fixed w-full z-20 top-0 start-0 border-b border-gray-200 dark:border-gray-600 shadow-lg">
-      <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
-        {/* Logo Section */}
-        <a href="/" className="flex items-center space-x-3 rtl:space-x-reverse">
-          <img src="logo.png" className="h-10" alt="Auto Taxi Logo" />
-          <Typography
-            sx={{
-              display: { md: "block", sm: "none", xs: "none" },
-              fontWeight: 800,
-              textShadow: "2px 2px 20px rgba(0, 0, 0, 0.3)",
-            }}
-          >
-            <span style={{ fontSize: "20px" }}>Auto </span>TAXI
-          </Typography>
-        </a>
+    <>
+      <nav className="fixed w-full z-20 top-0 left-0" style={navbarStyle}>
+        <div className="flex items-center p-4">
+          <h1 className="text-2xl" style={{ fontFamily: "'Concert One', sans-serif", fontWeight: "400", marginLeft: "10px" }}>
+            Auto Drive
+          </h1>
 
-        {/* Right Section */}
-        <div className="flex md:order-2 space-x-3 md:space-x-0 rtl:space-x-reverse">
-          {/* Conditional rendering for Login/Logout */}
-          {auth.user ? (
-            <button
-              type="button"
-              className="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-800"
-              onClick={auth.logout}
-            >
-              Logout
+          <div style={{ display: "flex", marginLeft: "50px", gap: "30px" }}>
+            <NavLink href="/userhome" text="Home" currentPath={location.pathname} />
+            <NavLink href="/userbookdrive" text="Book Drive" currentPath={location.pathname} />
+            <NavLink href="/Aboutus" text="About us" currentPath={location.pathname} />
+            {location.pathname === "/userhome" && (
+              <button
+                onClick={toggleCalendar}
+                className="navbar-link py-2 px-4 rounded hover:text-white"
+                style={{ marginLeft: "10px" }}
+              >
+                Previous Bookings
+              </button>
+            )}
+          </div>
+
+          <div className="flex space-x-4" style={{ position: "absolute", right: "10px" }}>
+            {auth.user ? (
+              <button type="button" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700" onClick={auth.logout}>
+                Logout
+              </button>
+            ) : (
+              <>
+                <a href="/userlogin" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                  Login
+                </a>
+                <a href="/usersignup" className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
+                  Signup
+                </a>
+              </>
+            )}
+          </div>
+        </div>
+      </nav>
+
+      {isCalendarOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center">
+          <div className="bg-gray-900 p-8 rounded-2xl relative">
+            <button onClick={toggleCalendar} className="calendar-close-button" aria-label="Close calendar">
+              ×
             </button>
-          ) : (
-            <>
-              <a
-                href="/login"
-                className="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-800"
-                rel="noopener noreferrer"
-              >
-                Login
-              </a>
-              <a
-                href="/signup"
-                className="text-white bg-gray-600 hover:bg-gray-700 focus:ring-4 focus:outline-none focus:ring-gray-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-gray-500 dark:hover:bg-gray-600 dark:focus:ring-gray-800"
-                rel="noopener noreferrer"
-              >
-                Signup
-              </a>
-            </>
-          )}
-
-          {/* Hamburger Menu (Responsive) */}
-          <button
-            onClick={toggleMenu}
-            className="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-500 rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
-            aria-controls="navbar-sticky"
-            aria-expanded={isMenuOpen}
-          >
-            <span className="sr-only">Open main menu</span>
-            <svg
-              className="w-5 h-5"
-              aria-hidden="true"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 17 14"
-            >
-              <path
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M1 1h15M1 7h15M1 13h15"
-              />
-            </svg>
-          </button>
+            <Calendar
+              onClickDay={(date) => {
+                const booking = completedBookings.find(
+                  (b) => new Date(b.createdAt).toDateString() === date.toDateString()
+                );
+                if (booking) {
+                  alert(
+                    `Price: ${booking.price}\nPickup: ${booking.pickupLocation.lat}, ${booking.pickupLocation.lng}\nDestination: ${booking.destinationLocation.lat}, ${booking.destinationLocation.lng}`
+                  );
+                }
+              }}
+              tileClassName={({ date }) =>
+                completedBookings.some((b) => new Date(b.createdAt).toDateString() === date.toDateString())
+                  ? "react-calendar__tile--has-booking"
+                  : ""
+              }
+            />
+          </div>
         </div>
-
-        {/* Navigation Links */}
-        <div
-          className={`items-center justify-between ${
-            isMenuOpen ? "block" : "hidden"
-          } w-full md:flex md:w-auto md:order-1`}
-          id="navbar-sticky"
-        >
-          <ul className="flex flex-col p-4 md:p-0 mt-4 font-medium border border-gray-100 rounded-lg bg-gray-50 md:space-x-8 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0 md:bg-white dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
-            <li>
-              <NavLink href="/home" text="Home" currentPath={location.pathname} />
-            </li>
-            <li>
-              <NavLink href="/userHome" text="User Dashboard" currentPath={location.pathname} />
-            </li>
-            <li>
-              <NavLink href="/userbookdrive" text="Book Drive" currentPath={location.pathname} />
-            </li>
-          
-          </ul>
-        </div>
-      </div>
-    </nav>
+      )}
+    </>
   );
 };
 

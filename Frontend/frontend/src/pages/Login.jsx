@@ -30,7 +30,8 @@ const LoginPage = () => {
   };
 
   return (
-    <Box width="100%" height="100%" display="flex" flex="1" flexDirection="row">
+    <div className='h-screen bg-gradient-to-br from-blue-900 via-black to-gray-900'>
+    <Box width="100%" height="100%" display="flex" flex="1" flexDirection="row" >
       {/* Left side: Image */}
       <Box
         padding={2}
@@ -54,19 +55,19 @@ const LoginPage = () => {
         padding={2}
         margin="auto"
       >
-        <Box
-          component="form"
-          onSubmit={handleLogin}
-          sx={{
-            margin: 'auto',
-            padding: 4,
-            boxShadow: '10px 10px 20px rgba(0,0,0,0.2)',
-            borderRadius: 2,
-            maxWidth: '400px',
-            width: '100%',
-            bgcolor: 'background.paper',
-          }}
-        >
+    <Box
+  component="form"
+  onSubmit={handleLogin}
+  sx={{
+    margin: 'auto',
+    padding: 4,
+    boxShadow: '10px 10px 20px rgba(0,0,0,0.2)',
+    borderRadius: 2,
+    maxWidth: '400px',
+    width: '100%',
+    background: 'linear-gradient(to bottom right, #93c5fd, #f3f4f6, #d1d5db)', // Tailwind-inspired gradient
+  }}
+>
           <Typography variant="h4" textAlign="center" fontWeight={600} mb={3}>
             Login
           </Typography>
@@ -126,6 +127,7 @@ const LoginPage = () => {
         </Box>
       </Box>
     </Box>
+    </div>
   );
 };
 
