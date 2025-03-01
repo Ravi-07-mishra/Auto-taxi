@@ -234,6 +234,42 @@ const GetAllBookingRequests = async (req, res) => {
       });
     }
   };
+  const updateProfile = async (req, res) => {
+    try {
+      const { name, email, password } = req.body;
+      const driverId = req.driver._id; // Assuming driver ID is extracted from the token
+  
+      // Find the driver
+      const driver = await Driver.findById(driverId);
+      if (!driver) {
+        return res.status(404).json({ msg: 'Driver not found.' });
+      }
+  
+      // Update fields if provided
+      if (name) driver.name = name;
+      if (email) driver.email = email;
+      if (password) {
+        const salt = await bcrypt.genSalt(10);
+        driver.password = await bcrypt.hash(password, salt);
+      }
+  
+      // Save the updated driver
+      await driver.save();
+  
+      res.status(200).json({
+        msg: 'Profile updated successfully.',
+        driver: {
+          _id: driver._id,
+          name: driver.name,
+          email: driver.email,
+          profileImage: driver.profileImage,
+        },
+      });
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      res.status(500).json({ msg: 'Server error. Please try again later.' });
+    }
+  };
   
   
-module.exports = { Register, GetallDrivers, Login, GetAllBookingRequests,updateAvailability,verifyDriver,GetSubscriptionStatus,Logout };
+module.exports = { Register, GetallDrivers, Login, GetAllBookingRequests,updateAvailability,verifyDriver,GetSubscriptionStatus,Logout,updateProfile };

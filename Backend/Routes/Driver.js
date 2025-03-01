@@ -4,7 +4,7 @@ const upload = require('../utiils/upload');
 const fs = require("fs");
 const path = require('path');
 const Driver = require('../Models/drivermodel')
-const {Register,GetallDrivers,Login, updateAvailability, verifyDriver, GetSubscriptionStatus, Logout} = require('../controllers/driver');
+const {Register,GetallDrivers,Login, updateAvailability, verifyDriver, GetSubscriptionStatus, Logout, updateProfile} = require('../controllers/driver');
 const { getallDriverBookings, getBooking, CompleteBooking } = require('../controllers/Booking');
 const { verifyDriverToken } = require('../utiils/token-manager');
 const BASE_UPLOAD_PATH = "D:/PROJECT/Auto-taxi/Backend/uploads/drivers";
@@ -116,7 +116,7 @@ router.put('/updateProfileImage', verifyDriverToken, async (req, res) => {
     res.status(500).send("Failed to update profile image.");
   }
 });
-
+router.route('/updateProfile').post(updateProfile);
   // Route to upload cover image
   router.post('/uploadCoverImage',verifyDriver, upload.single('coverImage'), (req, res) => {
     if (req.file) {

@@ -1,36 +1,41 @@
-import React, { useState, useEffect } from "react"
-import { Avatar, Menu, MenuItem } from "@mui/material"
-import { useLocation } from "react-router-dom"
-import { useDriverAuth } from "../Context/driverContext"
-import DriverLogin from "../pages/Driverlogin"
-import DriverRegistrationForm from "../pages/Register"
+import React, { useState, useEffect } from "react";
+import { Avatar, Menu, MenuItem } from "@mui/material";
+import { useLocation } from "react-router-dom";
+import { useDriverAuth } from "../Context/driverContext";
+import { useSubscription } from "../Context/SubscriptionContext"; // Import the subscription context
+import DriverLogin from "../pages/Driverlogin";
+import DriverRegistrationForm from "../pages/Register";
+import SubscriptionPage from "../pages/SubscriptionPage"; // Import the SubscriptionPage component
 
 const NavLink = ({ href, text, currentPath }) => {
-  const isActive = currentPath === href
+  const isActive = currentPath === href;
   return (
     <a href={href} className={`navbar-link ${isActive ? "active" : ""} py-2 px-4 rounded hover:text-white`}>
       {text}
     </a>
-  )
-}
+  );
+};
 
 const DriverNavbar = () => {
-  const auth = useDriverAuth()
-  const location = useLocation()
-  const [isLoginOpen, setIsLoginOpen] = useState(false)
-  const [isRegisterOpen, setIsRegisterOpen] = useState(false)
-  const [anchorEl, setAnchorEl] = useState(null)
+  const auth = useDriverAuth();
+  const { subscription } = useSubscription(); // Use the subscription context
+  const location = useLocation();
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const [isSubscriptionOpen, setIsSubscriptionOpen] = useState(false); // State for subscription card
+  const [anchorEl, setAnchorEl] = useState(null);
   const [navbarStyle, setNavbarStyle] = useState({
     background: "transparent",
-  })
+  });
 
-  const handleAvatarClick = (event) => setAnchorEl(event.currentTarget)
-  const handleMenuClose = () => setAnchorEl(null)
-  const toggleLogin = () => setIsLoginOpen((prev) => !prev)
-  const toggleRegister = () => setIsRegisterOpen((prev) => !prev)
+  const handleAvatarClick = (event) => setAnchorEl(event.currentTarget);
+  const handleMenuClose = () => setAnchorEl(null);
+  const toggleLogin = () => setIsLoginOpen((prev) => !prev);
+  const toggleRegister = () => setIsRegisterOpen((prev) => !prev);
+  const toggleSubscription = () => setIsSubscriptionOpen((prev) => !prev); // Toggle subscription card
 
-  const driverName = auth.driver?.name || "D"
-  const driverInitial = driverName.charAt(0).toUpperCase()
+  const driverName = auth.driver?.name || "D";
+  const driverInitial = driverName.charAt(0).toUpperCase();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -39,18 +44,21 @@ const DriverNavbar = () => {
           background: "linear-gradient(to bottom right, #262529, #363b3f, #383e42, #141920)",
           opacity: 0.95,
           transition: "background 0.5s ease",
-        })
+        });
       } else {
         setNavbarStyle({
           background: "transparent",
           transition: "background 0.5s ease",
-        })
+        });
       }
-    }
+    };
 
-    window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Check if the driver is subscribed
+  const isSubscribed = subscription.isSubscribed && new Date(subscription.expiryDate) > new Date();
 
   return (
     <>
@@ -72,7 +80,6 @@ const DriverNavbar = () => {
           <div style={{ display: "flex", marginLeft: "50px", gap: "30px" }}>
             <NavLink href="/driverDashboard" text="Driver Dashboard" currentPath={location.pathname} />
             <NavLink href="/driverpage" text="Home" currentPath={location.pathname} />
-          
             <NavLink href="/Aboutus" text="About us" currentPath={location.pathname} />
           </div>
 
@@ -86,13 +93,23 @@ const DriverNavbar = () => {
           >
             {auth.driver ? (
               <>
-                <Avatar 
-  sx={{ bgcolor: "#2563EB", cursor: "pointer" }} 
-  onClick={handleAvatarClick}
-  src={`http://localhost:3000/${auth.driver.profileImage}` || ""}
->
-  {!auth.driver.profileImage && driverInitial}
-</Avatar>
+                {/* Show Subscribe button if not subscribed */}
+                {!isSubscribed && (
+                  <button
+                    onClick={toggleSubscription}
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+                  >
+                    Subscribe
+                  </button>
+                )}
+
+                <Avatar
+                  sx={{ bgcolor: "#2563EB", cursor: "pointer" }}
+                  onClick={handleAvatarClick}
+                  src={`http://localhost:3000/${auth.driver.profileImage}` || ""}
+                >
+                  {!auth.driver.profileImage && driverInitial}
+                </Avatar>
                 <Menu
                   anchorEl={anchorEl}
                   open={Boolean(anchorEl)}
@@ -146,9 +163,23 @@ const DriverNavbar = () => {
           </div>
         </div>
       )}
+
+      {/* Subscription Card */}
+      {isSubscriptionOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
+          <div className="bg-gray-900 p-8 rounded-2xl relative w-full max-w-4xl">
+            <button
+              onClick={toggleSubscription}
+              className="absolute top-3 right-3 text-white hover:text-red-500"
+            >
+              ✕
+            </button>
+            <SubscriptionPage />
+          </div>
+        </div>
+      )}
     </>
-  )
-}
+  );
+};
 
-export default DriverNavbar
-
+export default DriverNavbar;

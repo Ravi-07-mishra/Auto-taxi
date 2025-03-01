@@ -1,134 +1,198 @@
-import React, { useState } from "react";
-import { NavLink, Link } from "react-router-dom";
+import { useState, useRef } from "react"
+import { Link } from "react-router-dom"
+import { Users, Car, Clock, Mail, Phone, MapPin, Menu, X } from "lucide-react"
+import React from "react"
+const NavLink = ({ href, text, currentPath, onClick }) => {
+  const isActive = currentPath === href
+  return (
+    <Link
+      to={href}
+      className={`navbar-link ${isActive ? "active" : ""} text-white hover:text-[#cbe557] transition-colors`}
+      onClick={onClick}
+    >
+      {text}
+    </Link>
+  )
+}
 
 const Home = () => {
-  const [isCardVisible, setIsCardVisible] = useState(false);
+  const [isCardVisible, setIsCardVisible] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const contactRef = useRef(null)
 
   const handleGetStartedClick = () => {
-    setIsCardVisible(true); // Show the card prompt when clicked
-  };
+    setIsCardVisible(true)
+  }
 
   const handleCloseCard = () => {
-    setIsCardVisible(false); // Hide the card when the close button is clicked
-  };
+    setIsCardVisible(false)
+  }
+
+  const scrollToContact = () => {
+    contactRef.current?.scrollIntoView({ behavior: "smooth" })
+    setIsMenuOpen(false)
+  }
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen)
+  }
 
   return (
-    <div className="relative flex flex-col lg:flex-row min-h-screen">
+    <div className="relative min-h-screen">
+      {/* Background Video */}
+      <video autoPlay loop muted className="fixed top-0 left-0 w-full h-full object-cover z-0">
+        <source src="/HomePage.mp4" type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
 
-      {/* Section 1: Statistics */}
-      <div className="w-full lg:w-1/3 min-h-screen bg-gradient-to-br from-[#121212] via-[#1b1b1b] via-[#262626] to-[#0d0d0d] text-white flex flex-col items-center justify-center p-6 relative z-10">
-        <h1 className="text-4xl font-extrabold lowercase tracking-wider shadow-md absolute top-[-40px] flex space-x-2 mt-20">
-          {["a", "u", "t", "o", "-", "d", "r", "i", "v", "e"].map((letter, index) => (
-            <span
-              key={index}
-              style={{ color: index % 2 === 0 ? "#cbe557" : "white" }}
+      {/* Overlay */}
+      <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 z-10"></div>
+
+      {/* Content */}
+      <div className="relative z-20">
+        {/* Navigation */}
+        <nav className="fixed w-full z-30 top-0 left-0 p-4 bg-black bg-opacity-50">
+          <div className="container mx-auto flex items-center justify-between">
+            <h1 className="text-2xl md:text-4xl font-extrabold lowercase tracking-wider shadow-md flex space-x-2">
+              {["a", "u", "t", "o", "-", "d", "r", "i", "v", "e"].map((letter, index) => (
+                <span key={index} style={{ color: index % 2 === 0 ? "#cbe557" : "white" }}>
+                  {letter}
+                </span>
+              ))}
+            </h1>
+
+            <div className="hidden md:flex gap-8">
+              <NavLink href="/Home" text="Home" currentPath="/Home" />
+              <NavLink href="/TrustedDrivers" text="Trusted Drivers" currentPath="/Home" />
+              <NavLink href="/OurServices" text="Our Services" currentPath="/Home" />
+              <button
+                onClick={scrollToContact}
+                className="bg-[#cbe557] text-black px-4 py-2 rounded-lg hover:bg-opacity-80 transition-all"
+              >
+                Contact Us
+              </button>
+            </div>
+
+            <button className="md:hidden text-white" onClick={toggleMenu}>
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
+        </nav>
+
+        {/* Mobile Menu */}
+        {isMenuOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-90 z-40 flex flex-col items-center justify-center">
+            <NavLink href="/Home" text="Home" currentPath="/Home" onClick={toggleMenu} />
+            <NavLink href="/TrustedDrivers" text="Trusted Drivers" currentPath="/Home" onClick={toggleMenu} />
+            <NavLink href="/OurServices" text="Our Services" currentPath="/Home" onClick={toggleMenu} />
+            <button
+              onClick={() => {
+                scrollToContact()
+                toggleMenu()
+              }}
+              className="bg-[#cbe557] text-black px-4 py-2 rounded-lg hover:bg-opacity-80 transition-all mt-4"
             >
-              {letter}
-            </span>
-          ))}
-        </h1>
-        <div className="flex flex-col items-center justify-center flex-grow pt-10">
-          <div className="text-center mb-10">
-            <h2 className="text-5xl font-bold text-gray-200">100+</h2>
-            <p className="text-gray-400 text-lg">Drivers</p>
+              Contact Us
+            </button>
           </div>
-          <div className="text-center">
-            <h2 className="text-5xl font-bold text-gray-200">20k+</h2>
-            <p className="text-gray-400 text-lg">Users</p>
+        )}
+
+        {/* Hero Section */}
+        <section className="min-h-screen flex items-center justify-center px-4">
+          <div className="text-center text-white">
+            <h2 className="text-4xl md:text-6xl font-bold mb-8">Book Drives or Start Driving</h2>
+            <button
+              onClick={handleGetStartedClick}
+              className="bg-[#cbe557] text-gray-800 font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-[#b8d93e] hover:shadow-xl transition-all focus:outline-none focus:ring-2 focus:ring-[#a8c834] focus:ring-offset-2" style={{borderRadius: '10px'}}
+            >
+              Get Started
+            </button>
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* Section 2: Navigation */}
-      <div className="w-full lg:w-1/3 min-h-screen bg-gradient-to-br from-[#232323] via-[#4b4b4b] via-[#5f605d] via-[#494949] to-[#363636] text-white flex flex-col p-6 relative z-10">
-        <ul className="flex justify-center space-x-12 text-lg pt-6">
-          <li>
-            <NavLink to="/Home" className="hover:text-gray-400 transition">
-              Home
-            </NavLink>
-          </li>
-          <li>
-            <NavLink to="/TrustedDrivers" className="hover:text-gray-400 transition">
-              Trusted Drivers
-            </NavLink>
-          </li>
-          <li>
-            <NavLink to="/OurServices" className="hover:text-gray-400 transition">
-              Our Services
-            </NavLink>
-          </li>
-        </ul>
-        <div className="flex flex-col items-center justify-center flex-grow">
-          <h2 className="text-5xl font-bold text-center mt-12">
-            Book Drives or Start Driving
-          </h2>
-          <button
-            onClick={handleGetStartedClick}
-            className="bg-[#cae944] text-gray-800 font-bold py-2 px-6 rounded-lg shadow-lg hover:bg-[#b8d93e] hover:shadow-xl transition-all focus:outline-none focus:ring-2 focus:ring-[#a8c834] focus:ring-offset-2"
-          >
-            Get Started
-          </button>
-        </div>
-      </div>
-
-      {/* Section 3: Contact Us */}
-      <div className="w-full lg:w-1/3 min-h-screen bg-gradient-to-br from-[#0f0f0f] via-[#1b1b1b] via-[#262626] to-[#121212] text-white flex flex-col items-center justify-center p-6 relative z-10">
-        <button
-          className="bg-white border border-gray-300 text-gray-700 font-medium py-2 px-4 rounded-lg shadow-md hover:bg-gray-100 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 absolute top-[-40px] mt-20"
-        >
-          Contact Us
-        </button>
-        <p className="text-gray-400 text-center mt-8 max-w-md">
-          Reach out to us for assistance or to address any concerns. We're here to help with your issues, complaints, or questions. Your satisfaction matters to us, so don’t hesitate to contact us anytime.
-        </p>
-      </div>
-
-      {/* Card Prompt */}
-      {isCardVisible && (
-        <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white rounded-lg overflow-hidden shadow-lg w-3/4 h-3/4 flex">
-            {/* User Section */}
-            <Link to="/userhome" className="w-1/2 relative group">
-              <div className="h-full w-full">
-                <img
-                  src="/user.jpg"
-                  alt="User"
-                  className="h-full w-full object-cover"
-                />
-                <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center group-hover:bg-opacity-50 transition">
-                  <h3 className="text-white text-3xl font-bold">User</h3>
-                </div>
+        {/* Stats Section */}
+        <section className="py-20 bg-black bg-opacity-70">
+          <div className="container mx-auto px-4">
+            <div className="flex flex-col md:flex-row justify-around text-white gap-8 md:gap-0">
+              <div className="text-center">
+                <Users size={48} className="mx-auto mb-4 text-[#cbe557]" />
+                <h2 className="text-4xl md:text-5xl font-bold">20k+</h2>
+                <p className="text-xl">Users</p>
               </div>
-            </Link>
-
-            {/* Driver Section */}
-            <Link to="/driverdashboard" className="w-1/2 relative group">
-              <div className="h-full w-full">
-                <img
-                  src="/driver.jpg"
-                  alt="Driver"
-                  className="h-full w-full object-cover"
-                />
-                <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center group-hover:bg-opacity-50 transition">
-                  <h3 className="text-white text-3xl font-bold">Driver</h3>
-                </div>
+              <div className="text-center">
+                <Car size={48} className="mx-auto mb-4 text-[#cbe557]" />
+                <h2 className="text-4xl md:text-5xl font-bold">100+</h2>
+                <p className="text-xl">Drivers</p>
               </div>
-            </Link>
+              <div className="text-center">
+                <Clock size={48} className="mx-auto mb-4 text-[#cbe557]" />
+                <h2 className="text-4xl md:text-5xl font-bold">50k+</h2>
+                <p className="text-xl">Hours Driven</p>
+              </div>
+            </div>
           </div>
+        </section>
 
-          {/* Close Button */}
-          <div className="flex justify-center mt-4">
+        {/* Contact Section */}
+        <section ref={contactRef} className="py-20 bg-black bg-opacity-70 text-white">
+          <div className="container mx-auto px-4">
+            <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center">Contact Us</h2>
+            <p className="text-center max-w-2xl mx-auto mb-8">
+              Reach out to us for assistance or to address any concerns. We're here to help with your issues,
+              complaints, or questions. Your satisfaction matters to us, so don't hesitate to contact us anytime.
+            </p>
+            <div className="flex flex-col md:flex-row justify-center items-center space-y-4 md:space-y-0 md:space-x-8">
+              <div className="flex items-center">
+                <Mail className="mr-2 text-[#cbe557]" />
+                <span>info@auto-drive.com</span>
+              </div>
+              <div className="flex items-center">
+                <Phone className="mr-2 text-[#cbe557]" />
+                <span>+1 (555) 123-4567</span>
+              </div>
+              <div className="flex items-center">
+                <MapPin className="mr-2 text-[#cbe557]" />
+                <span>123 Drive St, City, State 12345</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Card Prompt */}
+        {isCardVisible && (
+          <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 z-50 p-4">
+            <div className="bg-white rounded-lg overflow-hidden shadow-lg w-full max-w-4xl h-3/4 flex flex-col md:flex-row">
+              <Link to="/userhome" className="w-full md:w-1/2 h-1/2 md:h-full relative group">
+                <div className="h-full w-full">
+                  <img src="/user.jpg" alt="User" className="h-full w-full object-cover" />
+                  <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center group-hover:bg-opacity-50 transition">
+                    <h3 className="text-white text-3xl font-bold">User</h3>
+                  </div>
+                </div>
+              </Link>
+
+              <Link to="/driverdashboard" className="w-full md:w-1/2 h-1/2 md:h-full relative group">
+                <div className="h-full w-full">
+                  <img src="/driver.jpg" alt="Driver" className="h-full w-full object-cover" />
+                  <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center group-hover:bg-opacity-50 transition">
+                    <h3 className="text-white text-3xl font-bold">Driver</h3>
+                  </div>
+                </div>
+              </Link>
+            </div>
+
             <button
               onClick={handleCloseCard}
-              className="bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 transition-all"
+              className="absolute top-4 right-4 bg-red-500 text-white font-bold py-2 px-4 rounded-full hover:bg-red-600 transition-all"
             >
               Close
             </button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
-  );
-};
+  )
+}
 
-export default Home;
+export default Home
+

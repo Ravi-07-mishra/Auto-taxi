@@ -1,133 +1,208 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { useAuth } from '../Context/userContext';
-import { Box, Button, Typography, TextField, Alert } from '@mui/material';
-import { RiLoginCircleFill } from 'react-icons/ri';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../Context/userContext";
+import { Box, Button, Typography, TextField, Alert } from "@mui/material";
+import { RiLoginCircleFill } from "react-icons/ri";
+import { keyframes } from "@emotion/react";
+
+// Floating animation for the login box
+const float = keyframes`
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+`;
 
 const LoginPage = () => {
   const { login } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
 
     try {
-      const response = await login(email,password);
+      const response = await login(email, password);
       if (response.user) {
-      
-       
-        navigate('/userhome');
+        navigate("/userhome");
       } else {
-        setError(response.data.msg || 'Unexpected error occurred.');
+        setError(response.data.msg || "Unexpected error occurred.");
       }
     } catch (err) {
-      setError(err.response?.data?.msg || 'Login failed. Please try again.');
+      setError(err.response?.data?.msg || "Login failed. Please try again.");
     }
   };
 
   return (
-    <div className='h-screen bg-gradient-to-br from-blue-900 via-black to-gray-900'>
-    <Box width="100%" height="100%" display="flex" flex="1" flexDirection="row" >
-      {/* Left side: Image */}
-      <Box
-        padding={2}
-        mt={8}
-        display={{ md: 'block', xs: 'none' }}
-        sx={{ flex: 1 }}
-      >
-        <img
-          src="login.png"
-          alt="Login"
-          style={{ width: '100%', maxWidth: '400px', display: 'block', margin: 'auto' }}
-        />
-      </Box>
-
-      {/* Right side: Login Form */}
-      <Box
-        display="flex"
-        flex={1}
-        justifyContent="center"
-        alignItems="center"
-        padding={2}
-        margin="auto"
-      >
     <Box
-  component="form"
-  onSubmit={handleLogin}
-  sx={{
-    margin: 'auto',
-    padding: 4,
-    boxShadow: '10px 10px 20px rgba(0,0,0,0.2)',
-    borderRadius: 2,
-    maxWidth: '400px',
-    width: '100%',
-    background: 'linear-gradient(to bottom right, #93c5fd, #f3f4f6, #d1d5db)', // Tailwind-inspired gradient
-  }}
->
-          <Typography variant="h4" textAlign="center" fontWeight={600} mb={3}>
-            Login
-          </Typography>
+      sx={{
+        height: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundImage: "url('/bg1.jpg')", // Replace with your image path
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        position: "relative",
+      }}
+    >
+      {/* Dark Overlay */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          background: "rgba(0, 0, 0, 0.5)", // Dark overlay for better readability
+          zIndex: 1,
+        }}
+      />
 
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
+      {/* Login Form Container */}
+      <Box
+        component="form"
+        onSubmit={handleLogin}
+        sx={{
+          width: "100%",
+          maxWidth: "400px",
+          padding: 4,
+          borderRadius: "16px",
+          background: "rgba(255, 255, 255, 0.1)", // Transparent glassmorphism effect
+          backdropFilter: "blur(10px)",
+          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
+          animation: `${float} 4s ease-in-out infinite`,
+          textAlign: "center",
+          position: "relative",
+          zIndex: 2,
+        }}
+      >
+        {/* Logo */}
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: "bold",
+            mb: 3,
+            textShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: "0.5rem",
+          }}
+        >
+          {["a", "u", "t", "o", "-", "d", "r", "i", "v", "e"].map((letter, index) => (
+            <span
+              key={index}
+              style={{ color: index % 2 === 0 ? "#cbe557" : "white" }}
+            >
+              {letter}
+            </span>
+          ))}
+        </Typography>
 
-          <Box mb={3}>
-            <Typography variant="body1" mb={1}>
-              Email:
-            </Typography>
-            <TextField
-              type="email"
-              fullWidth
-              variant="outlined"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </Box>
-
-          <Box mb={3}>
-            <Typography variant="body1" mb={1}>
-              Password:
-            </Typography>
-            <TextField
-              type="password"
-              fullWidth
-              variant="outlined"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </Box>
-
-          <Button
-            type="submit"
-            fullWidth
+        {error && (
+          <Alert
+            severity="error"
             sx={{
-              py: 1.5,
-              mt: 2,
-              borderRadius: 2,
-              bgcolor: '#00fffc',
-              color: '#000',
-              ':hover': {
-                bgcolor: 'white',
-                color: 'black',
-              },
+              mb: 3,
+              background: "rgba(255, 0, 0, 0.1)",
+              border: "1px solid rgba(255, 0, 0, 0.2)",
+              color: "#fff",
             }}
-            endIcon={<RiLoginCircleFill />}
           >
-            Login
-          </Button>
-        </Box>
+            {error}
+          </Alert>
+        )}
+
+        {/* Email Input */}
+        <TextField
+          type="email"
+          fullWidth
+          label="Email"
+          variant="outlined"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          sx={{
+            mb: 3,
+            "& .MuiOutlinedInput-root": {
+              "& fieldset": {
+                borderColor: "rgba(255, 255, 255, 0.3)",
+              },
+              "&:hover fieldset": {
+                borderColor: "rgba(255, 255, 255, 0.5)",
+              },
+              "&.Mui-focused fieldset": {
+                borderColor: "#cbe557",
+              },
+            },
+            "& .MuiInputLabel-root": {
+              color: "rgba(255, 255, 255, 0.7)",
+            },
+            "& .MuiInputBase-input": {
+              color: "#fff",
+            },
+          }}
+        />
+
+        {/* Password Input */}
+        <TextField
+          type="password"
+          fullWidth
+          label="Password"
+          variant="outlined"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          sx={{
+            mb: 3,
+            "& .MuiOutlinedInput-root": {
+              "& fieldset": {
+                borderColor: "rgba(255, 255, 255, 0.3)",
+              },
+              "&:hover fieldset": {
+                borderColor: "rgba(255, 255, 255, 0.5)",
+              },
+              "&.Mui-focused fieldset": {
+                borderColor: "#cbe557",
+              },
+            },
+            "& .MuiInputLabel-root": {
+              color: "rgba(255, 255, 255, 0.7)",
+            },
+            "& .MuiInputBase-input": {
+              color: "#fff",
+            },
+          }}
+        />
+
+        {/* Login Button */}
+        <Button
+          type="submit"
+          fullWidth
+          sx={{
+            py: 1.5,
+            mt: 2,
+            borderRadius: "10px",
+            background: "linear-gradient(45deg, #cbe557, #b8d93e)",
+            color: "#000",
+            fontWeight: "bold",
+            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
+            transition: "transform 0.2s, box-shadow 0.2s",
+            ":hover": {
+              transform: "scale(1.05)",
+              boxShadow: "0 6px 8px rgba(0, 0, 0, 0.3)",
+              background: "linear-gradient(45deg, #b8d93e, #cbe557)",
+            },
+          }}
+          endIcon={<RiLoginCircleFill />}
+        >
+          Login
+        </Button>
       </Box>
     </Box>
-    </div>
   );
 };
 

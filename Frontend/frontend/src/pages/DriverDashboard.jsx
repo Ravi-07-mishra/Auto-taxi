@@ -5,12 +5,15 @@ import { useNavigate } from "react-router-dom"
 import { Button } from "@mui/material"
 import "../Css/DriverDashboard.css"
 import { useSubscription } from "../Context/SubscriptionContext"
-
+import Slider from "react-slick";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
+import { MapPin, DollarSign, Check, X, ChevronLeft, ChevronRight } from "lucide-react";
 const DriverDashboard = () => {
   const [driverId, setDriverId] = useState("")
   const [bookingRequests, setBookingRequests] = useState([])
   const { subscription } = useSubscription()
-
+const sliderRef = useRef(null);
   const [bookings, setBookings] = useState([])
 
   const { driver, dispatch } = useDriverAuth()
@@ -26,6 +29,7 @@ const DriverDashboard = () => {
         navigate("/driverlogin")
       } else {
         setDriverId(driver._id)
+        console.log(subscription.isSubscribed);
         console.log("Driver ID set to:", driver._id)
       }
     }, 1000) // Wait for 5 seconds (5000 milliseconds)
@@ -117,6 +121,46 @@ const DriverDashboard = () => {
     socket.emit("acceptBooking", { bookingId, price: 100 })
     setBookingRequests((prev) => prev.filter((b) => b.bookingId !== bookingId))
   }
+  const CustomPrevArrow = (props) => (
+    <div
+      className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white/10 backdrop-blur-md rounded-full p-2 cursor-pointer hover:bg-white/20 transition-all z-30"
+      onClick={() => sliderRef.current.slickPrev()}
+    >
+      <ChevronLeft className="w-6 h-6 text-white" />
+    </div>
+  );
+
+  const CustomNextArrow = (props) => (
+    <div
+      className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white/10 backdrop-blur-md rounded-full p-2 cursor-pointer hover:bg-white/20 transition-all z-30"
+      onClick={() => sliderRef.current.slickNext()}
+    >
+      <ChevronRight className="w-6 h-6 text-white" />
+    </div>
+  );
+
+  // Carousel settings
+  const carouselSettings = {
+    dots: true,
+    infinite: true,
+    speed: 500,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    autoplay: true,
+    autoplaySpeed: 3000,
+    arrows: false, // Disable default arrows
+    prevArrow: <CustomPrevArrow />,
+    nextArrow: <CustomNextArrow />,
+    appendDots: (dots) => (
+      <div className="slick-dots-container">
+        <ul className="slick-dots">{dots}</ul>
+      </div>
+    ),
+    customPaging: (i) => (
+      <div className="w-3 h-3 bg-white/50 rounded-full transition-all hover:bg-white/80"></div>
+    ),
+  };
+
 
   const handleDecline = (bookingId) => {
     const socket = socketRef.current
@@ -173,7 +217,7 @@ const DriverDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-cover bg-center bg-fixed" style={{ backgroundImage: 'url("driverbg.jpg")' }}>
+    <div className="min-h-screen bg-cover bg-center bg-fixed" style={{ backgroundImage: 'url("driverbg3.jpg")' }}>
       {/* Hero Section */}
       <section className="h-screen flex items-center justify-center relative">
         <div className="text-center z-10">
@@ -193,246 +237,201 @@ const DriverDashboard = () => {
 
       {/* Booking Requests Section */}
       <section className="py-20 bg-black bg-opacity-80">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-white mb-12 text-center">New Booking Requests</h2>
-          <div className="overflow-x-auto pb-6">
-            <div className="flex space-x-6 snap-x snap-mandatory">
-              {bookingRequests.map((req) => (
-                <div key={req.bookingId} className="w-[calc(33.33%-1rem)] flex-shrink-0 snap-start">
-                  <div className="bg-indigo-900 rounded-xl overflow-hidden shadow-2xl border border-indigo-700 transition-all duration-300 hover:shadow-indigo-500/50 hover:scale-105">
-                    <div className="p-6">
-                      {/* User Info */}
-                      <div className="flex items-center mb-6">
-                        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-indigo-500">
-                          <img
-                            src={req.userImage || "/placeholder.svg?height=64&width=64"}
-                            alt="User"
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="ml-4">
-                          <h3 className="text-white font-semibold text-lg">{req.userName || "New Request"}</h3>
-                          <span className="text-indigo-300 text-sm">Pending Confirmation</span>
-                        </div>
-                      </div>
+  <div className="container mx-auto px-4">
+    <h2 className="text-3xl font-bold text-white mb-12 text-center">New Booking Requests</h2>
+    <div className="overflow-x-auto pb-6">
+      <div className="flex space-x-6 snap-x snap-mandatory">
+        {bookingRequests.map((req) => (
+          <div key={req.bookingId} className="w-[calc(33.33%-1rem)] flex-shrink-0 snap-start">
+            <div className="bg-gradient-to-r from-black via-gray-800 to-black rounded-xl overflow-hidden shadow-xl border border-gray-700 transition-all duration-300 hover:shadow-indigo-500/50 hover:scale-105">
+              <div className="p-6">
+                {/* User Info */}
+                <div className="flex items-center mb-6">
+                  <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-indigo-500">
+                    <img
+                      src={req.userImage || "/placeholder.svg?height=64&width=64"}
+                      alt="User"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="text-white font-semibold text-lg">{req.userName || "New Request"}</h3>
+                    <span className="text-indigo-300 text-sm">Pending Confirmation</span>
+                  </div>
+                </div>
 
-                      {/* Booking Details */}
-                      <div className="space-y-4 mb-6">
-                        <div className="flex items-start space-x-3">
-                          <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-                            <svg
-                              className="w-4 h-4 text-green-400"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M5 10l7-7m0 0l7 7m-7-7v18"
-                              />
-                            </svg>
-                          </div>
-                          <div>
-                            <p className="text-indigo-200 text-sm">Pickup Location</p>
-                            <p className="text-white">
-                              {req.pickupLocation.address || `${req.pickupLocation.lat}, ${req.pickupLocation.lng}`}
-                            </p>
-                          </div>
-                        </div>
+                {/* Booking Details */}
+                <div className="space-y-4 mb-6">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                      <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 10l7-7m0 0l7 7m-7-7v18"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-indigo-200 text-sm">Pickup Location</p>
+                      <p className="text-white">
+                        {req.pickupLocation.address || `${req.pickupLocation.lat}, ${req.pickupLocation.lng}`}
+                      </p>
+                    </div>
+                  </div>
 
-                        <div className="flex items-start space-x-3">
-                          <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center">
-                            <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 14l-7 7m0 0l-7-7m7 7V3"
-                              />
-                            </svg>
-                          </div>
-                          <div>
-                            <p className="text-indigo-200 text-sm">Destination</p>
-                            <p className="text-white">
-                              {req.destinationLocation.address ||
-                                `${req.destinationLocation.lat}, ${req.destinationLocation.lng}`}
-                            </p>
-                          </div>
-                        </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center">
+                      <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-indigo-200 text-sm">Destination</p>
+                      <p className="text-white">
+                        {req.destinationLocation.address || `${req.destinationLocation.lat}, ${req.destinationLocation.lng}`}
+                      </p>
+                    </div>
+                  </div>
 
-                        <div className="flex items-start space-x-3">
-                          <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center">
-                            <svg
-                              className="w-4 h-4 text-yellow-400"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                              />
-                            </svg>
-                          </div>
-                          <div>
-                            <p className="text-indigo-200 text-sm">Estimated Price</p>
-                            <p className="text-white">${req.estimatedPrice || "100"}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex gap-4">
-                        <button
-                          onClick={() => handleAccept(req.bookingId)}
-                          className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors duration-300"
-                        >
-                          Accept
-                        </button>
-                        <button
-                          onClick={() => handleDecline(req.bookingId)}
-                          className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg transition-colors duration-300"
-                        >
-                          Decline
-                        </button>
-                      </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                      <svg className="w-4 h-4 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-indigo-200 text-sm">Estimated Price</p>
+                      <p className="text-white">${req.estimatedPrice || "100"}</p>
                     </div>
                   </div>
                 </div>
-              ))}
+
+                {/* Action Buttons */}
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => handleAccept(req.bookingId)}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors duration-300"
+                  >
+                    Accept
+                  </button>
+                  <button
+                    onClick={() => handleDecline(req.bookingId)}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg transition-colors duration-300"
+                  >
+                    Decline
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>
 
-      {/* Active Bookings Section */}
-      <section className="py-20 bg-black bg-opacity-80">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-white mb-12 text-center">Your Active Bookings</h2>
-          <div className="overflow-x-auto pb-6">
-            <div className="flex space-x-6 snap-x snap-mandatory">
-              {bookings.map((booking) => (
-                <div key={booking._id} className="w-[calc(33.33%-1rem)] flex-shrink-0 snap-start">
-                  <div className="bg-indigo-900 rounded-xl overflow-hidden shadow-2xl border border-indigo-700 transition-all duration-300 hover:shadow-indigo-500/50 hover:scale-105">
-                    <div className="p-6">
-                      {/* User Info */}
-                      <div className="flex items-center mb-6">
-                        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-indigo-500">
-                          <img
-                            src={booking.userImage || "/placeholder.svg?height=64&width=64"}
-                            alt="User"
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="ml-4">
-                          <h3 className="text-white font-semibold text-lg">{booking.userName || "User"}</h3>
-                          <span
-                            className={`text-sm ${
-                              booking.status === "completed"
-                                ? "text-green-400"
-                                : booking.status === "in-progress"
-                                  ? "text-yellow-400"
-                                  : "text-indigo-300"
-                            }`}
-                          >
-                            {booking.status || "Active"}
-                          </span>
-                        </div>
-                      </div>
+{/* Active Bookings Section */}
+{/* Active Bookings Section */}
+<section className="py-20 bg-transparent z-10 relative">
+  <div className="container mx-auto px-4">
+    <h2 className="text-3xl font-bold text-white mb-12 text-center">Your Active Bookings</h2>
+    <div className="relative">
+      <Slider ref={sliderRef} {...carouselSettings}>
+        {bookings.map((booking) => (
+          <div key={booking._id} className="px-4">
+            {/* Booking Card */}
+            <div className="bg-white/10 backdrop-blur-md rounded-xl overflow-hidden shadow-2xl border border-white/10 transition-all duration-300 hover:shadow-3xl hover:scale-105">
+              <div className="p-6">
+                {/* User Info */}
+                <div className="flex items-center mb-6">
+                  <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-indigo-300/50">
+                    <img
+                      src={booking.userImage || "/placeholder.svg?height=64&width=64"}
+                      alt="User"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="font-semibold text-xl text-white">{booking.userName || "User"}</h3>
+                    <span
+                      className={`text-sm px-2 py-1 rounded-full ${
+                        booking.status === "completed"
+                          ? "bg-green-500/20 text-green-400"
+                          : booking.status === "in-progress"
+                            ? "bg-yellow-500/20 text-yellow-400"
+                            : "bg-indigo-500/20 text-indigo-400"
+                      }`}
+                    >
+                      {booking.status || "Active"}
+                    </span>
+                  </div>
+                </div>
 
-                      {/* Booking Details */}
-                      <div className="space-y-4 mb-6">
-                        <div className="flex items-start space-x-3">
-                          <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-                            <svg
-                              className="w-4 h-4 text-green-400"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M5 10l7-7m0 0l7 7m-7-7v18"
-                              />
-                            </svg>
-                          </div>
-                          <div>
-                            <p className="text-indigo-200 text-sm">Pickup Location</p>
-                            <p className="text-white">{booking.pickupLocation?.address || "Address not available"}</p>
-                          </div>
-                        </div>
+                {/* Booking Details */}
+                <div className="space-y-4 mb-6">
+                  <div className="flex items-start space-x-3">
+                    <MapPin className="w-5 h-5 text-green-400 mt-1" />
+                    <div>
+                      <p className="text-indigo-200 text-sm">Pickup Location</p>
+                      <p className="text-white font-medium">{booking.pickupLocation?.address || "Address not available"}</p>
+                    </div>
+                  </div>
 
-                        <div className="flex items-start space-x-3">
-                          <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center">
-                            <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 14l-7 7m0 0l-7-7m7 7V3"
-                              />
-                            </svg>
-                          </div>
-                          <div>
-                            <p className="text-indigo-200 text-sm">Destination</p>
-                            <p className="text-white">
-                              {booking.destinationLocation?.address || "Address not available"}
-                            </p>
-                          </div>
-                        </div>
+                  <div className="flex items-start space-x-3">
+                    <MapPin className="w-5 h-5 text-red-400 mt-1" />
+                    <div>
+                      <p className="text-indigo-200 text-sm">Destination</p>
+                      <p className="text-white font-medium">{booking.destinationLocation?.address || "Address not available"}</p>
+                    </div>
+                  </div>
 
-                        <div className="flex items-start space-x-3">
-                          <div className="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center">
-                            <svg
-                              className="w-4 h-4 text-yellow-400"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                              />
-                            </svg>
-                          </div>
-                          <div>
-                            <p className="text-indigo-200 text-sm">Price</p>
-                            <p className="text-white">${booking.price || "N/A"}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Inbox Button */}
-                      <button
-                        onClick={() => openInbox(booking._id)}
-                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center gap-2"
-                      >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
-                          />
-                        </svg>
-                        Open Inbox
-                      </button>
+                  <div className="flex items-start space-x-3">
+                    <DollarSign className="w-5 h-5 text-yellow-400 mt-1" />
+                    <div>
+                      <p className="text-indigo-200 text-sm">Estimated Price</p>
+                      <p className="text-white font-medium">${booking.estimatedPrice || "100"}</p>
                     </div>
                   </div>
                 </div>
-              ))}
+
+                {/* Action Buttons */}
+                <div className="flex justify-between items-center gap-4">
+                  <button
+                    onClick={() => handleMarkAsCompleted(booking._id)}
+                    className="bg-gradient-to-r from-green-600 to-green-700 text-white py-2 px-4 rounded-lg transition-all duration-300 hover:from-green-700 hover:to-green-800 flex items-center justify-center gap-2 transform hover:scale-105"
+                  >
+                    <Check className="w-4 h-4" />
+                    Mark as Completed
+                  </button>
+                  <button
+                    onClick={() => handleCancelBooking(booking._id)}
+                    className="bg-gradient-to-r from-red-600 to-red-700 text-white py-2 px-4 rounded-lg transition-all duration-300 hover:from-red-700 hover:to-red-800 flex items-center justify-center gap-2 transform hover:scale-105"
+                  >
+                    <X className="w-4 h-4" />
+                    Cancel
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        ))}
+      </Slider>
+    </div>
+  </div>
+</section>
+
 
       {/* Footer */}
       <footer className="bg-indigo-900 bg-opacity-80 py-6">
@@ -456,4 +455,3 @@ const DriverDashboard = () => {
 }
 
 export default DriverDashboard
-
