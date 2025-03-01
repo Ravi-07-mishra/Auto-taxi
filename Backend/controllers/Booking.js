@@ -267,7 +267,14 @@ const CompleteBooking = async (req, res) => {
   const { bookingId } = req.params;
 
   try {
-    const booking = await Booking.findById(id);
+    // Validate bookingId as a MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(bookingId)) {
+      return res.status(400).json({
+        message: "Invalid booking ID format",
+      });
+    }
+
+    const booking = await Booking.findById(bookingId).populate("user");
 
     if (!booking) {
       return res.status(404).json({
@@ -281,14 +288,18 @@ const CompleteBooking = async (req, res) => {
       });
     }
 
-    if (booking.driver.toString() !== req.user.id) {
-      return res.status(403).json({
-        message: "Unauthorized to complete this booking",
-      });
-    }
-
+    // Update the booking status to 'Completed'
     booking.status = "Completed";
     await booking.save();
+
+    // Emit RideCompletednowpay event to the user
+    if (booking.user.socketId && global.io) {
+      global.io.to(booking.user.socketId).emit("RideCompletednowpay", {
+        bookingId: booking._id,
+        price: booking.price, // Use the price from the booking
+        paymentPageUrl: `/payment/${booking._id}`,
+      });
+    }
 
     return res.status(200).json({
       message: "Ride ended successfully",
@@ -310,6 +321,48 @@ const CompleteBooking = async (req, res) => {
   }
 };
 
+const CancelBooking = async (req, res) => {
+  const { bookingId } = req.params;
+
+  try {
+    // Validate bookingId as a MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(bookingId)) {
+      return res.status(400).json({
+        message: 'Invalid booking ID format',
+      });
+    }
+
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return res.status(404).json({
+        message: 'No booking found with this ID',
+      });
+    }
+
+    // Check if the booking is already completed
+    if (booking.status === 'Completed') {
+      return res.status(400).json({
+        message: 'Cannot cancel a completed booking',
+      });
+    }
+
+    // Update the booking status to 'Cancelled'
+    booking.status = 'Cancelled';
+    await booking.save();
+
+    return res.status(200).json({
+      message: 'Booking cancelled successfully',
+      booking,
+    });
+  } catch (error) {
+    console.error('Error cancelling booking:', error);
+    return res.status(500).json({
+      message: 'Server error. Please try again later.',
+    });
+  }
+};
+
+module.exports = { DoBooking, getallDriverBookings, getallUserBookings, Review, getBooking, GetCompletedBookings, CompleteBooking, CancelBooking };
 
 
-module.exports = { DoBooking,getallDriverBookings,getallUserBookings,Review ,getBooking,GetCompletedBookings,CompleteBooking};

@@ -165,7 +165,29 @@ io.on('connection', (socket) => {
           console.error('Error updating user socketId:', error);
         }
     });
-
+    socket.on("rideCompleted", async (data) => {
+      try {
+        const { bookingId, paymentAmount } = data;
+    
+        // Fetch the booking details
+        const booking = await Booking.findById(bookingId).populate("user");
+        if (!booking) {
+          console.error("Booking not found");
+          return;
+        }
+    
+        // Emit RideCompletednowpay event to the user
+        io.to(booking.user.socketId).emit("RideCompletednowpay", {
+          bookingId: booking._id,
+          price: paymentAmount,
+          paymentPageUrl: `/payment/${booking._id}`,
+        });
+    
+        console.log(`RideCompletednowpay event emitted to user ${booking.user._id}`);
+      } catch (error) {
+        console.error("Error handling rideCompleted event:", error);
+      }
+    });
     // Handle booking acceptance
     socket.on('acceptBooking', async (data) => {
         try {
@@ -211,7 +233,7 @@ io.on('connection', (socket) => {
         try {
             const { bookingId } = data;
             const booking = await Booking.findById(bookingId);
-
+const user = booking.user;
             if (!booking) {
                 return socket.emit('bookingError', { msg: 'Booking not found.' });
             }
@@ -241,47 +263,28 @@ io.on('connection', (socket) => {
     });
 
     // Handle sending messages
-    socket.on('sendMessage', async (data) => {
-        const { bookingId, message, senderId, senderModel } = data;
+    socket.on('sendMessage', async (messageData) => {
         try {
-            if (!message || typeof message !== 'string' || message.trim() === '') {
-                return socket.emit('chatError', 'Message content cannot be empty.');
-            }
+          const { bookingId, message, senderId, senderModel, senderName } = messageData;
+          const chat = await Chat.findOne({ booking: bookingId });
     
-            const booking = await Booking.findById(bookingId);
-            if (!booking || booking.status !== 'Accepted') {
-                return socket.emit('chatError', 'Chat is only allowed for accepted bookings.');
-            }
-    
-            let chat = await Chat.findOne({ booking: bookingId });
-            if (!chat) {
-                chat = new Chat({ booking: bookingId, messages: [] });
-            }
-    
-            const chatMessage = {
-                sender: senderId,
-                senderModel,
-                text: message.trim(),
-                timestamp: new Date(),
-                seenBy: [],
-            };
-    
-            chat.messages.push(chatMessage);
+          if (!chat) {
+            const newChat = new Chat({
+              booking: bookingId,
+              messages: [{ sender: senderId, senderModel, senderName, text: message }]
+            });
+            await newChat.save();
+          } else {
+            chat.messages.push({ sender: senderId, senderModel, senderName, text: message });
             await chat.save();
-            console.log('Message saved to database:', chatMessage);
+          }
     
-            if (io.sockets.adapter.rooms.has(bookingId)) {
-                io.to(bookingId).emit('newMessage', chatMessage);
-                console.log('Message emitted to room:', bookingId);
-            } else {
-                console.error('Socket is not part of the room:', bookingId);
-            }
+          io.to(bookingId).emit('newMessage', { sender: senderId, senderModel, senderName, text: message, timestamp: new Date() });
         } catch (error) {
-            console.error('Error sending message:', error);
-            socket.emit('chatError', 'Failed to send message.');
+          console.error('Error saving message:', error);
+          socket.emit('chatError', 'Failed to send message.');
         }
-    });
-    
+      });
 
     // Handle disconnection
     socket.on('disconnect', (reason) => {

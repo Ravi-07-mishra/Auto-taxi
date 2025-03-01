@@ -1,10 +1,15 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
 
 import Sendotp from "./pages/Sendotp";
 import Signup from "./pages/Signup";
 import DriverRegistrationForm from "./pages/Register";
-import '@fortawesome/fontawesome-free/css/all.min.css';
+import "@fortawesome/fontawesome-free/css/all.min.css";
 
 import UserDashboard from "./pages/UserDashboard";
 import DriverLogin from "./pages/Driverlogin";
@@ -12,7 +17,7 @@ import LoginPage from "./pages/Login";
 import DriverDashboard from "./pages/DriverDashboard";
 import BookDrive from "./pages/Book-drive";
 import UserHome from "./pages/userHome";
-import './index.css'; // Your custom CSS
+import "./index.css"; // Your custom CSS
 import DriverInbox from "./pages/DriverInbox";
 import UserInbox from "./pages/UserInbox";
 
@@ -30,19 +35,25 @@ import RatingPage from "./Component/Ratingsystem";
 import DriverProfilePage from "./pages/DriverProfile";
 import UserHomes from "./pages/userHome2";
 
-import UserProfile from "./pages/UserProfile";
+
 import DrivePage from "./pages/DrivePage";
 import Home from "./pages/Home";
 import CalendarPage from "./pages/CalendarPage";
 import BookingPage from "./Component/BookingPage";
 import EditProfilePage from "./Component/EditProfile";
+import AboutUs from "./pages/Aboutus";
+import UserRidePage from "./pages/UserDrive";
 import UserProfilePage from "./pages/UserProfile";
+
 const Navbar = () => {
   const location = useLocation();
 
   if (location.pathname.startsWith("/user")) {
     return <Navbar2 />;
-  } else if (location.pathname.startsWith("/driver") || location.pathname.startsWith("/Driver") ) {
+  } else if (
+    location.pathname.startsWith("/driver") ||
+    location.pathname.startsWith("/Driver")
+  ) {
     return <DriverNavbar />;
   }
   return null; // No navbar for other routes
@@ -51,20 +62,19 @@ const Navbar = () => {
 const App = () => {
   // Custom hook to determine the navbar based on the route
 
-  
-
   return (
     <SocketProvider>
       <Router>
         {/* Conditionally render the appropriate navbar */}
-    <Navbar/>
+        <Navbar />
         <Routes>
           <Route path="/" element={<Sendotp />} />
           <Route path="/userhome" element={<UserHome />} />
           <Route path="/userlogin" element={<LoginPage />} />
           <Route path="/usersignup" element={<Signup />} />
           <Route path="/driverregister" element={<DriverRegistrationForm />} />
-<Route path="/ratings" element={<RatingPage/>}/>
+          <Route path="/Aboutus" element={<AboutUs />} />
+          <Route path="/ratings" element={<RatingPage />} />
           <Route path="/userdashboard" element={<UserDashboard />} />
           <Route path="/driverlogin" element={<DriverLogin />} />
           <Route path="/driverdashboard" element={<DriverDashboard />} />
@@ -75,15 +85,16 @@ const App = () => {
           <Route path="/payment/:bookingId" element={<Payment />} />
           <Route path="/userhomepage" element={<HomePage />} />
           <Route path="/driverpage" element={<DriverHomePage />} />
-          <Route path="/home" element={<Home/>}/>
+          <Route path="/home" element={<Home />} />
+          <Route path="/user/:bookingId" element={<UserRidePage />} />
+          <Route path="/driverprofile" element={<ProfilePage />} />
+       
+<Route path="/userprofile" element={<UserProfilePage/>}/>
+          <Route path="/userHome2" element={<UserHomes />} />
+          <Route path="/BookingPage" element={<BookingPage />} />
+        
+          <Route path="/driveredit-profile" element={<EditProfilePage />} />
           
-          <Route path="/driverprofile" element={<ProfilePage/>} />
-          <Route path="/userprofile" element={<UserProfile/>} />
-      
-      <Route path="/userHome2" element={<UserHomes/>}/>
-      <Route path="/BookingPage" element={<BookingPage/>}/>
-      <Route path="/userprofile" element={<UserProfilePage/>}/>
-      <Route path="/driveredit-profile" element={<EditProfilePage/>}/>
         </Routes>
       </Router>
     </SocketProvider>

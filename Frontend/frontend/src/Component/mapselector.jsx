@@ -63,14 +63,16 @@ const MapSelector = ({
         </MapContainer>
       </div>
 
-      <div className="w-full p-4 bg-gray-100 rounded-lg shadow mt-4">
-        <p className="text-sm font-medium text-gray-700">
-          <span className="font-semibold">Pickup Location:</span> {pickupName}
-        </p>
-        <p className="text-sm font-medium text-gray-700 mt-2">
-          <span className="font-semibold">Destination Location:</span> {destinationName}
-        </p>
-      </div>
+      <div className="w-full p-4 rounded-lg shadow mt-4 bg-black">
+  <p className="text-sm font-medium text-white">
+    <span className="font-semibold text-gray-300">Pickup Location:</span>{' '}
+    <span className="font-light">{pickupName}</span>
+  </p>
+  <p className="text-sm font-medium text-white mt-2">
+    <span className="font-semibold text-gray-300">Destination Location:</span>{' '}
+    <span className="font-light">{destinationName}</span>
+  </p>
+</div>
     </div>
   );
 };
