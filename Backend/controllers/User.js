@@ -132,6 +132,124 @@ const userlogin = async (req, res) => {
         });
     }
 };
+const updateProfile = async (req, res) => {
+    try {
+      const { name, email, password } = req.body;
+      const userId = req.user._id; // Assuming user ID is extracted from the token
+  
+      // Find the user
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ msg: 'User not found.' });
+      }
+  
+      // Update fields if provided
+      if (name) user.name = name;
+      if (email) user.email = email;
+      if (password) {
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(password, salt);
+      }
+  
+      // Save the updated user
+      await user.save();
+  
+      res.status(200).json({
+        msg: 'Profile updated successfully.',
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          profileImage: user.profileImage,
+        },
+      });
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      res.status(500).json({ msg: 'Server error. Please try again later.' });
+    }
+  };
+  
+  // Upload profile image
+  const uploadProfileImage = async (req, res) => {
+    try {
+      const userId = req.user._id; // Assuming user ID is extracted from the token
+      const file = req.file;
+  
+      if (!file) {
+        return res.status(400).json({ msg: 'No file uploaded.' });
+      }
+  
+      // Construct the file path
+      const filePath = `/uploads/users/profile/${file.filename}`;
+  
+      // Find the user and update the profile image
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ msg: 'User not found.' });
+      }
+  
+      // Delete the old profile image if it exists
+      if (user.profileImage) {
+        const oldImagePath = path.join(__dirname, '..', user.profileImage);
+        if (fs.existsSync(oldImagePath)) {
+          fs.unlinkSync(oldImagePath);
+        }
+      }
+  
+      // Update the profile image
+      user.profileImage = filePath;
+      await user.save();
+  
+      res.status(200).json({
+        msg: 'Profile image uploaded successfully.',
+        profileImage: user.profileImage,
+      });
+    } catch (error) {
+      console.error('Error uploading profile image:', error);
+      res.status(500).json({ msg: 'Server error. Please try again later.' });
+    }
+  };
+  
+  // Get user profile
+  const getUserProfile = async (req, res) => {
+    try {
+      const userId = req.user._id; // Assuming user ID is extracted from the token
+  
+      const user = await User.findById(userId).select('-password');
+      if (!user) {
+        return res.status(404).json({ msg: 'User not found.' });
+      }
+  
+      res.status(200).json({
+        msg: 'User profile fetched successfully.',
+        user,
+      });
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      res.status(500).json({ msg: 'Server error. Please try again later.' });
+    }
+  };
+  const logoutUser = async(req,res)=>{
+    try {
+      // Check if the signed cookie exists
+      if (req.signedCookies[COOKIE_NAME]) {
+        // Clear the cookie
+        res.clearCookie(COOKIE_NAME, {
+          path: '/',   // Ensure the path matches where the cookie is set
+          httpOnly: true,
+          signed: true,
+        });
+      }
+      res.status(200).send('Logged out');
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({
+        msg: 'Error logging out',
+      });
+    }
+  }
 
 
-module.exports = {Usersignup,userlogin,verifyUser};
+module.exports = {Usersignup,userlogin,verifyUser, updateProfile,
+    uploadProfileImage,
+    getUserProfile,logoutUser};

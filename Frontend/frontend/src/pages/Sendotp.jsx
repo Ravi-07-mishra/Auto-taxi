@@ -33,41 +33,51 @@ const Sendotp = () => {
 
   return (
     <div
-      className="relative w-full h-screen bg-cover bg-center text-white"
-      style={{ backgroundImage: 'url("homepage.jpg")' }}
+      className="min-h-screen flex flex-col justify-center items-center p-6 font-sans relative"
+      style={{
+        backgroundImage: "url('/bg1.jpg')", // Replace with your image path
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
     >
+      {/* Dark Overlay */}
+      <div className="absolute inset-0 bg-black/60 z-0"></div>
+
       {/* Top Navigation */}
-      <div className="absolute top-0 left-0 w-full flex justify-between items-center px-8 py-4">
+      <div className="absolute top-0 left-0 w-full flex justify-between items-center px-8 py-6 z-20">
         {/* Logo */}
-        <img src="/logo.png" alt="Company Logo" className="h-12" />
+        <h1 className="text-2xl md:text-4xl font-extrabold lowercase tracking-wider shadow-md flex space-x-2">
+          {["a", "u", "t", "o", "-", "d", "r", "i", "v", "e"].map((letter, index) => (
+            <span key={index} style={{ color: index % 2 === 0 ? "#cbe557" : "white" }}>
+              {letter}
+            </span>
+          ))}
+        </h1>
 
         {/* Sign-in Button */}
         <button
           onClick={() => navigate("/userlogin")}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-lg px-6 py-2 rounded-lg shadow-lg"
+          className="bg-[#cbe557] text-gray-900 font-semibold text-lg px-6 py-2 rounded-full shadow-lg transition-all duration-300 hover:bg-[#b8d93e] hover:scale-105 hover:shadow-xl"
         >
           Sign In
         </button>
       </div>
 
       {/* Main Content */}
-      <div
-        className="flex flex-col justify-center items-center h-full text-center px-4"
-        style={{ fontFamily: "Work Sans, sans-serif" }}
-      >
+      <div className="w-full max-w-md bg-gray-800/50 backdrop-blur-lg rounded-xl p-8 shadow-2xl border border-gray-700/30 relative z-10 transform transition-all duration-300 hover:scale-105 hover:shadow-3xl hover:bg-gray-800/60">
         {/* Heading */}
-        <h1 className="text-6xl md:text-7xl font-bold mb-4" style={{ fontWeight: "bold" }}>
-          Start Saving Money by Registering for <span className="text-green-400">AutoDrive</span>
+        <h1 className="text-4xl font-bold text-center text-white mb-4 animate-fade-in-down">
+          Welcome to <span className="text-[#cbe557]">AutoDrive</span>
         </h1>
 
-        {/* Additional Text Below Heading */}
-        <p className="text-lg text-gray-200 mb-8">
-          Start with a negligible platform fee and save more on every drive.
+        {/* Subheading */}
+        <p className="text-gray-300 text-center mb-8 animate-fade-in-up">
+          Start saving money on every drive. Enter your email to get started.
         </p>
 
         {/* Email Form */}
-        <form onSubmit={handleSubmit} className="w-full max-w-md p-6 rounded-lg shadow-xl backdrop-blur-lg">
-          <div className="relative mb-6">
+        <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in">
+          <div className="relative">
             {/* Email Input */}
             <input
               type="email"
@@ -76,7 +86,7 @@ const Sendotp = () => {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="Email Address"
-              className="w-full p-3 pl-10 rounded-lg border border-gray-700 bg-transparent text-white focus:outline-none focus:border-blue-500 placeholder-gray-400"
+              className="w-full p-3 pl-10 rounded-lg bg-gray-700/50 border border-gray-600/30 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#cbe557] focus:border-transparent transition-all"
             />
             
             {/* Email Icon */}
@@ -90,16 +100,27 @@ const Sendotp = () => {
               <path d="M11.241 9.817c-.36.275-.801.425-1.255.427-.428 0-.845-.138-1.187-.395L0 2.6V14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2.5l-8.759 7.317Z" />
             </svg>
           </div>
+
+          {/* Submit Button */}
           <button
             type="submit"
-            className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-extrabold text-lg rounded-lg transition-all duration-300"
+            className="w-full py-3 bg-[#cbe557] text-gray-900 font-bold text-lg rounded-full shadow-lg transition-all duration-300 hover:bg-[#b8d93e] hover:scale-105 hover:shadow-xl"
           >
             Send OTP
           </button>
+
+          {/* Error Message */}
           {error && (
-            <p className="text-red-500 font-medium mt-4">{error}</p>
+            <p className="text-red-500 text-center font-medium mt-4 animate-fade-in">
+              {error}
+            </p>
           )}
         </form>
+      </div>
+
+      {/* Footer */}
+      <div className="absolute bottom-0 left-0 w-full text-center text-gray-400 py-4 z-20">
+        <p>© 2023 AutoDrive. All rights reserved.</p>
       </div>
     </div>
   );

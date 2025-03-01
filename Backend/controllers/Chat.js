@@ -47,15 +47,18 @@ const getMessages = async (req, res) => {
     const { bookingId } = req.params;
 
     try {
+        // Validate booking ID
         if (!bookingId || bookingId.trim() === '') {
             return res.status(400).json({ msg: 'Booking ID is required.' });
         }
 
+        // Find chat for the booking
         const chat = await Chat.findOne({ booking: bookingId }).populate('messages.sender');
         if (!chat) {
             return res.status(404).json({ msg: 'No messages found for this booking.' });
         }
 
+        // Return messages
         res.status(200).json(chat.messages);
     } catch (error) {
         console.error('Error retrieving messages:', error);
@@ -63,17 +66,7 @@ const getMessages = async (req, res) => {
     }
 };
 
-const GetallConversations = async (req, res) => {
-    const { driverId } = req.params;
-    try {
-        const chats = await Chat.find({ 'messages.sender': driverId });
-        if (!chats.length) {
-            return res.status(400).json({ message: 'No chats exist' });
-        }
-        return res.status(200).json(chats);
-    } catch (error) {
-        return res.status(500).json({ message: 'Internal Server Error' });
-    }
-};
 
-module.exports = { getMessages, sendMessage, GetallConversations };
+
+
+module.exports = { getMessages, sendMessage };

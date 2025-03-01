@@ -34,13 +34,12 @@ export const checkAuthStatus = async () => {
 };
 
 export const logoutUser = async () => {
-    try {
-        await axios.post('http://localhost:3000/user/logout', {}, { withCredentials: true });
-    } catch (error) {
-        console.error(error.message);
-        throw error;
-    }
-};
+    await fetch("http://localhost:3000/api/user/logout", {
+      method: "GET",
+      credentials: "include", // This ensures cookies are sent
+    });
+  };
+  
 
 
 export const loginDriver = async (email, password) => {
