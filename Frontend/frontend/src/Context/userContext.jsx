@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }) => {
       }
       checkStatus();
     }, []);
-  
+  // here login 
     const login = async (email, password) => {
       try {
         const data = await loginUser(email, password);
