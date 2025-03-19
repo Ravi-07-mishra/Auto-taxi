@@ -1,10 +1,15 @@
 const express = require('express');
 const connectDB = require('./connectDB/connectDB');
+require('dotenv').config();
 const path = require('path')
 const cors = require('cors');
 const http = require('http');
-const socketIo = require('socket.io');
 const app = express();
+const socketIo = require('socket.io');
+const passport = require('passport')
+require('./controllers/googleauth')
+
+
 const axios = require('axios'); // Make sure this line is added
 
 const cookieParser = require('cookie-parser');
@@ -12,7 +17,7 @@ const morgan = require('morgan')
 const Chat = require('./Models/Chatmodel');
 const ChatRouter = require('./Routes/Chat');
 const Booking = require('./Models/Bookingmodel');
-require('dotenv').config();
+
 const UserRouter = require('./Routes/User');
 const DriverRouter = require('./Routes/Driver');
 const Driver = require('./Models/drivermodel');
@@ -28,6 +33,7 @@ const io = socketIo(server, {
     pingInterval: 25000,
 });
 global.io = io; // Assigning io to global object
+app.use(passport.initialize());
 
 // Middleware Setup
 app.use("/uploads", express.static(path.join(__dirname, "utiils/uploads")))

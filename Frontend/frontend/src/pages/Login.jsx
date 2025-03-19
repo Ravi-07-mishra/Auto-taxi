@@ -1,9 +1,11 @@
+// LoginPage.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../Context/userContext";
 import { Box, Button, Typography, TextField, Alert } from "@mui/material";
 import { RiLoginCircleFill } from "react-icons/ri";
 import { keyframes } from "@emotion/react";
+import GoogleSignInButton from "../Component/Googlesigninbutton";// Import the Google button
 
 // Floating animation for the login box
 const float = keyframes`
@@ -201,6 +203,14 @@ const LoginPage = () => {
         >
           Login
         </Button>
+
+        {/* Divider */}
+        <Typography variant="body2" sx={{ mt: 2, color: "#fff" }}>
+          OR
+        </Typography>
+
+        {/* Google Sign In Button */}
+        <GoogleSignInButton />
       </Box>
     </Box>
   );

@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const upload = require('../utiils/userupload'); // Changed to 'upload' instead of 'userupload'
 const User = require('../Models/Usermodel');
+const passport = require('passport');
+
 const { Usersignup, userlogin, verifyUser,updateProfile,
   uploadProfileImage,
   getUserProfile, 
@@ -20,6 +22,36 @@ router.route('/completedBookings/:userId').get(GetCompletedBookings);
 router.route('/rating/:bookingId').post(Review);
 router.route('/logout').post(logoutUser)
 router.put('/updateProfile', verifyToken, updateProfile);
+router.get(
+  '/auth/google',
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+router.get(
+  '/auth/google/callback',
+  passport.authenticate('google', { failureRedirect: '/login' }),
+  (req, res) => {
+    // Create token after successful authentication
+    const token = createToken(
+      req.user._id.toString(),
+      req.user.email,
+      "7d"
+    );
+    const expires = new Date();
+    expires.setDate(expires.getDate() + 7);
+
+    res.cookie(COOKIE_NAME, token, {
+      path: "/",
+      domain: "localhost",
+      expires,
+      httpOnly: true,
+      signed: true,
+    });
+
+    res.redirect('/userhome');
+  }
+);
+
 
 // Upload profile image
 router.post(

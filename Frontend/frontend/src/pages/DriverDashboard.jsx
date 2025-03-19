@@ -221,7 +221,7 @@ const sliderRef = useRef(null);
       {/* Hero Section */}
       <section className="h-screen flex items-center justify-center relative">
         <div className="text-center z-10">
-          <h1 className="text-6xl font-bold text-white mb-4 tracking-tight">Driver Dashboard</h1>
+          <h1 className="text-6xl font-bold text-white mb-4 tracking-tight mt-14">Driver Dashboard</h1>
           <p className="text-xl text-gray-300">Welcome back, {driver?.name}</p>
           <div className="mt-8 animate-bounce">
             <p className="text-gray-400">Scroll to view bookings</p>

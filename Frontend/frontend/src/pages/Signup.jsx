@@ -1,6 +1,8 @@
+// Signup.jsx
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../Context/userContext";
+import GoogleSignInButton from "../Component/Googlesigninbutton"; // Import the Google button
 
 const Signup = () => {
   const { signup } = useAuth();
@@ -32,7 +34,7 @@ const Signup = () => {
 
   return (
     <div
-      className="flex justify-center items-center min-h-screen"
+      className="flex justify-center items-center min-h-screen relative"
       style={{
         backgroundImage: "url('/bg1.jpg')", // Replace with your image path
         backgroundSize: "cover",
@@ -49,10 +51,7 @@ const Signup = () => {
         {/* Logo */}
         <h1 className="text-2xl md:text-3xl font-extrabold lowercase tracking-wider shadow-md flex justify-center items-center gap-2 mb-6">
           {["a", "u", "t", "o", "-", "d", "r", "i", "v", "e"].map((letter, index) => (
-            <span
-              key={index}
-              style={{ color: index % 2 === 0 ? "#cbe557" : "white" }}
-            >
+            <span key={index} style={{ color: index % 2 === 0 ? "#cbe557" : "white" }}>
               {letter}
             </span>
           ))}
@@ -136,6 +135,12 @@ const Signup = () => {
             {isLoading ? "Signing up..." : "Signup"}
           </button>
         </form>
+
+        {/* Divider */}
+        <div className="text-center text-white my-4">OR</div>
+
+        {/* Google Sign In Button */}
+        <GoogleSignInButton />
       </div>
     </div>
   );
