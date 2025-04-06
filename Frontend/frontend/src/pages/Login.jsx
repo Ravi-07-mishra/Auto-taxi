@@ -2,15 +2,23 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../Context/userContext";
-import { Box, Button, Typography, TextField, Alert } from "@mui/material";
+import {
+  Box,
+  Button,
+  Typography,
+  TextField,
+  Alert,
+  Divider,
+} from "@mui/material";
 import { RiLoginCircleFill } from "react-icons/ri";
 import { keyframes } from "@emotion/react";
-import GoogleSignInButton from "../Component/Googlesigninbutton";// Import the Google button
+import GoogleSignInButton
+ from "../Component/Googlesigninbutton";// Updated component with icon
 
-// Floating animation for the login box
+// Floating animation for the login card
 const float = keyframes`
   0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
+  50% { transform: translateY(-8px); }
   100% { transform: translateY(0px); }
 `;
 
@@ -39,26 +47,23 @@ const LoginPage = () => {
   return (
     <Box
       sx={{
-        height: "100vh",
+        minHeight: "100vh",
         display: "flex",
-        justifyContent: "center",
         alignItems: "center",
-        backgroundImage: "url('/bg1.jpg')", // Replace with your image path
+        justifyContent: "center",
+        backgroundImage: "url('/bg1.jpg')",
         backgroundSize: "cover",
         backgroundPosition: "center",
         position: "relative",
+        p: 2,
       }}
     >
-      {/* Dark Overlay */}
+      {/* Dark translucent overlay */}
       <Box
         sx={{
           position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          background: "rgba(0, 0, 0, 0.5)", // Dark overlay for better readability
-          zIndex: 1,
+          inset: 0,
+          backgroundColor: "rgba(0, 0, 0, 0.6)",
         }}
       />
 
@@ -67,41 +72,40 @@ const LoginPage = () => {
         component="form"
         onSubmit={handleLogin}
         sx={{
+          position: "relative",
+          zIndex: 1,
           width: "100%",
           maxWidth: "400px",
-          padding: 4,
-          borderRadius: "16px",
-          background: "rgba(255, 255, 255, 0.1)", // Transparent glassmorphism effect
+          p: 4,
+          borderRadius: 3,
+          background: "rgba(255, 255, 255, 0.15)",
           backdropFilter: "blur(10px)",
-          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
-          border: "1px solid rgba(255, 255, 255, 0.1)",
-          animation: `${float} 4s ease-in-out infinite`,
+          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+          border: "1px solid rgba(255, 255, 255, 0.25)",
+          animation: `${float} 3s ease-in-out infinite`,
           textAlign: "center",
-          position: "relative",
-          zIndex: 2,
         }}
       >
-        {/* Logo */}
+        {/* App Name */}
         <Typography
           variant="h4"
           sx={{
             fontWeight: "bold",
             mb: 3,
-            textShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+            textShadow: "0 2px 4px rgba(0, 0, 0, 0.4)",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            gap: "0.5rem",
+            gap: 0.5,
           }}
         >
-          {["a", "u", "t", "o", "-", "d", "r", "i", "v", "e"].map((letter, index) => (
-            <span
-              key={index}
-              style={{ color: index % 2 === 0 ? "#cbe557" : "white" }}
-            >
-              {letter}
-            </span>
-          ))}
+          {["a", "u", "t", "o", "-", "d", "r", "i", "v", "e"].map(
+            (letter, index) => (
+              <span key={index} style={{ color: index % 2 === 0 ? "#cbe557" : "#fff" }}>
+                {letter}
+              </span>
+            )
+          )}
         </Typography>
 
         {error && (
@@ -109,8 +113,8 @@ const LoginPage = () => {
             severity="error"
             sx={{
               mb: 3,
-              background: "rgba(255, 0, 0, 0.1)",
-              border: "1px solid rgba(255, 0, 0, 0.2)",
+              backgroundColor: "rgba(255, 0, 0, 0.15)",
+              border: "1px solid rgba(255, 0, 0, 0.3)",
               color: "#fff",
             }}
           >
@@ -129,22 +133,12 @@ const LoginPage = () => {
           required
           sx={{
             mb: 3,
+            input: { color: "#fff" },
+            label: { color: "rgba(255,255,255,0.8)" },
             "& .MuiOutlinedInput-root": {
-              "& fieldset": {
-                borderColor: "rgba(255, 255, 255, 0.3)",
-              },
-              "&:hover fieldset": {
-                borderColor: "rgba(255, 255, 255, 0.5)",
-              },
-              "&.Mui-focused fieldset": {
-                borderColor: "#cbe557",
-              },
-            },
-            "& .MuiInputLabel-root": {
-              color: "rgba(255, 255, 255, 0.7)",
-            },
-            "& .MuiInputBase-input": {
-              color: "#fff",
+              "& fieldset": { borderColor: "rgba(255,255,255,0.4)" },
+              "&:hover fieldset": { borderColor: "#cbe557" },
+              "&.Mui-focused fieldset": { borderColor: "#cbe557" },
             },
           }}
         />
@@ -160,22 +154,12 @@ const LoginPage = () => {
           required
           sx={{
             mb: 3,
+            input: { color: "#fff" },
+            label: { color: "rgba(255,255,255,0.8)" },
             "& .MuiOutlinedInput-root": {
-              "& fieldset": {
-                borderColor: "rgba(255, 255, 255, 0.3)",
-              },
-              "&:hover fieldset": {
-                borderColor: "rgba(255, 255, 255, 0.5)",
-              },
-              "&.Mui-focused fieldset": {
-                borderColor: "#cbe557",
-              },
-            },
-            "& .MuiInputLabel-root": {
-              color: "rgba(255, 255, 255, 0.7)",
-            },
-            "& .MuiInputBase-input": {
-              color: "#fff",
+              "& fieldset": { borderColor: "rgba(255,255,255,0.4)" },
+              "&:hover fieldset": { borderColor: "#cbe557" },
+              "&.Mui-focused fieldset": { borderColor: "#cbe557" },
             },
           }}
         />
@@ -184,30 +168,31 @@ const LoginPage = () => {
         <Button
           type="submit"
           fullWidth
+          variant="contained"
+          endIcon={<RiLoginCircleFill />}
           sx={{
             py: 1.5,
-            mt: 2,
-            borderRadius: "10px",
-            background: "linear-gradient(45deg, #cbe557, #b8d93e)",
+            mb: 2,
+            borderRadius: 2,
+            background:
+              "linear-gradient(45deg, #cbe557, #b8d93e)",
             color: "#000",
             fontWeight: "bold",
-            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
+            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
+            textTransform: "none",
             transition: "transform 0.2s, box-shadow 0.2s",
-            ":hover": {
-              transform: "scale(1.05)",
-              boxShadow: "0 6px 8px rgba(0, 0, 0, 0.3)",
-              background: "linear-gradient(45deg, #b8d93e, #cbe557)",
+            "&:hover": {
+              transform: "scale(1.03)",
+              boxShadow: "0 6px 8px rgba(0, 0, 0, 0.4)",
+              background:
+                "linear-gradient(45deg, #b8d93e, #cbe557)",
             },
           }}
-          endIcon={<RiLoginCircleFill />}
         >
           Login
         </Button>
 
-        {/* Divider */}
-        <Typography variant="body2" sx={{ mt: 2, color: "#fff" }}>
-          OR
-        </Typography>
+        <Divider sx={{ my: 2, color: "rgba(255,255,255,0.7)" }}>OR</Divider>
 
         {/* Google Sign In Button */}
         <GoogleSignInButton />

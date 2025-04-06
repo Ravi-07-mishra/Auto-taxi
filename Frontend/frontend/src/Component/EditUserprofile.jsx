@@ -1,44 +1,44 @@
 import React, { useState, useEffect } from "react";
-import { useDriverAuth } from "../Context/driverContext";
+import { useAuth } from "../Context/userContext";
 import { motion } from "framer-motion";
 import { FiUser, FiMail, FiLock } from "react-icons/fi";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import { CircularProgress } from "@mui/material";
 
-const EditProfilePage = () => {
-  const [driverName, setDriverName] = useState("");
+const EditUserProfilePage = () => {
+  const [userName, setUserName] = useState("");
   const [email, setEmail] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { driver, setDriver } = useDriverAuth();
+  const { user, setUser } = useAuth();
 
-  // Initialize form fields with current driver details
+  // Initialize form fields with current user details
   useEffect(() => {
-    if (driver) {
-      setDriverName(driver.name);
-      setEmail(driver.email);
+    if (user) {
+      setUserName(user.name);
+      setEmail(user.email);
     }
-  }, [driver]);
+  }, [user]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      // Prepare payload; include password fields only if a new password is provided.
-      const payload = { name: driverName, email };
+      // Prepare payload; include password fields only if newPassword is provided
+      const payload = { name: userName, email };
       if (newPassword) {
         payload.currentPassword = currentPassword;
         payload.newPassword = newPassword;
       }
       const response = await axios.put(
-        "http://localhost:3000/api/driver/updateProfile",
+        "http://localhost:3000/api/user/updateProfile",
         payload,
         { withCredentials: true }
       );
-      // Update driver context with new details
-      setDriver(response.data.driver);
+      // Update user context with new details
+      setUser(response.data.user);
       toast.success("Profile updated successfully!");
       // Clear password fields on success
       setCurrentPassword("");
@@ -73,8 +73,8 @@ const EditProfilePage = () => {
             <input
               type="text"
               id="name"
-              value={driverName}
-              onChange={(e) => setDriverName(e.target.value)}
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
               className="w-full pl-10 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 transition duration-300"
               placeholder="Name"
               required
@@ -140,4 +140,4 @@ const EditProfilePage = () => {
   );
 };
 
-export default EditProfilePage;
+export default EditUserProfilePage;

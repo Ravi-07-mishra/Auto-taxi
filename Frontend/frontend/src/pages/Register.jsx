@@ -1,7 +1,9 @@
+// DriverRegistrationForm.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDriverAuth } from "../Context/driverContext";
 import { BiUserPlus } from "react-icons/bi";
+import DriverGoogleSignInButton from "../Component/Drivergooglesigninbutton"; // adjust path as needed
 
 const DriverRegistrationForm = () => {
   const [formData, setFormData] = useState({
@@ -70,7 +72,7 @@ const DriverRegistrationForm = () => {
     <div
       className="flex items-center justify-center min-h-screen px-4"
       style={{
-        backgroundImage: "url('/bg1.jpg')", // Replace with your image path
+        backgroundImage: "url('/bg1.jpg')",
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
@@ -82,14 +84,16 @@ const DriverRegistrationForm = () => {
       <div className="w-full max-w-3xl bg-white/5 backdrop-blur-lg rounded-xl shadow-lg p-8 relative z-10 border border-white/10">
         {/* Logo */}
         <h1 className="text-2xl md:text-3xl font-extrabold lowercase tracking-wider shadow-md flex justify-center items-center gap-2 mb-6">
-          {["a", "u", "t", "o", "-", "d", "r", "i", "v", "e"].map((letter, index) => (
-            <span
-              key={index}
-              style={{ color: index % 2 === 0 ? "#cbe557" : "white" }}
-            >
-              {letter}
-            </span>
-          ))}
+          {["a", "u", "t", "o", "-", "d", "r", "i", "v", "e"].map(
+            (letter, index) => (
+              <span
+                key={index}
+                style={{ color: index % 2 === 0 ? "#cbe557" : "white" }}
+              >
+                {letter}
+              </span>
+            )
+          )}
         </h1>
 
         {/* Scrollable Form */}
@@ -160,6 +164,12 @@ const DriverRegistrationForm = () => {
               <BiUserPlus className="text-lg" />
               <span>Register</span>
             </button>
+          </div>
+
+          {/* Divider and Google Sign In Button */}
+          <div className="mt-4">
+            <hr className="border-gray-300" />
+            <DriverGoogleSignInButton />
           </div>
         </form>
       </div>

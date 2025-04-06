@@ -44,6 +44,7 @@ import EditProfilePage from "./Component/EditProfile";
 import AboutUs from "./pages/Aboutus";
 import UserRidePage from "./pages/UserDrive";
 import UserProfilePage from "./pages/UserProfile";
+import EditUserProfilePage from "./Component/EditUserprofile";
 
 const Navbar = () => {
   const location = useLocation();
@@ -94,6 +95,7 @@ const App = () => {
           <Route path="/BookingPage" element={<BookingPage />} />
         
           <Route path="/driveredit-profile" element={<EditProfilePage />} />
+          <Route path="/useredit-profile" element={<EditUserProfilePage/>} />
           
         </Routes>
       </Router>

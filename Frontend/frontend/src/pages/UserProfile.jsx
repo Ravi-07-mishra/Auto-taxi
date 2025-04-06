@@ -1,7 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../Context/userContext";
 import { motion } from "framer-motion";
-import { FiStar, FiAward, FiShoppingBag, FiClock, FiEdit2, FiCamera, FiSettings, FiBell } from "react-icons/fi";
+import {
+  FiStar,
+  FiAward,
+  FiShoppingBag,
+  FiClock,
+  FiEdit2,
+  FiCamera,
+  FiSettings,
+  FiBell,
+} from "react-icons/fi";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-hot-toast";
@@ -17,9 +26,9 @@ const UserProfilePage = () => {
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
 
+  // Redirect if not authenticated & set userId
   useEffect(() => {
     const timeout = setTimeout(() => {
-      // Redirect to login if not authenticated
       if (!user) {
         navigate("/userlogin");
       } else {
@@ -27,61 +36,62 @@ const UserProfilePage = () => {
         console.log("User ID set to:", user._id);
       }
     }, 1000);
-
     return () => clearTimeout(timeout);
   }, [user, navigate]);
 
+  // Fetch user data from API
   const fetchUserData = async () => {
     if (!userId) return;
     try {
       const response = await axios.get(`http://localhost:3000/api/user/profile/${userId}`, { withCredentials: true });
       const updatedUser = response.data.data.user;
-      setUserName(updatedUser.name);
-      setUserId(updatedUser._id);
+      setDriverName(updatedUser.name);
+      setDriverId(updatedUser._id);
       setEmail(updatedUser.email);
-      setAvgRating(updatedUser.avgRating);
-      setProfileImage(updatedUser.profileImage ? `http://localhost:3000/${updatedUser.profileImage}` : 'http://localhost:3000/uploads/drivers/profile/image-1738174511665-171767109.png');
+    
+      setProfileImage(updatedUser.profileImage ? `http://localhost:3000/${user.profileImage}` : 'null');
     } catch (error) {
       console.error("Error fetching user data:", error);
     }
   };
 
+  // Fetch data when userId is set
   useEffect(() => {
     if (userId) {
       fetchUserData();
     }
   }, [userId]);
 
+  // Update local state when user context changes
   useEffect(() => {
-    if (user) {
-      setUserName(user.name);
-      setUserId(user._id);
-      setEmail(user.email);
-      setAvgRating(user.avgRating);
-      setProfileImage(user.profileImage ? `http://localhost:3000/${user.profileImage}` : 'http://localhost:3000/uploads/drivers/profile/image-1738174511665-171767109.png');
-    }
-  }, [user]);
+     if (user) {
+       setUserName(user.name);
+       setUserId(user._id);
+       setEmail(user.email);
+     
+       setProfileImage(user.profileImage ? `http://localhost:3000/${user.profileImage}` : 'http://localhost:3000/uploads/users/profile/image-1738174511665-171767109.png');
+     }
+   }, [user]);
 
+  // Handle profile image upload
   const handleImageUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    setIsUploading(true);
+    setIsUploading(true);  // Show loading state
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append('image', event.target.files[0]);
     formData.append('type', 'profile');
 
     try {
       const response = await axios.post(`http://localhost:3000/api/user/uploadProfileImage/${userId}`, formData, { withCredentials: true });
       if (response.data.profileImage) {
         await fetchUserData();
-        toast.success("Profile image updated successfully!");
       }
     } catch (error) {
       console.error("Error uploading profile image:", error);
-      toast.error("Failed to upload profile image. Please try again.");
     } finally {
-      setIsUploading(false);
+      setIsUploading(false);  // Hide loading state after upload
     }
   };
 
@@ -124,7 +134,7 @@ const UserProfilePage = () => {
             <div className="flex flex-col sm:flex-row items-center">
               <div className="relative">
                 <img
-                  src={profileImage || "http://localhost:3000/uploads/drivers/profile/image-1738174511665-171767109.png"}
+                  src={profileImage || "http://localhost:3000/uploads/users/profile/default.png"}
                   alt={userName}
                   className="w-40 h-40 rounded-full border-4 border-cyan-500 shadow-lg -mt-20 z-10 object-cover"
                 />

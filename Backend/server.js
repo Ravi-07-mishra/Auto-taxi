@@ -8,6 +8,7 @@ const app = express();
 const socketIo = require('socket.io');
 const passport = require('passport')
 require('./controllers/googleauth')
+require('./controllers/drivergoogleauth')
 
 
 const axios = require('axios'); // Make sure this line is added
@@ -76,6 +77,27 @@ app.get("/api/geocode", async (req, res) => {
       res.status(500).json({ error: "Failed to fetch geocoding data" });
     }
   });
+  app.get("/api/reverse-geocode", async (req, res) => {
+    const { lat, lon } = req.query;
+    const OPEN_CAGE_API_KEY = process.env.OPEN_CAGE_API_KEY || "your-api-key-here";
+    if (!lat || !lon) {
+      return res.status(400).json({ error: "Latitude and longitude are required." });
+    }
+    try {
+      const response = await axios.get("https://api.opencagedata.com/geocode/v1/json", {
+        params: {
+          key: OPEN_CAGE_API_KEY,
+          q: `${lat},${lon}`,
+          pretty: 1,
+        },
+      });
+      res.json(response.data);
+    } catch (error) {
+      console.error("Error fetching reverse geocoding data:", error);
+      res.status(500).json({ error: "Failed to fetch reverse geocoding data" });
+    }
+  });
+  
   app.get('/directions', async (req, res) => {
     const { start, end } = req.query;
     const apiKey = process.env.ORS_API_KEY;  // Make sure this key is valid

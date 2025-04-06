@@ -1,17 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const upload = require('../utiils/userupload'); // Changed to 'upload' instead of 'userupload'
+const upload = require('../utiils/userupload');
 const User = require('../Models/Usermodel');
 const passport = require('passport');
-
-const { Usersignup, userlogin, verifyUser,updateProfile,
+const path = require('path');
+const { Usersignup, userlogin, verifyUser, updateProfile,
   uploadProfileImage,
   getUserProfile, 
-  logoutUser} = require('../controllers/User');
+  logoutUser } = require('../controllers/User');
 const otpController = require('../controllers/otpController');
 const { DoBooking, getallUserBookings, Review, GetCompletedBookings } = require('../controllers/Booking');
 const { verifyToken } = require('../utiils/token-manager');
-const path = require('path')
+const { createToken } = require('../utiils/token-manager');
+const { COOKIE_NAME } = require('../utiils/constants');
+
 router.route('/usersignup').post(Usersignup);
 router.route('/userlogin').post(userlogin);
 router.route('/send-otp').post(otpController.sendOTP);
@@ -20,16 +22,59 @@ router.route('/auth-status').get(verifyToken, verifyUser);
 router.route('/:userId').get(getallUserBookings);
 router.route('/completedBookings/:userId').get(GetCompletedBookings);
 router.route('/rating/:bookingId').post(Review);
-router.route('/logout').post(logoutUser)
-router.put('/updateProfile', verifyToken, updateProfile);
+router.route('/logout').post(logoutUser);
+router.post(
+  '/uploadProfileImage/:userId',
+  verifyToken,
+  upload.single('image'),
+  async (req, res) => {
+    try {
+      const userId = req.params.userId;
+
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      // Determine the type of image (profile/cover)
+      const fileType = req.body.type || 'profile';
+
+      // Create the relative file path based on the file type
+      const filePath = path.join("uploads", "users", fileType, req.file.filename);
+
+      // Find the user and update the image field
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      if (fileType === 'profile') {
+        user.profileImage = filePath;
+      } else if (fileType === 'cover') {
+        user.coverImage = filePath;
+      }
+
+      await user.save();
+
+      res.json({
+        message: `${fileType.charAt(0).toUpperCase() + fileType.slice(1)} image uploaded successfully!`,
+        imageUrl: `/uploads/users/${fileType}/${req.file.filename}`,
+      });
+    } catch (error) {
+      console.error("Error saving image:", error);
+      res.status(500).json({ message: "Failed to update image." });
+    }
+  }
+);
+// Initiate Google OAuth authentication without session support
 router.get(
   '/auth/google',
-  passport.authenticate('google', { scope: ['profile', 'email'] })
+  passport.authenticate('google', { scope: ['profile', 'email'], session: false })
 );
 
+// Google OAuth callback route (JWT is created here, no sessions used)
 router.get(
   '/auth/google/callback',
-  passport.authenticate('google', { failureRedirect: '/login' }),
+  passport.authenticate('google', { failureRedirect: '/login', session: false }),
   (req, res) => {
     // Create token after successful authentication
     const token = createToken(
@@ -48,20 +93,77 @@ router.get(
       signed: true,
     });
 
-    res.redirect('/userhome');
+    res.redirect('http://localhost:5173/userhome');;
   }
 );
 
-
 // Upload profile image
-router.post(
-  '/uploadProfileImage',
-  verifyToken,
-  upload.single('profileImage'),
-  uploadProfileImage
-);
 
-// Get user profile
-router.get('/profile', verifyToken, getUserProfile);
+router.get(`/profile/:userId`, verifyToken, async (req, res) => {
+ 
+  const userId = req.params.userId;
+  try {
+    const user = await User.findById(userId)
+    if (!user) {
+      return res.status(404).json({ message: "User not found" })
+    }
+
+    res.json({
+      data: {
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+        
+          profileImage: user.profileImage,
+          // Add any other fields you want to send to the frontend
+        },
+      },
+    })
+  } catch (error) {
+    console.error("Error fetching user profile:", error)
+    res.status(500).json({ message: "Failed to fetch user profile." })
+  }
+})
+router.put("/updateProfile", verifyToken, async (req, res) => {
+  // Assume that verifyToken attaches the authenticated user to req.user
+  const userId = req.user._id;
+  const { name, email, currentPassword, newPassword } = req.body;
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+    if (name) user.name = name;
+    if (email) user.email = email;
+
+    // If a new password is provided, check for the current password and verify it
+    if (newPassword) {
+      if (!currentPassword) {
+        return res.status(400).json({ message: "Current password is required to change password." });
+      }
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ message: "Current password is incorrect." });
+      }
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(newPassword, salt);
+    }
+
+    await user.save();
+    res.json({
+      message: "Profile updated successfully.",
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        profileImage: user.profileImage, // Ensure this field exists on your user document
+      },
+    });
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    res.status(500).json({ message: "Server error while updating profile." });
+  }
+});
 
 module.exports = router;
