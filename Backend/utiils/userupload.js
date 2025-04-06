@@ -17,10 +17,10 @@ const ensureDirExists = (dir) => {
 // Define the storage configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const fileType = req.body.type || 'profile'; // Default to 'profile' if not specified in body
+    const fileType = req.body.type || 'profile'; // Default to 'profile' if not provided
     const uploadPath = getUploadPath(fileType);
     ensureDirExists(uploadPath);
-    cb(null, uploadPath); // Specify the directory to save the file
+    cb(null, uploadPath); // Save file in the proper directory
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);

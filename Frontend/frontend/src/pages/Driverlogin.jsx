@@ -1,11 +1,13 @@
+// DriverLogin.jsx
 import React, { useState } from "react";
 import { useSocket } from "../Context/SocketContext";
 import { useNavigate } from "react-router-dom";
 import { useDriverAuth } from "../Context/driverContext";
-import { Box, Button, Typography, TextField } from "@mui/material";
+import { Box, Button, Typography, TextField, Divider } from "@mui/material";
 import { RiLoginCircleFill } from "react-icons/ri";
 import toast from "react-hot-toast";
 import { keyframes } from "@emotion/react";
+import DriverGoogleSignInButton from "../Component/Drivergooglesigninbutton"; // adjust the path as needed
 
 // Floating animation for the login box
 const float = keyframes`
@@ -86,7 +88,7 @@ const DriverLogin = () => {
         justifyContent: "center",
         alignItems: "center",
         minHeight: "100vh",
-        backgroundImage: "url('/bg1.jpg')", // Replace with your image path
+        backgroundImage: "url('/bg1.jpg')",
         backgroundSize: "cover",
         backgroundPosition: "center",
         position: "relative",
@@ -137,14 +139,16 @@ const DriverLogin = () => {
             gap: "0.5rem",
           }}
         >
-          {["a", "u", "t", "o", "-", "d", "r", "i", "v", "e"].map((letter, index) => (
-            <span
-              key={index}
-              style={{ color: index % 2 === 0 ? "#cbe557" : "white" }}
-            >
-              {letter}
-            </span>
-          ))}
+          {["a", "u", "t", "o", "-", "d", "r", "i", "v", "e"].map(
+            (letter, index) => (
+              <span
+                key={index}
+                style={{ color: index % 2 === 0 ? "#cbe557" : "white" }}
+              >
+                {letter}
+              </span>
+            )
+          )}
         </Typography>
 
         <Typography variant="h5" textAlign="center" fontWeight={600} mb={3}>
@@ -253,6 +257,11 @@ const DriverLogin = () => {
         >
           {loading ? "Logging in..." : "Login"}
         </Button>
+
+        <Divider sx={{ my: 2, backgroundColor: "rgba(255,255,255,0.5)" }} />
+
+        {/* Google Sign In Button */}
+        <DriverGoogleSignInButton />
       </Box>
     </Box>
   );

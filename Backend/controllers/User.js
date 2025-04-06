@@ -171,43 +171,49 @@ const updateProfile = async (req, res) => {
   
   // Upload profile image
   const uploadProfileImage = async (req, res) => {
+    router.post(
+  '/uploadProfileImage/:driverId',
+  verifyDriverToken,
+  upload.single('image'),
+  async (req, res) => {
     try {
-      const userId = req.user._id; // Assuming user ID is extracted from the token
-      const file = req.file;
-  
-      if (!file) {
-        return res.status(400).json({ msg: 'No file uploaded.' });
+      const driverId = req.params.driverId;
+
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
       }
-  
-      // Construct the file path
-      const filePath = `/uploads/users/profile/${file.filename}`;
-  
-      // Find the user and update the profile image
-      const user = await User.findById(userId);
-      if (!user) {
-        return res.status(404).json({ msg: 'User not found.' });
+
+      // Determine the type of image (profile/cover)
+      const fileType = req.body.type || 'profile'; // Default to 'profile' if not provided
+
+      // Create the relative file path based on the file type
+      const filePath = path.join("uploads", "drivers", fileType, req.file.filename);
+
+      // Find the driver and update the image field
+      const driver = await Driver.findById(driverId);
+      if (!driver) {
+        return res.status(404).json({ message: "Driver not found" });
       }
-  
-      // Delete the old profile image if it exists
-      if (user.profileImage) {
-        const oldImagePath = path.join(__dirname, '..', user.profileImage);
-        if (fs.existsSync(oldImagePath)) {
-          fs.unlinkSync(oldImagePath);
-        }
+
+      // Update the driver's image based on the type
+      if (fileType === 'profile') {
+        driver.profileImage = filePath;
+      } else if (fileType === 'cover') {
+        driver.coverImage = filePath;
       }
-  
-      // Update the profile image
-      user.profileImage = filePath;
-      await user.save();
-  
-      res.status(200).json({
-        msg: 'Profile image uploaded successfully.',
-        profileImage: user.profileImage,
+
+      await driver.save();
+
+      res.json({
+        message: `${fileType.charAt(0).toUpperCase() + fileType.slice(1)} image uploaded successfully!`,
+        imageUrl: `/uploads/drivers/${fileType}/${req.file.filename}`,
       });
     } catch (error) {
-      console.error('Error uploading profile image:', error);
-      res.status(500).json({ msg: 'Server error. Please try again later.' });
+      console.error("Error saving image:", error);
+      res.status(500).json({ message: "Failed to update image." });
     }
+  }
+);
   };
   
   // Get user profile

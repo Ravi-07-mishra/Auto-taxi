@@ -1,12 +1,12 @@
-// GoogleSignInButton.jsx
+// DriverGoogleSignInButton.jsx
 import React from "react";
 import { Button } from "@mui/material";
 import { SiGoogle } from "react-icons/si";
 
-const GoogleSignInButton = () => {
+const DriverGoogleSignInButton = () => {
   const handleGoogleSignIn = () => {
     // Redirect to Google OAuth authentication route
-    window.location.href = "http://localhost:3000/api/user/auth/google";
+    window.location.href = "http://localhost:3000/api/driver/auth/google";
   };
 
   return (
@@ -32,4 +32,4 @@ const GoogleSignInButton = () => {
   );
 };
 
-export default GoogleSignInButton;
+export default DriverGoogleSignInButton;

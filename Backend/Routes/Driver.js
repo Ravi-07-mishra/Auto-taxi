@@ -2,11 +2,13 @@ const express = require('express');
 const router = express.Router();
 const upload = require('../utiils/upload');
 const fs = require("fs");
+const passport = require('passport')
 const path = require('path');
 const Driver = require('../Models/drivermodel')
 const {Register,GetallDrivers,Login, updateAvailability, verifyDriver, GetSubscriptionStatus, Logout, updateProfile} = require('../controllers/driver');
 const { getallDriverBookings, getBooking, CompleteBooking } = require('../controllers/Booking');
 const { verifyDriverToken } = require('../utiils/token-manager');
+const { DRIVER_COOKIE_NAME } = require('../utiils/constants');
 const BASE_UPLOAD_PATH = "D:/PROJECT/Auto-taxi/Backend/uploads/drivers";
 
 router.post('/register', upload.single('licenseDoc'), Register);
@@ -59,6 +61,36 @@ router.post(
       console.error("Error saving image:", error);
       res.status(500).json({ message: "Failed to update image." });
     }
+  }
+);
+router.get(
+  '/auth/google',
+  passport.authenticate('driver-google', { scope: ['profile', 'email'], session: false })
+);
+
+// Google OAuth callback for drivers (JWT is created here)
+router.get(
+  '/auth/google/callback',
+  passport.authenticate('driver-google', { failureRedirect: '/driver/login', session: false }),
+  (req, res) => {
+    // Create token after successful authentication
+    const token = createToken(
+      req.user._id.toString(),
+      req.user.email,
+      "7d"
+    );
+    const expires = new Date();
+    expires.setDate(expires.getDate() + 7);
+
+    res.cookie(DRIVER_COOKIE_NAME, token, {
+      path: "/",
+      domain: "localhost", // adjust as needed in production
+      expires,
+      httpOnly: true,
+      signed: true,
+    });
+    // Redirect driver to the appropriate frontend page
+    res.redirect('http://localhost:5173/driverdashboard');
   }
 );
 
@@ -116,17 +148,44 @@ router.put('/updateProfileImage', verifyDriverToken, async (req, res) => {
     res.status(500).send("Failed to update profile image.");
   }
 });
-router.route('/updateProfile').post(updateProfile);
-  // Route to upload cover image
-  router.post('/uploadCoverImage',verifyDriver, upload.single('coverImage'), (req, res) => {
-    if (req.file) {
-      res.json({
-        message: 'Cover image uploaded successfully!',
-        filePath: req.file.path,  // Path of uploaded cover image
-      });
-    } else {
-      res.status(400).send('Please upload a valid image.');
+router.put("/updateProfile", verifyDriverToken, async (req, res) => {
+  const driverId = req.driver._id; // Provided by verifyDriverToken middleware
+  const { name, email, currentPassword, newPassword } = req.body;
+  try {
+    const driver = await Driver.findById(driverId);
+    if (!driver) {
+      return res.status(404).json({ message: "Driver not found." });
     }
-  });
-  
+    if (name) driver.name = name;
+    if (email) driver.email = email;
+    
+    // If a new password is provided, check for current password and verify it
+    if (newPassword) {
+      if (!currentPassword) {
+        return res.status(400).json({ message: "Current password is required to change password." });
+      }
+      const isMatch = await bcrypt.compare(currentPassword, driver.password);
+      if (!isMatch) {
+        return res.status(400).json({ message: "Current password is incorrect." });
+      }
+      const salt = await bcrypt.genSalt(10);
+      driver.password = await bcrypt.hash(newPassword, salt);
+    }
+    
+    await driver.save();
+    res.json({
+      message: "Profile updated successfully.",
+      driver: {
+        _id: driver._id,
+        name: driver.name,
+        email: driver.email,
+        profileImage: driver.profileImage, // Ensure this field exists on your driver document
+      },
+    });
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    res.status(500).json({ message: "Server error while updating profile." });
+  }
+});
+
 module.exports = router;
