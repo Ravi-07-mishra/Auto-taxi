@@ -8,6 +8,7 @@ const BookingSchema = new mongoose.Schema({
   status: { type: String, enum: ['Pending', 'Accepted', 'Declined', 'Completed','Canceled'], default: 'Pending' },
   price: { type: Number },
   createdAt: { type: Date, default: Date.now },
+  profileImage: { type: String, default: '' },
   
   // Rating system fields
   rating: { 

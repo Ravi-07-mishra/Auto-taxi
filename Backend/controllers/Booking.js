@@ -40,6 +40,7 @@ const DoBooking = async (req, res) => {
         pickupLocation,
         destinationLocation,
         driver: driver._id,
+        profileImage: driver.profileImage
       });
 
       console.log(`Booking created: ${booking._id}`);

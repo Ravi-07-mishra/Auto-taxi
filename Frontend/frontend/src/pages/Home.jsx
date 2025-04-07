@@ -1,7 +1,9 @@
-import { useState, useRef } from "react";
-import { Link } from "react-router-dom";
-import { Users, Car, Clock, Mail, Phone, MapPin, Menu, X } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 import React from "react";
+import { Link } from "react-router-dom";
+import { Users, Car, Clock, Mail, Phone, MapPin, Menu, X, Star, ChevronLeft, ChevronRight } from "lucide-react";
+import { Carousel } from 'react-responsive-carousel';
+import 'react-responsive-carousel/lib/styles/carousel.min.css';
 
 const NavLink = ({ href, text, currentPath, onClick }) => {
   const isActive = currentPath === href;
@@ -21,8 +23,12 @@ const NavLink = ({ href, text, currentPath, onClick }) => {
 const Home = () => {
   const [isCardVisible, setIsCardVisible] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const contactRef = useRef(null);
+  const [topDrivers, setTopDrivers] = useState([]);
 
+const [error, setError] = useState(null);
+  const [loadingDrivers, setLoadingDrivers] = useState(true);
+  const contactRef = useRef(null);
+  const topDriversRef = useRef(null);
   const handleGetStartedClick = () => {
     setIsCardVisible(true);
   };
@@ -39,6 +45,42 @@ const Home = () => {
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
+
+
+  useEffect(() => {
+    const fetchTopDrivers = async () => {
+      try {
+        setLoadingDrivers(true);
+        setError(null);
+        
+        const response = await fetch('/api/driver/top-rated');
+        const result = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to fetch drivers');
+        }
+    
+        // Normalize driver data
+        const normalizedDrivers = (result.data || []).map(driver => ({
+          ...driver,
+          name: driver.name || 'Unknown Driver',
+          avgRating: typeof driver.avgRating === 'number' ? driver.avgRating : 0,
+          numRatings: typeof driver.numRatings === 'number' ? driver.numRatings : 0,
+          profileImage: driver.profileImage || '/default-driver.jpg'
+        }));
+    
+        setTopDrivers(normalizedDrivers);
+        
+      } catch (err) {
+        console.error('Fetch error:', err);
+        setError(err.message);
+        setTopDrivers([]); // Set empty array on error
+      } finally {
+        setLoadingDrivers(false);
+      }
+    };
+    fetchTopDrivers();
+  }, []);
 
   return (
     <div className="relative min-h-screen">
@@ -62,13 +104,12 @@ const Home = () => {
         <nav className="fixed w-full z-30 top-0 left-0 p-4 bg-black bg-opacity-50">
           <div className="container mx-auto flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              {/* Logo Image */}
               <img
-                src="/carlogo.png" // Path to your logo image
+                src="/carlogo.png"
                 alt="Auto-Drive Logo"
-                className="h-10 w-15" // Adjust the size as needed
+                className="h-10 w-15"
               />
-              <h1 className="text-2xl md:text-4xl font-extrabold  tracking-wider shadow-md flex space-x-2">
+              <h1 className="text-2xl md:text-4xl font-extrabold tracking-wider shadow-md flex space-x-2">
                 {["Q", "U", "I", "C", "K", "-", "G", "O"].map(
                   (letter, index) => (
                     <span
@@ -84,11 +125,15 @@ const Home = () => {
 
             <div className="hidden md:flex gap-8">
               <NavLink href="/Home" text="Home" currentPath="/Home" />
-              <NavLink
-                href="/TrustedDrivers"
-                text="Trusted Drivers"
-                currentPath="/Home"
-              />
+              <button
+        onClick={() => {
+          topDriversRef.current?.scrollIntoView({ behavior: "smooth" });
+          setIsMenuOpen(false);
+        }}
+        className="text-white hover:text-[#cbe557] transition-colors"
+      >
+        Trusted Drivers
+      </button>
               <NavLink
                 href="/OurServices"
                 text="Our Services"
@@ -117,12 +162,15 @@ const Home = () => {
               currentPath="/Home"
               onClick={toggleMenu}
             />
-            <NavLink
-              href="/TrustedDrivers"
-              text="Trusted Drivers"
-              currentPath="/Home"
-              onClick={toggleMenu}
-            />
+           <button
+    onClick={() => {
+      topDriversRef.current?.scrollIntoView({ behavior: "smooth" });
+      setIsMenuOpen(false);
+    }}
+    className="text-white hover:text-[#cbe557] transition-colors"
+  >
+    Trusted Drivers
+  </button>
             <NavLink
               href="/OurServices"
               text="Our Services"
@@ -177,6 +225,104 @@ const Home = () => {
                 <p className="text-xl">Hours Driven</p>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Top Drivers Section */}
+        <section className="py-16 bg-black bg-opacity-80"  ref={topDriversRef}>
+          <div className="container mx-auto px-4">
+            <h2 className="text-3xl md:text-4xl font-bold mb-12 text-center text-white">
+              Our Top-Rated Drivers
+            </h2>
+            
+            {loadingDrivers ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#cbe557]"></div>
+              </div>
+            ) : topDrivers.length > 0 ? (
+              <div className="relative max-w-4xl mx-auto">
+                <Carousel
+                  showArrows={true}
+                  showStatus={false}
+                  showThumbs={false}
+                  infiniteLoop={true}
+                  autoPlay={true}
+                  interval={5000}
+                  renderArrowPrev={(onClickHandler, hasPrev, label) => (
+                    <button
+                      onClick={onClickHandler}
+                      disabled={!hasPrev}
+                      aria-label={label}
+                      className="absolute left-0 top-1/2 z-10 -translate-y-1/2 bg-[#cbe557] bg-opacity-80 p-2 rounded-full hover:bg-opacity-100 transition-all"
+                    >
+                      <ChevronLeft className="h-6 w-6 text-black" />
+                    </button>
+                  )}
+                  renderArrowNext={(onClickHandler, hasNext, label) => (
+                    <button
+                      onClick={onClickHandler}
+                      disabled={!hasNext}
+                      aria-label={label}
+                      className="absolute right-0 top-1/2 z-10 -translate-y-1/2 bg-[#cbe557] bg-opacity-80 p-2 rounded-full hover:bg-opacity-100 transition-all"
+                    >
+                      <ChevronRight className="h-6 w-6 text-black" />
+                    </button>
+                  )}
+                >
+                  {topDrivers.map((driver) => (
+                    <div key={driver._id} className="px-4 py-4">
+                      <div className="bg-white bg-opacity-10 backdrop-blur-md rounded-xl p-6 shadow-lg border border-[#cbe557] border-opacity-30">
+                        <div className="flex flex-col items-center">
+                          <div className="relative mb-6">
+                            <img
+                              src={`http://localhost:3000/${driver.profileImage}` || '/default-driver.jpg'}
+                              alt={driver.name}
+                              className="w-32 h-32 rounded-full object-cover border-4 border-[#cbe557]"
+                              onError={(e) => {
+                                e.target.src = '/default-driver.jpg';
+                              }}
+                            />
+                            <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-[#cbe557] text-black px-3 py-1 rounded-full flex items-center">
+                              <Star className="h-4 w-4 fill-current mr-1" />
+                              <span className="font-bold">
+                                {driver.avgRating.toFixed(1)}
+                              </span>
+                            </div>
+                          </div>
+                          <h3 className="text-2xl font-bold text-white mb-2">
+                            {driver.name}
+                          </h3>
+                          <div className="flex justify-center mt-2">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`h-5 w-5 ${
+                                  i < Math.round(driver.avgRating)
+                                    ? 'fill-[#cbe557] text-[#cbe557]'
+                                    : 'text-gray-400'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </Carousel>
+                <div className="text-center mt-8">
+                  <Link 
+                    to="/TrustedDrivers" 
+                    className="inline-block bg-[#cbe557] text-black px-6 py-2 rounded-lg hover:bg-opacity-90 transition-all"
+                  >
+                    View All Drivers
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center text-gray-400 py-12">
+                No top-rated drivers available yet
+              </div>
+            )}
           </div>
         </section>
 
