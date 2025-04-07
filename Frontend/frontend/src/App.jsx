@@ -38,13 +38,15 @@ import UserHomes from "./pages/userHome2";
 
 import DrivePage from "./pages/DrivePage";
 import Home from "./pages/Home";
-import CalendarPage from "./pages/CalendarPage";
+
 import BookingPage from "./Component/BookingPage";
 import EditProfilePage from "./Component/EditProfile";
 import AboutUs from "./pages/Aboutus";
 import UserRidePage from "./pages/UserDrive";
 import UserProfilePage from "./pages/UserProfile";
 import EditUserProfilePage from "./Component/EditUserprofile";
+import AdminLogin from "./pages/AdminLogin";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const Navbar = () => {
   const location = useLocation();
@@ -96,7 +98,9 @@ const App = () => {
         
           <Route path="/driveredit-profile" element={<EditProfilePage />} />
           <Route path="/useredit-profile" element={<EditUserProfilePage/>} />
-          
+          <Route path="/admin/login" element={<AdminLogin/>} />
+        <Route path="/admin" element={<AdminDashboard/>} />
+
         </Routes>
       </Router>
     </SocketProvider>

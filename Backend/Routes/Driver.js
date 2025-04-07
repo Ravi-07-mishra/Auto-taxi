@@ -5,7 +5,7 @@ const fs = require("fs");
 const passport = require('passport')
 const path = require('path');
 const Driver = require('../Models/drivermodel')
-const {Register,GetallDrivers,Login, updateAvailability, verifyDriver, GetSubscriptionStatus, Logout, updateProfile} = require('../controllers/driver');
+const {Register,GetallDrivers,Login, updateAvailability, verifyDriver, GetSubscriptionStatus, Logout, updateProfile, getTopRatedDrivers} = require('../controllers/driver');
 const { getallDriverBookings, getBooking, CompleteBooking } = require('../controllers/Booking');
 const { verifyDriverToken } = require('../utiils/token-manager');
 const { DRIVER_COOKIE_NAME } = require('../utiils/constants');
@@ -17,6 +17,7 @@ router.route('/availability').put(updateAvailability)
 router.get('/',GetallDrivers);
 router.route('/auth-status').get(verifyDriverToken,verifyDriver)
 router.route('/driver/:bookingId').get(getBooking);
+router.route('/top-rated').get(getTopRatedDrivers);
 router.get('/:driverId',getallDriverBookings);
 router.route('/subscription/:driverId').get(GetSubscriptionStatus)
 router.route('/logout').post(Logout)
@@ -148,6 +149,7 @@ router.put('/updateProfileImage', verifyDriverToken, async (req, res) => {
     res.status(500).send("Failed to update profile image.");
   }
 });
+
 router.put("/updateProfile", verifyDriverToken, async (req, res) => {
   const driverId = req.driver._id; // Provided by verifyDriverToken middleware
   const { name, email, currentPassword, newPassword } = req.body;

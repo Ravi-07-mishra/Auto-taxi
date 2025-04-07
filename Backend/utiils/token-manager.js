@@ -54,4 +54,5 @@ const verifyDriverToken = async (req, res, next) => {
     }
 };
 
+
 module.exports = { createToken, verifyToken, verifyDriverToken };

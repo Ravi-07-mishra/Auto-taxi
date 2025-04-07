@@ -270,6 +270,36 @@ const GetAllBookingRequests = async (req, res) => {
       res.status(500).json({ msg: 'Server error. Please try again later.' });
     }
   };
+  const getTopRatedDrivers = async (req, res) => {
+    console.log('Received request at:', new Date());
+    try {
+      const topDrivers = await Driver.find({}) // Remove all rating filters
+        .sort({ 
+          avgRating: -1,  // Still sort by rating (highest first)
+          numRatings: -1  // Then by number of ratings
+        })
+        .limit(5)
+        .select('name avgRating numRatings profileImage')
+        .lean();
   
+      console.log('Found drivers:', topDrivers.map(d => ({
+        name: d.name,
+        rating: d.avgRating,
+        ratingsCount: d.numRatings
+      })));
   
-module.exports = { Register, GetallDrivers, Login, GetAllBookingRequests,updateAvailability,verifyDriver,GetSubscriptionStatus,Logout,updateProfile };
+      res.status(200).json({
+        success: true,
+        data: topDrivers
+      });
+  
+    } catch (error) {
+      console.error('Error:', error);
+      res.status(500).json({ 
+        success: false,
+        error: 'Server error' 
+      });
+    }
+  };
+  
+module.exports = { Register, GetallDrivers, Login, GetAllBookingRequests,updateAvailability,verifyDriver,GetSubscriptionStatus,Logout,updateProfile,getTopRatedDrivers };

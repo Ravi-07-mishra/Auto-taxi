@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
+
 import { useAuth } from "../Context/userContext";
 import { useNavigate } from "react-router-dom";
 import {
@@ -19,7 +20,6 @@ import "slick-carousel/slick/slick-theme.css";
 const UserHome = () => {
   const auth = useAuth();
   const [bookings, setBookings] = useState([]);
-  // addresses: { [bookingId: string]: { pickupAddress: string, destinationAddress: string } }
   const [addresses, setAddresses] = useState({});
   const [reviewVisible, setReviewVisible] = useState(null);
   const [rating, setRating] = useState(0);
@@ -28,7 +28,48 @@ const UserHome = () => {
   const sliderRef = useRef(null);
   const backgroundImages = ["/bg1.jpg", "/bg2.jpg", "/bg3.jpg"];
 
-  // Fetch bookings from the backend
+  // Custom Prev Arrow Component
+  const CustomPrevArrow = () => (
+    <div
+      className="absolute top-1/2 left-6 -translate-y-1/2 bg-black/50 backdrop-blur-md rounded-full p-3 cursor-pointer hover:bg-indigo-600/80 transition-all z-30 shadow-lg hover:scale-110"
+      onClick={() => sliderRef.current.slickPrev()}
+    >
+      <ChevronLeft className="w-6 h-6 text-white" />
+    </div>
+  );
+
+  // Custom Next Arrow Component
+  const CustomNextArrow = () => (
+    <div
+      className="absolute top-1/2 right-6 -translate-y-1/2 bg-black/50 backdrop-blur-md rounded-full p-3 cursor-pointer hover:bg-indigo-600/80 transition-all z-30 shadow-lg hover:scale-110"
+      onClick={() => sliderRef.current.slickNext()}
+    >
+      <ChevronRight className="w-6 h-6 text-white" />
+    </div>
+  );
+
+  // Slider Settings
+  const carouselSettings = {
+    dots: true,
+    infinite: true,
+    speed: 500,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    autoplay: true,
+    autoplaySpeed: 5000,
+    arrows: false,
+    prevArrow: <CustomPrevArrow />,
+    nextArrow: <CustomNextArrow />,
+    appendDots: (dots) => (
+      <div className="slick-dots-container">
+        <ul className="flex justify-center gap-2">{dots}</ul>
+      </div>
+    ),
+    customPaging: () => (
+      <div className="w-3 h-3 bg-white/30 rounded-full transition-all hover:bg-white/80 dot-indicator"></div>
+    ),
+  };
+
   useEffect(() => {
     const fetchBookings = async () => {
       try {
@@ -37,7 +78,6 @@ const UserHome = () => {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
         const json = await response.json();
-        console.log("Fetched bookings:", json.bookings);
         setBookings(json.bookings || []);
       } catch (error) {
         console.error("Error fetching bookings:", error);
@@ -46,18 +86,14 @@ const UserHome = () => {
     if (auth.user?._id) fetchBookings();
   }, [auth.user?._id]);
 
-  // Reverse geocoding using our backend endpoint with OpenCage
   const fetchAddressFromCoordinates = async (lat, lon) => {
     try {
       const url = `http://localhost:3000/api/reverse-geocode?lat=${lat}&lon=${lon}`;
-      console.log("Fetching reverse geocode from:", url);
       const response = await fetch(url);
       if (!response.ok) {
-        console.error("Response not ok:", response.status);
         return "Address not available";
       }
       const data = await response.json();
-      console.log("Full API response:", data);
       if (data.formatted) {
         return data.formatted;
       }
@@ -74,10 +110,7 @@ const UserHome = () => {
       return "Address not available";
     }
   };
-  
-  
 
-  // Fetch addresses for each booking and store them in state
   useEffect(() => {
     if (bookings.length > 0) {
       const fetchAllAddresses = async () => {
@@ -102,7 +135,6 @@ const UserHome = () => {
           addressPairs.forEach(({ id, pickupAddress, destinationAddress }) => {
             newAddresses[id] = { pickupAddress, destinationAddress };
           });
-          console.log("Fetched addresses:", newAddresses);
           setAddresses(newAddresses);
         } catch (error) {
           console.error("Error fetching all addresses:", error);
@@ -149,194 +181,217 @@ const UserHome = () => {
     }
   };
 
-  // Custom carousel arrows
-  const CustomPrevArrow = () => (
-    <div
-      className="absolute top-1/2 left-4 -translate-y-1/2 bg-black/30 backdrop-blur-md rounded-full p-2 cursor-pointer hover:bg-black/50 transition-all z-30"
-      onClick={() => sliderRef.current.slickPrev()}
-    >
-      <ChevronLeft className="w-6 h-6 text-white" />
-    </div>
-  );
-  const CustomNextArrow = () => (
-    <div
-      className="absolute top-1/2 right-4 -translate-y-1/2 bg-black/30 backdrop-blur-md rounded-full p-2 cursor-pointer hover:bg-black/50 transition-all z-30"
-      onClick={() => sliderRef.current.slickNext()}
-    >
-      <ChevronRight className="w-6 h-6 text-white" />
-    </div>
-  );
-
-  const carouselSettings = {
-    dots: true,
-    infinite: true,
-    speed: 500,
-    slidesToShow: 1,
-    slidesToScroll: 1,
-    autoplay: true,
-    autoplaySpeed: 3000,
-    arrows: false,
-    prevArrow: <CustomPrevArrow />,
-    nextArrow: <CustomNextArrow />,
-    appendDots: (dots) => (
-      <div className="slick-dots-container mt-4">
-        <ul className="slick-dots flex justify-center gap-2">{dots}</ul>
-      </div>
-    ),
-    customPaging: () => (
-      <div className="w-3 h-3 bg-white/50 rounded-full transition-all hover:bg-white/80"></div>
-    ),
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-indigo-900 text-white relative font-sans">
       <BackgroundSlider images={backgroundImages} interval={7000} className="absolute inset-0 z-0" />
+      
       {/* Welcome Section */}
-      <section className="pt-20 pb-10 flex items-center justify-center relative z-10">
-        <div className="text-center">
+      <section className="pt-24 pb-12 flex items-center justify-center relative z-10">
+        <div className="text-center px-4">
           <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight drop-shadow-lg">
             Welcome, {auth.user ? auth.user.name || "User" : "Please Login"}!
           </h1>
-          <p className="text-lg md:text-xl text-gray-300 drop-shadow-sm">
+          <p className="text-lg md:text-xl text-gray-300 drop-shadow-sm max-w-2xl mx-auto">
             Manage your bookings and explore your dashboard.
           </p>
         </div>
       </section>
+
       {/* Bookings Section */}
-      <section className="py-20 relative z-10">
+      <section className="py-12 relative z-10">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold mb-8 text-center">Your Bookings</h2>
-          <div className="relative">
-            <Slider ref={sliderRef} {...carouselSettings}>
-              {bookings.map((booking) => {
-                const id = booking._id.toString();
-                return (
-                  <div key={id} className="px-4">
-                    {/* Booking Card */}
-                    <div className="bg-white/10 backdrop-blur-md rounded-xl overflow-hidden shadow-lg border border-white/20 transition-transform duration-300 hover:shadow-2xl hover:scale-105">
-                      <div className="p-6">
-                        {/* Driver Info */}
-                        <div className="flex items-center mb-4">
-                          <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-indigo-300/50">
-                            <img
-                              src={booking.driver?.profileImage || "/placeholder.svg?height=64&width=64"}
-                              alt="Driver"
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div className="ml-4">
-                            <h3 className="font-semibold text-xl">{booking.driver?.name || "Driver"}</h3>
-                            <span
-                              className={`text-xs px-2 py-1 rounded-full ${
-                                booking.status === "completed"
-                                  ? "bg-green-500/20 text-green-400"
-                                  : booking.status === "in-progress"
-                                  ? "bg-yellow-500/20 text-yellow-400"
-                                  : "bg-indigo-500/20 text-indigo-400"
-                              }`}
-                            >
-                              {booking.status || "Pending"}
-                            </span>
-                          </div>
-                        </div>
-                        {/* Booking Details */}
-                        <div className="space-y-3 mb-4">
-                          <div className="flex items-start space-x-2">
-                            <MapPin className="w-5 h-5 text-green-400 mt-1" />
-                            <div>
-                              <p className="text-indigo-200 text-xs">Pickup Location</p>
-                              <p className="text-white font-medium text-sm">
-                                {addresses[id]?.pickupAddress || "Address not available"}
-                              </p>
+          <h2 className="text-3xl font-bold mb-10 text-center">Your Bookings</h2>
+          <div className="relative max-w-3xl mx-auto">
+            {bookings.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-400 text-lg">You don't have any bookings yet</p>
+              </div>
+            ) : (
+              <Slider ref={sliderRef} {...carouselSettings}>
+                {bookings.map((booking) => {
+                  const id = booking._id.toString();
+                  return (
+                    <div key={id} className="px-2 sm:px-4">
+                      {/* Booking Card */}
+                      <div className="bg-gradient-to-br from-gray-800/80 to-indigo-900/80 backdrop-blur-lg rounded-2xl overflow-hidden shadow-2xl border border-white/10 transition-all duration-300 hover:shadow-indigo-500/20 hover:border-indigo-400/30">
+                        {/* Card Header */}
+                        <div className="p-6 pb-4 border-b border-white/10">
+                          <div className="flex items-center">
+                            <div className="relative">
+                              <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-indigo-400/50 shadow-md">
+                                <img
+                                  src={`http://localhost:3000/${booking.profileImage}` || "/placeholder.svg"}
+                                  alt="Driver"
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.target.src = "/placeholder.svg";
+                                  }}
+                                />
+                              </div>
+                              {booking.driver?.avgRating && (
+                                <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-indigo-600 text-white px-2 py-1 rounded-full flex items-center text-xs font-bold shadow-md">
+                                  <Star className="w-3 h-3 fill-current mr-1" />
+                                  {booking.driver.avgRating.toFixed(1)}
+                                </div>
+                              )}
                             </div>
-                          </div>
-                          <div className="flex items-start space-x-2">
-                            <MapPin className="w-5 h-5 text-red-400 mt-1" />
-                            <div>
-                              <p className="text-indigo-200 text-xs">Destination</p>
-                              <p className="text-white font-medium text-sm">
-                                {addresses[id]?.destinationAddress || "Address not available"}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-start space-x-2">
-                            <DollarSign className="w-5 h-5 text-yellow-400 mt-1" />
-                            <div>
-                              <p className="text-indigo-200 text-xs">Price</p>
-                              <p className="text-white font-medium text-sm">${booking.price || "N/A"}</p>
+                            <div className="ml-4">
+                              <h3 className="font-bold text-xl text-white">{booking.driver?.name || "Driver"}</h3>
+                              <div className="flex items-center mt-1">
+                                <span
+                                  className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                    booking.status === "completed"
+                                      ? "bg-green-500/20 text-green-300"
+                                      : booking.status === "in-progress"
+                                      ? "bg-yellow-500/20 text-yellow-300"
+                                      : booking.status === "Cancelled"
+                                      ? "bg-red-500/20 text-red-300"
+                                      : "bg-indigo-500/20 text-indigo-300"
+                                  }`}
+                                >
+                                  {booking.status || "Pending"}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
-                        {/* Actions */}
-                        {booking.status === "completed" ? (
-                          <button
-                            onClick={() => setReviewVisible(id)}
-                            className="w-full bg-indigo-600/80 text-white py-2 rounded-md flex items-center justify-center gap-2 transition-transform duration-300 hover:bg-indigo-700 hover:scale-105 text-sm"
-                          >
-                            <Star className="w-5 h-5" />
-                            Leave a Review
-                          </button>
-                        ) : (
-                          <div className="flex justify-between items-center gap-3">
+
+                        {/* Card Body */}
+                        <div className="p-6 pt-4">
+                          <div className="space-y-4 mb-6">
+                            {/* Pickup Location */}
+                            <div className="flex items-start">
+                              <div className="bg-indigo-500/20 p-2 rounded-lg mr-3">
+                                <MapPin className="w-5 h-5 text-indigo-300" />
+                              </div>
+                              <div>
+                                <p className="text-indigo-300/80 text-xs font-medium uppercase tracking-wider mb-1">
+                                  Pickup Location
+                                </p>
+                                <p className="text-white font-medium">
+                                  {addresses[id]?.pickupAddress || "Loading address..."}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Destination */}
+                            <div className="flex items-start">
+                              <div className="bg-pink-500/20 p-2 rounded-lg mr-3">
+                                <MapPin className="w-5 h-5 text-pink-300" />
+                              </div>
+                              <div>
+                                <p className="text-pink-300/80 text-xs font-medium uppercase tracking-wider mb-1">
+                                  Destination
+                                </p>
+                                <p className="text-white font-medium">
+                                  {addresses[id]?.destinationAddress || "Loading address..."}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Price */}
+                            <div className="flex items-start">
+                              <div className="bg-amber-500/20 p-2 rounded-lg mr-3">
+                                <DollarSign className="w-5 h-5 text-amber-300" />
+                              </div>
+                              <div>
+                                <p className="text-amber-300/80 text-xs font-medium uppercase tracking-wider mb-1">
+                                  Price
+                                </p>
+                                <p className="text-white font-medium">
+                                  ${booking.price?.toFixed(2) || "0.00"}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Card Footer - Actions */}
+                          {booking.status === "completed" ? (
                             <button
-                              onClick={() => navigate(`/booking/${id}`)}
-                              className="bg-indigo-600/80 text-white font-semibold py-2 px-4 rounded-md shadow hover:bg-indigo-700 transition-transform duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 flex items-center gap-2 text-sm"
+                              onClick={() => setReviewVisible(id)}
+                              className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 text-white py-3 rounded-lg flex items-center justify-center gap-2 font-medium hover:from-indigo-700 hover:to-indigo-800 transition-all duration-300 hover:shadow-lg hover:scale-[1.02]"
                             >
-                              <Eye className="w-4 h-4" />
-                              View Details
+                              <Star className="w-5 h-5" />
+                              Leave a Review
                             </button>
-                            {booking.status !== "Cancelled" && (
+                          ) : (
+                            <div className="flex justify-between gap-3">
                               <button
-                                onClick={() => handleCancelBooking(id)}
-                                className="bg-red-600/80 text-white py-2 px-4 rounded-md transition-transform duration-300 hover:bg-red-700 hover:scale-105 flex items-center gap-2 text-sm"
+                                onClick={() => navigate(`/booking/${id}`)}
+                                className="flex-1 bg-indigo-600/90 text-white font-medium py-3 px-4 rounded-lg shadow hover:bg-indigo-700 transition-all duration-300 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-indigo-500 flex items-center justify-center gap-2"
                               >
-                                <X className="w-4 h-4" />
-                                Cancel
+                                <Eye className="w-4 h-4" />
+                                Details
                               </button>
-                            )}
-                          </div>
-                        )}
+                              {booking.status !== "Cancelled" && (
+                                <button
+                                  onClick={() => handleCancelBooking(id)}
+                                  className="flex-1 bg-gradient-to-r from-red-600 to-red-700 text-white py-3 px-4 rounded-lg transition-all duration-300 hover:from-red-700 hover:to-red-800 hover:scale-[1.02] flex items-center justify-center gap-2"
+                                >
+                                  <X className="w-4 h-4" />
+                                  Cancel
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </Slider>
+                  );
+                })}
+              </Slider>
+            )}
           </div>
         </div>
       </section>
+
       {/* Review Modal */}
       {reviewVisible && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-8 w-11/12 max-w-md shadow-2xl">
-            <h3 className="font-semibold text-2xl mb-6 text-white">Leave a Review</h3>
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm">
+          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-8 w-11/12 max-w-md shadow-2xl border border-white/10">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-semibold text-2xl text-white">Leave a Review</h3>
+              <button
+                onClick={() => setReviewVisible(null)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
             <div className="space-y-6">
-              <div className="flex items-center space-x-2">
+              <div className="flex justify-center space-x-2">
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <Star
+                  <button
                     key={star}
-                    className={`w-7 h-7 cursor-pointer ${star <= rating ? "text-yellow-400" : "text-gray-500"}`}
                     onClick={() => setRating(star)}
-                  />
+                    className={`p-2 rounded-full transition-all ${
+                      star <= rating
+                        ? "bg-yellow-500/20 text-yellow-400"
+                        : "bg-gray-700/50 text-gray-400"
+                    } hover:scale-110`}
+                  >
+                    <Star className="w-7 h-7" fill={star <= rating ? "currentColor" : "none"} />
+                  </button>
                 ))}
               </div>
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                placeholder="Write your review..."
-                className="w-full p-3 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="Share your experience..."
+                className="w-full p-4 rounded-lg bg-gray-700/50 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 border border-white/10 resize-none"
                 rows={4}
               />
               <div className="flex justify-end space-x-4">
                 <button
                   onClick={() => setReviewVisible(null)}
-                  className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-md transition-colors duration-300"
+                  className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-6 rounded-lg transition-colors duration-300"
                 >
-                  Close
+                  Cancel
                 </button>
                 <button
                   onClick={() => handleSubmitReview(reviewVisible)}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-md transition-colors duration-300"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-6 rounded-lg transition-colors duration-300 disabled:opacity-50"
+                  disabled={rating === 0}
                 >
                   Submit Review
                 </button>

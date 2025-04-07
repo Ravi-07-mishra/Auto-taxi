@@ -9,7 +9,7 @@ const socketIo = require('socket.io');
 const passport = require('passport')
 require('./controllers/googleauth')
 require('./controllers/drivergoogleauth')
-
+const adminRoutes = require('./Routes/adminRoutes')
 
 const axios = require('axios'); // Make sure this line is added
 
@@ -18,6 +18,7 @@ const morgan = require('morgan')
 const Chat = require('./Models/Chatmodel');
 const ChatRouter = require('./Routes/Chat');
 const Booking = require('./Models/Bookingmodel');
+
 
 const UserRouter = require('./Routes/User');
 const DriverRouter = require('./Routes/Driver');
@@ -56,6 +57,7 @@ app.use('/api/user', UserRouter);
 app.use('/api/driver', DriverRouter);
 app.use('/api/chat', ChatRouter);
 app.use('/api/payment', Paymentrouter);
+app.use('/api/admin', adminRoutes);
 
 const port = process.env.PORT || 3000;
 
