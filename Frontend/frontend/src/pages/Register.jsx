@@ -108,7 +108,7 @@ const DriverRegistrationForm = () => {
 
           {/* Grid Layout for Input Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
+            {[ 
               { name: "name", label: "Name", type: "text" },
               { name: "email", label: "Email", type: "email" },
               { name: "password", label: "Password", type: "password" },
@@ -117,7 +117,7 @@ const DriverRegistrationForm = () => {
               { name: "vehicle_license_number", label: "Vehicle License Number", type: "text" },
               { name: "date_of_birth", label: "Date of Birth", type: "date" },
             ].map(({ name, label, type }) => (
-              <div key={name}>
+              <div key={name} className="flex flex-col">
                 <label className="block text-sm font-medium text-gray-200 mb-1" htmlFor={name}>
                   {label}
                 </label>
@@ -135,7 +135,7 @@ const DriverRegistrationForm = () => {
           </div>
 
           {/* File Upload */}
-          <div>
+          <div className="flex flex-col">
             <label className="block text-sm font-medium text-gray-200 mb-1">
               Upload License Document
             </label>

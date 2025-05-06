@@ -9,13 +9,13 @@ import {
   TextField,
   Alert,
   Divider,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { RiLoginCircleFill } from "react-icons/ri";
 import { keyframes } from "@emotion/react";
-import GoogleSignInButton
- from "../Component/Googlesigninbutton";// Updated component with icon
+import GoogleSignInButton from "../Component/Googlesigninbutton";
 
-// Floating animation for the login card
 const float = keyframes`
   0% { transform: translateY(0px); }
   50% { transform: translateY(-8px); }
@@ -29,9 +29,11 @@ const LoginPage = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   const handleLogin = async (e) => {
     e.preventDefault();
-
     try {
       const response = await login(email, password);
       if (response.user) {
@@ -55,7 +57,7 @@ const LoginPage = () => {
         backgroundSize: "cover",
         backgroundPosition: "center",
         position: "relative",
-        p: 2,
+        p: isMobile ? 2 : 4,
       }}
     >
       {/* Dark translucent overlay */}
@@ -75,8 +77,8 @@ const LoginPage = () => {
           position: "relative",
           zIndex: 1,
           width: "100%",
-          maxWidth: "400px",
-          p: 4,
+          maxWidth: isMobile ? "95%" : "400px",
+          p: isMobile ? 3 : 4,
           borderRadius: 3,
           background: "rgba(255, 255, 255, 0.15)",
           backdropFilter: "blur(10px)",
@@ -88,7 +90,7 @@ const LoginPage = () => {
       >
         {/* App Name */}
         <Typography
-          variant="h4"
+          variant={isMobile ? "h5" : "h4"}
           sx={{
             fontWeight: "bold",
             mb: 3,
@@ -97,6 +99,7 @@ const LoginPage = () => {
             justifyContent: "center",
             alignItems: "center",
             gap: 0.5,
+            flexWrap: "wrap",
           }}
         >
           {["a", "u", "t", "o", "-", "d", "r", "i", "v", "e"].map(
@@ -174,8 +177,7 @@ const LoginPage = () => {
             py: 1.5,
             mb: 2,
             borderRadius: 2,
-            background:
-              "linear-gradient(45deg, #cbe557, #b8d93e)",
+            background: "linear-gradient(45deg, #cbe557, #b8d93e)",
             color: "#000",
             fontWeight: "bold",
             boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
@@ -184,8 +186,7 @@ const LoginPage = () => {
             "&:hover": {
               transform: "scale(1.03)",
               boxShadow: "0 6px 8px rgba(0, 0, 0, 0.4)",
-              background:
-                "linear-gradient(45deg, #b8d93e, #cbe557)",
+              background: "linear-gradient(45deg, #b8d93e, #cbe557)",
             },
           }}
         >

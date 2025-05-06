@@ -131,7 +131,7 @@ const UserProfilePage = () => {
 
           {/* Profile Info Section */}
           <div className="relative px-8 pb-8">
-            <div className="flex flex-col sm:flex-row items-center">
+            <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start">
               <div className="relative">
                 <img
                   src={profileImage || "http://localhost:3000/uploads/users/profile/default.png"}
@@ -176,7 +176,7 @@ const UserProfilePage = () => {
             </div>
 
             {/* Stats Section */}
-            <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {stats.map((item, index) => (
                 <div
                   key={index}
