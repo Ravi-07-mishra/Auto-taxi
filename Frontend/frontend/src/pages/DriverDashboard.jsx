@@ -272,6 +272,31 @@ const DriverDashboard = () => {
 
   return (
     <div className="min-h-screen bg-cover bg-center bg-fixed" style={{ backgroundImage: 'url("driverbg3.jpg")' }}>
+  <button
+  onClick={toggleAvailability}
+  className={`fixed top-20 right-6 z-50 px-6 py-3 rounded-full font-semibold shadow-lg transition-all duration-300 flex items-center gap-2
+    ${driver?.isAvailable
+      ? 'bg-red-600 hover:bg-red-700 text-white'
+      : 'bg-green-600 hover:bg-green-700 text-white'}
+  `}
+>
+  {driver?.isAvailable ? (
+    <>
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M18 12H6" />
+      </svg>
+      Go Offline
+    </>
+  ) : (
+    <>
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" />
+      </svg>
+      Go Online
+    </>
+  )}
+</button>
+
       {/* Hero Section */}
       <section className="h-screen flex items-center justify-center relative">
         <div className="text-center z-10">
@@ -370,115 +395,116 @@ const DriverDashboard = () => {
       </section>
 
       {/* Active Bookings Section */}
+     
       <section className="py-20 bg-transparent relative z-10">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-white mb-12 text-center">Your Active Bookings</h2>
-          <div className="relative">
-            <Slider ref={sliderRef} {...carouselSettings}>
-              {bookings.map((booking) => (
-                <div key={booking._id} className="px-4">
-                  {/* Booking Card */}
-                  <div className="bg-white/10 backdrop-blur-md rounded-xl overflow-hidden shadow-2xl border border-white/10 transition-all duration-300 hover:shadow-3xl hover:scale-105">
-                    <div className="p-6">
-                      {/* User Info */}
-                      <div className="flex items-center mb-6">
-                        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-indigo-300/50">
-                          <img
-                            src={booking.userImage || "/placeholder.svg?height=64&width=64"}
-                            alt="User"
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="ml-4">
-                          <h3 className="font-semibold text-xl text-white">{booking.userName || "User"}</h3>
-                          <span
-                            className={`text-sm px-2 py-1 rounded-full ${
-                              booking.status === "completed"
-                                ? "bg-green-500/20 text-green-400"
-                                : booking.status === "in-progress"
-                                ? "bg-yellow-500/20 text-yellow-400"
-                                : "bg-indigo-500/20 text-indigo-400"
-                            }`}
-                          >
-                            {booking.status || "Active"}
-                          </span>
-                        </div>
-                      </div>
+  <div className="container mx-auto px-4">
+    <h2 className="text-3xl font-bold text-white mb-12 text-center">
+      Your Active Bookings
+    </h2>
+    <div className="relative max-w-3xl mx-auto">
+      <Slider ref={sliderRef} {...carouselSettings}>
+        {bookings.map((booking) => {
+          const id = booking._id.toString();
+          return (
+            <div key={id} className="px-2 sm:px-4">
+              {/* Booking Card */}
+              <div className="bg-gradient-to-br from-gray-800/80 to-indigo-900/80 backdrop-blur-lg rounded-2xl overflow-hidden shadow-2xl border border-white/10 transition-all duration-300 hover:shadow-indigo-500/20 hover:scale-105">
+                
+                {/* Card Header */}
+                <div className="p-6 pb-4 border-b border-white/10 flex items-center">
+                  <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-indigo-400/50 shadow-md">
+                    <img
+                      src={booking.userImage || "/placeholder.svg?height=64&width=64"}
+                      alt="User"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="font-semibold text-xl text-white">
+                      {booking.userName || "User"}
+                    </h3>
+                    <span
+                      className={`text-sm px-2 py-1 rounded-full ${
+                        booking.status === "completed"
+                          ? "bg-green-500/20 text-green-400"
+                          : booking.status === "in-progress"
+                          ? "bg-yellow-500/20 text-yellow-400"
+                          : "bg-indigo-500/20 text-indigo-400"
+                      }`}
+                    >
+                      {booking.status || "Active"}
+                    </span>
+                  </div>
+                </div>
 
-                      {/* Booking Details */}
-                      <div className="space-y-3 mb-6">
-                        <div className="flex items-start space-x-2">
-                          <MapPin className="w-5 h-5 text-green-400 mt-1" />
-                          <div>
-                            <p className="text-indigo-200 text-xs">Pickup Location</p>
-                            <p className="text-white font-medium text-sm">
-                              {addresses[booking._id]?.pickupAddress || "Loading address..."}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-start space-x-2">
-                          <MapPin className="w-5 h-5 text-red-400 mt-1" />
-                          <div>
-                            <p className="text-indigo-200 text-xs">Destination</p>
-                            <p className="text-white font-medium text-sm">
-                              {addresses[booking._id]?.destinationAddress || "Loading address..."}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-start space-x-2">
-                          <DollarSign className="w-5 h-5 text-yellow-400 mt-1" />
-                          <div>
-                            <p className="text-indigo-200 text-xs">Price</p>
-                            <p className="text-white font-medium text-sm">${booking.price || "N/A"}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex justify-between items-center gap-4">
-                        <button
-                          onClick={() => handleMarkAsCompleted(booking._id)}
-                          className="bg-gradient-to-r from-green-600 to-green-700 text-white py-2 px-4 rounded-lg transition-all duration-300 hover:from-green-700 hover:to-green-800 flex items-center justify-center gap-2 transform hover:scale-105"
-                        >
-                          <Check className="w-4 h-4" />
-                          Mark as Completed
-                        </button>
-                        <button
-                          onClick={() => handleCancelBooking(booking._id)}
-                          className="bg-gradient-to-r from-red-600 to-red-700 text-white py-2 px-4 rounded-lg transition-all duration-300 hover:from-red-700 hover:to-red-800 flex items-center justify-center gap-2 transform hover:scale-105"
-                        >
-                          <X className="w-4 h-4" />
-                          Cancel
-                        </button>
-                      </div>
+                {/* Card Body */}
+                <div className="p-6 space-y-3">
+                  <div className="flex items-start space-x-2">
+                    <MapPin className="w-5 h-5 text-indigo-300 mt-1" />
+                    <div>
+                      <p className="text-indigo-300/80 text-xs uppercase tracking-wider mb-1">
+                        Pickup Location
+                      </p>
+                      <p className="text-white font-medium">
+                        {addresses[id]?.pickupAddress || "Loading address..."}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <MapPin className="w-5 h-5 text-indigo-300 mt-1" />
+                    <div>
+                      <p className="text-indigo-300/80 text-xs uppercase tracking-wider mb-1">
+                        Destination
+                      </p>
+                      <p className="text-white font-medium">
+                        {addresses[id]?.destinationAddress || "Loading address..."}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <DollarSign className="w-5 h-5 text-indigo-300 mt-1" />
+                    <div>
+                      <p className="text-indigo-300/80 text-xs uppercase tracking-wider mb-1">
+                        Price
+                      </p>
+                      <p className="text-white font-medium">
+                        ${booking.price || "N/A"}
+                      </p>
                     </div>
                   </div>
                 </div>
-              ))}
-            </Slider>
-          </div>
-        </div>
-      </section>
+
+                {/* Actions */}
+                <div className="p-6 pt-0 flex justify-between gap-3">
+                  {booking.status === "Accepted" && (
+                    <button
+                      onClick={() => navigate(`/driver/drive/${id}`)}
+                      className="bg-indigo-600/90 text-white font-medium py-3 px-4 rounded-lg shadow hover:bg-indigo-700 transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-2"
+                    >
+                      <Check className="w-4 h-4" />
+                      Start Ride
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleCancelBooking(id)}
+                    className="bg-gradient-to-r from-red-600 to-red-700 text-white py-3 rounded-lg transition-all duration-300 hover:from-red-700 hover:to-red-800 hover:scale-[1.02] flex items-center justify-center gap-2"
+                  >
+                    <X className="w-4 h-4" />
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </Slider>
+    </div>
+  </div>
+</section>
+
 
       {/* Footer */}
-      <footer className="bg-indigo-900 bg-opacity-80 py-6">
-        <div className="container mx-auto px-4 flex justify-between items-center">
-          <Button
-            onClick={toggleAvailability}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg transition-colors duration-300"
-          >
-            Toggle Availability
-          </Button>
-          <Button
-            onClick={logout}
-            className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition-colors duration-300"
-          >
-            Logout
-          </Button>
-        </div>
-      </footer>
+   
     </div>
   );
 };

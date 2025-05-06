@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom"
 import io from "socket.io-client"
 import { TextField, Button, CircularProgress, Typography } from "@mui/material"
 import { useAuth } from "../Context/userContext"
-import { MapPin, Navigation, Search, Calendar, ArrowRight } from "lucide-react"
+import { MapPin, Navigation, ArrowRight } from "lucide-react"
 
 // OpenCage Geocoder API Key
 const OPEN_CAGE_API_KEY = import.meta.env.VITE_OPEN_CAGE_API_KEY
@@ -154,141 +154,137 @@ const Bookdrive = () => {
     if (type === "pickup") {
       setFormData((prev) => ({ ...prev, pickupLocation: location }))
       setPickupQuery(selectedLocation.formatted)
+      setPickupSuggestions([])
     } else {
       setFormData((prev) => ({ ...prev, destinationLocation: location }))
       setDestinationQuery(selectedLocation.formatted)
-    }
-
-    if (type === "pickup") {
-      setPickupSuggestions([])
-    } else {
       setDestinationSuggestions([])
     }
   }
 
   return (
-    <div className="min-h-screen bg-[#121212] text-white pt-16">
-      {" "}
-      {/* Added pt-16 for navbar space */}
+    <div className="min-h-screen bg-[#121212] text-white pt-16 px-2 sm:px-4">
       {user ? (
-        <div className="container mx-auto px-4 py-8 space-y-8">
-          <div className="text-center">
-          <Typography
-  variant="h2"
-  sx={{
-    fontSize: { xs: '2.25rem', md: '3.75rem' }, // Equivalent to text-4xl and md:text-6xl
-    fontWeight: 'bold',
-    marginBottom: '2rem', // Equivalent to mb-8
-  }}
->
-  Book Your Ride
-</Typography>
-
-
+        <div className="container mx-auto px-2 sm:px-4 py-8 space-y-8">
+          {/* Heading */}
+          <div className="text-center px-2">
+            <Typography
+              variant="h2"
+              sx={{
+                fontSize: { xs: '2.25rem', md: '3.75rem' },
+                fontWeight: 'bold',
+                marginBottom: '2rem',
+              }}
+            >
+              Book Your Ride
+            </Typography>
             <Typography variant="body1" className="text-gray-400">
               Enter your journey details below
             </Typography>
           </div>
 
-          <div className="max-w-5xl mx-auto">
+          {/* Form */}
+          <div className="w-full max-w-5xl mx-auto px-2 sm:px-4">
             <form
               onSubmit={handleSubmit}
-              className="bg-[#1E1E1E]/80 backdrop-blur-md p-6 rounded-2xl shadow-[0_0_15px_rgba(192,255,62,0.1)] border border-[#2A2A2A]"
+              className="bg-[#1E1E1E]/80 backdrop-blur-md p-4 sm:p-6 rounded-2xl shadow-[0_0_15px_rgba(192,255,62,0.1)] border border-[#2A2A2A] space-y-4"
             >
-          <div className="flex flex-col md:flex-row gap-4">
-  <div className="flex-1 relative group">
-    <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#C0FF3E]">
-      <MapPin size={20} />
-    </div>
-    <TextField
-      placeholder="Pickup Location"
-      onChange={(e) => handleLocationChange(e, "pickup")}
-      value={pickupQuery || ""}
-      fullWidth
-      variant="outlined"
-      style={{ color: 'white' }}
-      InputLabelProps={{
-        className: "text-white pl-10",
-        shrink: true,
-      }}
-      InputProps={{
-        className: "rounded-xl bg-[#2A2A2A] text-white pl-12",
-        sx: {
-          color: 'white',  // Ensure input text is white
-          "& .MuiOutlinedInput-notchedOutline": {
-            borderColor: "#3A3A3A",
-          },
-          "&:hover .MuiOutlinedInput-notchedOutline": {
-            borderColor: "#C0FF3E",
-          },
-          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-            borderColor: "#C0FF3E",
-          },
-        },
-      }}
-    />
-    {pickupSuggestions.length > 0 && (
-      <div className="relative w-full mt-2 bg-[#2A2A2A] rounded-xl shadow-lg z-[99999] border border-[#3A3A3A] max-h-60 overflow-auto">
-        {pickupSuggestions.map((suggestion) => (
-          <div
-            key={suggestion.place_id}
-            className="p-3 cursor-pointer hover:bg-[#3A3A3A] transition-colors duration-200 flex items-center gap-2"
-            onClick={() => handleLocationSelect(suggestion, "pickup")}
-          >
-            <MapPin size={16} className="text-[#C0FF3E]" />
-            {suggestion.formatted}
-          </div>
-        ))}
-      </div>
-    )}
-  </div>
-
-  <div className="flex-1 relative group">
-    <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#C0FF3E]">
-      <Navigation size={20} />
-    </div>
-    <TextField
-      placeholder="Destination Location"
-      onChange={(e) => handleLocationChange(e, "destination")}
-      value={destinationQuery || ""}
-      fullWidth
-      variant="outlined"
-      InputLabelProps={{
-        className: "text-gray-400 pl-10",
-        shrink: true,
-      }}
-      InputProps={{
-        className: "rounded-xl bg-[#2A2A2A] text-white pl-12",
-        sx: {
-          color: 'white',  // Ensure input text is white
-          "& .MuiOutlinedInput-notchedOutline": {
-            borderColor: "#3A3A3A",
-          },
-          "&:hover .MuiOutlinedInput-notchedOutline": {
-            borderColor: "#C0FF3E",
-          },
-          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-            borderColor: "#C0FF3E",
-          },
-        },
-      }}
-    />
-    {destinationSuggestions.length > 0 && (
-      <div className="relative w-full mt-2 bg-[#2A2A2A] rounded-xl shadow-lg z-[100] border border-[#3A3A3A]">
-        {destinationSuggestions.map((suggestion) => (
-          <div
-            key={suggestion.place_id}
-            className="p-3 cursor-pointer hover:bg-[#3A3A3A] transition-colors duration-200 flex items-center gap-2"
-            onClick={() => handleLocationSelect(suggestion, "destination")}
-          >
-            <Navigation size={16} className="text-[#C0FF3E]" />
-            {suggestion.formatted}
-          </div>
-        ))}
+              <div className="flex flex-col md:flex-row gap-4 w-full">
+                {/* Pickup */}
+                <div className="flex-1 relative group">
+                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#C0FF3E]">
+                    <MapPin size={20} />
+                  </div>
+                  <TextField
+                    placeholder="Pickup Location"
+                    onChange={(e) => handleLocationChange(e, "pickup")}
+                    value={pickupQuery || ""}
+                    fullWidth
+                    variant="outlined"
+                    InputLabelProps={{
+                      className: "text-white pl-10",
+                      shrink: true,
+                    }}
+                    InputProps={{
+                      className: "rounded-xl bg-[#2A2A2A] text-white pl-12",
+                      sx: {
+                        color: 'white',
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "#3A3A3A",
+                        },
+                        "&:hover .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "#C0FF3E",
+                        },
+                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "#C0FF3E",
+                        },
+                      },
+                    }}
+                  />
+                  {pickupSuggestions.length > 0 && (
+                    <div className="relative w-full mt-2 bg-[#2A2A2A] rounded-xl shadow-lg z-[99999] border border-[#3A3A3A] max-h-60 overflow-auto">
+                      {pickupSuggestions.map((suggestion) => (
+                        <div
+                          key={suggestion.place_id}
+                          className="p-3 cursor-pointer hover:bg-[#3A3A3A] transition-colors duration-200 flex items-center gap-2"
+                          onClick={() => handleLocationSelect(suggestion, "pickup")}
+                        >
+                          <MapPin size={16} className="text-[#C0FF3E]" />
+                          {suggestion.formatted}
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
 
+                {/* Destination */}
+                <div className="flex-1 relative group">
+                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#C0FF3E]">
+                    <Navigation size={20} />
+                  </div>
+                  <TextField
+                    placeholder="Destination Location"
+                    onChange={(e) => handleLocationChange(e, "destination")}
+                    value={destinationQuery || ""}
+                    fullWidth
+                    variant="outlined"
+                    InputLabelProps={{
+                      className: "text-gray-400 pl-10",
+                      shrink: true,
+                    }}
+                    InputProps={{
+                      className: "rounded-xl bg-[#2A2A2A] text-white pl-12",
+                      sx: {
+                        color: 'white',
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "#3A3A3A",
+                        },
+                        "&:hover .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "#C0FF3E",
+                        },
+                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "#C0FF3E",
+                        },
+                      },
+                    }}
+                  />
+                  {destinationSuggestions.length > 0 && (
+                    <div className="relative w-full mt-2 bg-[#2A2A2A] rounded-xl shadow-lg z-[100] border border-[#3A3A3A]">
+                      {destinationSuggestions.map((suggestion) => (
+                        <div
+                          key={suggestion.place_id}
+                          className="p-3 cursor-pointer hover:bg-[#3A3A3A] transition-colors duration-200 flex items-center gap-2"
+                          onClick={() => handleLocationSelect(suggestion, "destination")}
+                        >
+                          <Navigation size={16} className="text-[#C0FF3E]" />
+                          {suggestion.formatted}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Submit */}
                 <Button
                   type="submit"
                   disabled={loading}
@@ -299,7 +295,7 @@ const Bookdrive = () => {
                   ) : (
                     <>
                       <ArrowRight size={20} />
-                      <span style={{color:'white'}}>Book Drive</span>
+                      <span style={{ color: 'white' }}>Book Drive</span>
                     </>
                   )}
                 </Button>
@@ -307,7 +303,8 @@ const Bookdrive = () => {
             </form>
           </div>
 
-          <div className="w-full h-[500px] rounded-2xl position-relative overflow-hidden shadow-lg border z-[1000] border-[#2A2A2A]">
+          {/* Map */}
+          <div className="w-full h-[300px] sm:h-[400px] md:h-[500px] rounded-2xl overflow-hidden shadow-lg border border-[#2A2A2A]">
             <MapSelector
               pickupLocation={formData.pickupLocation}
               destinationLocation={formData.destinationLocation}
@@ -335,4 +332,3 @@ const Bookdrive = () => {
 }
 
 export default Bookdrive
-

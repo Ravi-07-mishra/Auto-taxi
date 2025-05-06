@@ -186,35 +186,40 @@ const GetAllBookingRequests = async (req, res) => {
          }    
   const updateAvailability = async (req, res) => { const { driverId, isAvailable } = req.body; try { const driver = await Driver.findByIdAndUpdate(driverId, { isAvailable }, { new: true }); if (!driver) { return res.status(404).json({ msg: 'Driver not found' }); } res.status(200).json({ msg: 'Driver availability updated', driver }); } catch (error) { console.error('Error updating availability:', error); res.status(500).json({ msg: 'Server error' }); } };
   const GetSubscriptionStatus = async (req, res) => {
-    const { driverId } = req.params; // Fixed req.params access
+    const { driverId } = req.params;
+  
     try {
-      const subscription = await Subscriptionmodel.findOne({ driver_id: driverId }); // Ensure driver_id is used
-      if (!subscription) {
+      const latestSubscription = await Subscriptionmodel.findOne({ driver_id: driverId })
+        .sort({ subscription_end_date: -1 }) // Sort by end date in descending order
+        .limit(1); // Ensure only the latest is retrieved
+  
+      if (!latestSubscription) {
         return res.status(404).json({
           message: "No subscription history found for this driver ID",
         });
       }
   
       // Check the subscription status
-      if (subscription.status === "active") {
+      if (latestSubscription.status === "active") {
         return res.status(200).json({
           isSubscribed: true,
-          planId: subscription.plan_id,
-          expiryDate: subscription.subscription_end_date,
+          planId: latestSubscription.plan_id,
+          expiryDate: latestSubscription.subscription_end_date,
           status: "active",
         });
       }
   
       return res.status(200).json({
         isSubscribed: false,
-        planId: subscription.plan_id,
-        expiryDate: subscription.subscription_end_date,
-        status: subscription.status, // Can be "expired" or "canceled"
+        planId: latestSubscription.plan_id,
+        expiryDate: latestSubscription.subscription_end_date,
+        status: latestSubscription.status, // Can be "expired" or "canceled"
       });
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
   };
+  
   const Logout = async (req, res) => {
     try {
       // Check if the signed cookie exists

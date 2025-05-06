@@ -94,7 +94,7 @@ const ProfilePage = () => {
       transition={{ duration: 0.5 }}
       className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black py-12 px-4 sm:px-6 lg:px-8"
     >
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <div className="bg-gray-900 shadow-2xl rounded-3xl overflow-hidden">
           {/* Header Section */}
           <div className="relative h-56 bg-gradient-to-r from-gray-800 to-gray-900">
@@ -108,7 +108,7 @@ const ProfilePage = () => {
                 <img
                   src={profileImage || "/placeholder-avatar.jpg"}
                   alt={driverName}
-                  className="w-40 h-40 rounded-full border-4 border-cyan-600 shadow-2xl -mt-20 z-10 object-cover"
+                  className="w-32 h-32 sm:w-40 sm:h-40 rounded-full border-4 border-cyan-600 shadow-2xl -mt-20 z-10 object-cover"
                 />
                 <label
                   htmlFor="profile-image-upload"
@@ -130,11 +130,11 @@ const ProfilePage = () => {
                 </label>
               </div>
               <div className="mt-6 sm:mt-0 sm:ml-8 text-center sm:text-left">
-                <h1 className="text-4xl font-bold text-white">{driverName}</h1>
-                <p className="text-lg text-gray-400">{email}</p>
+                <h1 className="text-2xl sm:text-4xl font-bold text-white">{driverName}</h1>
+                <p className="text-sm sm:text-lg text-gray-400">{email}</p>
                 <div className="mt-3 flex items-center justify-center sm:justify-start">
                   <FiStar className="text-yellow-500 mr-1" />
-                  <span className="text-2xl font-semibold text-white">{avgRating}</span>
+                  <span className="text-xl sm:text-2xl font-semibold text-white">{avgRating}</span>
                   <span className="ml-1 text-gray-400">/ 5.0</span>
                 </div>
               </div>
@@ -148,23 +148,23 @@ const ProfilePage = () => {
             </div>
 
             {/* Stats Section */}
-            <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
               {stats.map((item, index) => (
                 <div
                   key={index}
                   className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 flex flex-col items-center shadow-lg hover:shadow-xl transition-shadow duration-300"
                 >
                   <item.icon className="h-10 w-10 text-cyan-600 mb-4" />
-                  <h2 className="text-xl font-semibold text-white">{item.label}</h2>
-                  <p className="mt-2 text-4xl font-bold text-cyan-600">{item.value}</p>
+                  <h2 className="text-lg sm:text-xl font-semibold text-white">{item.label}</h2>
+                  <p className="mt-2 text-3xl sm:text-4xl font-bold text-cyan-600">{item.value}</p>
                 </div>
               ))}
             </div>
 
             {/* About Section */}
             <div className="mt-10">
-              <h2 className="text-3xl font-bold text-white mb-6">About Me</h2>
-              <p className="text-gray-400 leading-relaxed text-lg">
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6">About Me</h2>
+              <p className="text-gray-400 leading-relaxed text-base sm:text-lg">
                 Passionate driver with over 5 years of experience in providing safe and efficient transportation
                 services. Known for punctuality, professionalism, and excellent customer service. Always striving to
                 ensure a comfortable and enjoyable ride for all passengers.
@@ -173,15 +173,15 @@ const ProfilePage = () => {
 
             {/* Achievements Section */}
             <div className="mt-10">
-              <h2 className="text-3xl font-bold text-white mb-6">Achievements</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6">Achievements</h2>
               <ul className="space-y-4">
-                <li className="flex items-center text-gray-400 text-lg">
+                <li className="flex items-center text-gray-400 text-sm sm:text-lg">
                   <FiAward className="text-cyan-600 mr-3" /> Driver of the Month - March 2023
                 </li>
-                <li className="flex items-center text-gray-400 text-lg">
+                <li className="flex items-center text-gray-400 text-sm sm:text-lg">
                   <FiAward className="text-cyan-600 mr-3" /> 1000 Rides Milestone
                 </li>
-                <li className="flex items-center text-gray-400 text-lg">
+                <li className="flex items-center text-gray-400 text-sm sm:text-lg">
                   <FiAward className="text-cyan-600 mr-3" /> Perfect 5-Star Rating Week
                 </li>
               </ul>

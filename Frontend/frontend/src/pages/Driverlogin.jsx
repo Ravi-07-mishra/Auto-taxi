@@ -7,9 +7,8 @@ import { Box, Button, Typography, TextField, Divider } from "@mui/material";
 import { RiLoginCircleFill } from "react-icons/ri";
 import toast from "react-hot-toast";
 import { keyframes } from "@emotion/react";
-import DriverGoogleSignInButton from "../Component/Drivergooglesigninbutton"; // adjust the path as needed
+import DriverGoogleSignInButton from "../Component/Drivergooglesigninbutton";
 
-// Floating animation for the login box
 const float = keyframes`
   0% { transform: translateY(0px); }
   50% { transform: translateY(-10px); }
@@ -32,7 +31,6 @@ const DriverLogin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       const data = await login(formData.email, formData.password);
       if (data && data.driver) {
@@ -61,24 +59,22 @@ const DriverLogin = () => {
               lat: position.coords.latitude,
               lng: position.coords.longitude,
             };
-
             if (socket?.connected) {
               socket.emit("driverLocation", location);
               console.log("Location sent:", location);
             } else {
-              console.error("Socket is not connected. Retrying...");
-              setTimeout(sendLocation, 5000); // Retry after 5 seconds
+              console.error("Socket not connected. Retrying...");
+              setTimeout(sendLocation, 5000);
             }
           },
           (error) => console.error("Geolocation error:", error.message)
         );
       } else {
-        console.error("Geolocation is not supported by this browser.");
+        console.error("Geolocation not supported.");
       }
     };
-
     sendLocation();
-    setInterval(sendLocation, 10000); // Send location every 10 seconds
+    setInterval(sendLocation, 10000);
   };
 
   return (
@@ -92,9 +88,10 @@ const DriverLogin = () => {
         backgroundSize: "cover",
         backgroundPosition: "center",
         position: "relative",
+        px: 2,
       }}
     >
-      {/* Dark Overlay */}
+      {/* Overlay */}
       <Box
         sx={{
           position: "absolute",
@@ -107,14 +104,14 @@ const DriverLogin = () => {
         }}
       />
 
-      {/* Login Form Container */}
+      {/* Login Box */}
       <Box
         component="form"
         onSubmit={handleSubmit}
         sx={{
           width: "100%",
-          maxWidth: "400px",
-          padding: 4,
+          maxWidth: { xs: "90%", sm: "400px" },
+          padding: { xs: 3, sm: 4 },
           borderRadius: "16px",
           background: "rgba(255, 255, 255, 0.1)",
           backdropFilter: "blur(10px)",
@@ -126,7 +123,6 @@ const DriverLogin = () => {
           animation: `${float} 4s ease-in-out infinite`,
         }}
       >
-        {/* Logo */}
         <Typography
           variant="h4"
           sx={{
@@ -136,6 +132,7 @@ const DriverLogin = () => {
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
+            flexWrap: "wrap",
             gap: "0.5rem",
           }}
         >
@@ -151,7 +148,13 @@ const DriverLogin = () => {
           )}
         </Typography>
 
-        <Typography variant="h5" textAlign="center" fontWeight={600} mb={3}>
+        <Typography
+          variant="h5"
+          textAlign="center"
+          fontWeight={600}
+          mb={3}
+          sx={{ fontSize: { xs: "1.2rem", sm: "1.5rem" } }}
+        >
           Driver Login
         </Typography>
 
@@ -164,6 +167,7 @@ const DriverLogin = () => {
               padding: 2,
               borderRadius: 1,
               mb: 3,
+              fontSize: "0.9rem",
             }}
           >
             {msg}
@@ -182,22 +186,13 @@ const DriverLogin = () => {
             required
             sx={{
               "& .MuiOutlinedInput-root": {
-                "& fieldset": {
-                  borderColor: "rgba(255, 255, 255, 0.3)",
-                },
+                "& fieldset": { borderColor: "rgba(255, 255, 255, 0.3)" },
                 "&:hover fieldset": {
                   borderColor: "rgba(255, 255, 255, 0.5)",
                 },
-                "&.Mui-focused fieldset": {
-                  borderColor: "#cbe557",
-                },
+                "&.Mui-focused fieldset": { borderColor: "#cbe557" },
               },
-              "& .MuiInputLabel-root": {
-                color: "rgba(255, 255, 255, 0.7)",
-              },
-              "& .MuiInputBase-input": {
-                color: "#fff",
-              },
+              "& .MuiInputBase-input": { color: "#fff" },
             }}
           />
         </Box>
@@ -214,22 +209,13 @@ const DriverLogin = () => {
             required
             sx={{
               "& .MuiOutlinedInput-root": {
-                "& fieldset": {
-                  borderColor: "rgba(255, 255, 255, 0.3)",
-                },
+                "& fieldset": { borderColor: "rgba(255, 255, 255, 0.3)" },
                 "&:hover fieldset": {
                   borderColor: "rgba(255, 255, 255, 0.5)",
                 },
-                "&.Mui-focused fieldset": {
-                  borderColor: "#cbe557",
-                },
+                "&.Mui-focused fieldset": { borderColor: "#cbe557" },
               },
-              "& .MuiInputLabel-root": {
-                color: "rgba(255, 255, 255, 0.7)",
-              },
-              "& .MuiInputBase-input": {
-                color: "#fff",
-              },
+              "& .MuiInputBase-input": { color: "#fff" },
             }}
           />
         </Box>
@@ -260,7 +246,6 @@ const DriverLogin = () => {
 
         <Divider sx={{ my: 2, backgroundColor: "rgba(255,255,255,0.5)" }} />
 
-        {/* Google Sign In Button */}
         <DriverGoogleSignInButton />
       </Box>
     </Box>

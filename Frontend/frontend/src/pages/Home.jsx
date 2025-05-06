@@ -1,9 +1,21 @@
 import { useState, useRef, useEffect } from "react";
 import React from "react";
 import { Link } from "react-router-dom";
-import { Users, Car, Clock, Mail, Phone, MapPin, Menu, X, Star, ChevronLeft, ChevronRight } from "lucide-react";
-import { Carousel } from 'react-responsive-carousel';
-import 'react-responsive-carousel/lib/styles/carousel.min.css';
+import {
+  Users,
+  Car,
+  Clock,
+  Mail,
+  Phone,
+  MapPin,
+  Menu,
+  X,
+  Star,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import { Carousel } from "react-responsive-carousel";
+import "react-responsive-carousel/lib/styles/carousel.min.css";
 
 const NavLink = ({ href, text, currentPath, onClick }) => {
   const isActive = currentPath === href;
@@ -24,11 +36,11 @@ const Home = () => {
   const [isCardVisible, setIsCardVisible] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [topDrivers, setTopDrivers] = useState([]);
-
-const [error, setError] = useState(null);
+  const [error, setError] = useState(null);
   const [loadingDrivers, setLoadingDrivers] = useState(true);
   const contactRef = useRef(null);
   const topDriversRef = useRef(null);
+
   const handleGetStartedClick = () => {
     setIsCardVisible(true);
   };
@@ -46,35 +58,33 @@ const [error, setError] = useState(null);
     setIsMenuOpen(!isMenuOpen);
   };
 
-
   useEffect(() => {
     const fetchTopDrivers = async () => {
       try {
         setLoadingDrivers(true);
         setError(null);
-        
-        const response = await fetch('/api/driver/top-rated');
+
+        const response = await fetch("/api/driver/top-rated");
         const result = await response.json();
-        
+
         if (!response.ok) {
-          throw new Error(result.error || 'Failed to fetch drivers');
+          throw new Error(result.error || "Failed to fetch drivers");
         }
-    
-        // Normalize driver data
-        const normalizedDrivers = (result.data || []).map(driver => ({
+
+        const normalizedDrivers = (result.data || []).map((driver) => ({
           ...driver,
-          name: driver.name || 'Unknown Driver',
-          avgRating: typeof driver.avgRating === 'number' ? driver.avgRating : 0,
-          numRatings: typeof driver.numRatings === 'number' ? driver.numRatings : 0,
-          profileImage: driver.profileImage || '/default-driver.jpg'
+          name: driver.name || "Unknown Driver",
+          avgRating: typeof driver.avgRating === "number" ? driver.avgRating : 0,
+          numRatings:
+            typeof driver.numRatings === "number" ? driver.numRatings : 0,
+          profileImage: driver.profileImage || "/default-driver.jpg",
         }));
-    
+
         setTopDrivers(normalizedDrivers);
-        
       } catch (err) {
-        console.error('Fetch error:', err);
+        console.error("Fetch error:", err);
         setError(err.message);
-        setTopDrivers([]); // Set empty array on error
+        setTopDrivers([]);
       } finally {
         setLoadingDrivers(false);
       }
@@ -84,7 +94,6 @@ const [error, setError] = useState(null);
 
   return (
     <div className="relative min-h-screen">
-      {/* Background Video */}
       <video
         autoPlay
         loop
@@ -95,45 +104,37 @@ const [error, setError] = useState(null);
         Your browser does not support the video tag.
       </video>
 
-      {/* Overlay */}
       <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 z-10"></div>
 
-      {/* Content */}
       <div className="relative z-20">
-        {/* Navigation */}
+        {/* Navbar */}
         <nav className="fixed w-full z-30 top-0 left-0 p-4 bg-black bg-opacity-50">
-          <div className="container mx-auto flex items-center justify-between">
+          <div className="max-w-screen-xl mx-auto flex items-center justify-between w-full">
             <div className="flex items-center space-x-2">
-              <img
-                src="/carlogo.png"
-                alt="Auto-Drive Logo"
-                className="h-10 w-15"
-              />
+              <img src="/carlogo.png" alt="Logo" className="h-10 w-15" />
               <h1 className="text-2xl md:text-4xl font-extrabold tracking-wider shadow-md flex space-x-2">
-                {["Q", "U", "I", "C", "K", "-", "G", "O"].map(
-                  (letter, index) => (
-                    <span
-                      key={index}
-                      style={{ color: index % 2 === 0 ? "#cbe557" : "white" }}
-                    >
-                      {letter}
-                    </span>
-                  )
-                )}
+                {["Q", "U", "I", "C", "K", "-", "G", "O"].map((letter, i) => (
+                  <span
+                    key={i}
+                    style={{ color: i % 2 === 0 ? "#cbe557" : "white" }}
+                  >
+                    {letter}
+                  </span>
+                ))}
               </h1>
             </div>
 
             <div className="hidden md:flex gap-8">
               <NavLink href="/Home" text="Home" currentPath="/Home" />
               <button
-        onClick={() => {
-          topDriversRef.current?.scrollIntoView({ behavior: "smooth" });
-          setIsMenuOpen(false);
-        }}
-        className="text-white hover:text-[#cbe557] transition-colors"
-      >
-        Trusted Drivers
-      </button>
+                onClick={() => {
+                  topDriversRef.current?.scrollIntoView({ behavior: "smooth" });
+                  setIsMenuOpen(false);
+                }}
+                className="text-white hover:text-[#cbe557] transition-colors"
+              >
+                Trusted Drivers
+              </button>
               <NavLink
                 href="/OurServices"
                 text="Our Services"
@@ -155,22 +156,28 @@ const [error, setError] = useState(null);
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-90 z-40 flex flex-col items-center justify-center">
+          <div className="fixed inset-0 bg-black bg-opacity-90 z-40 flex flex-col items-center justify-center space-y-6">
+            <button 
+              className="absolute top-4 right-4 text-white"
+              onClick={toggleMenu}
+            >
+              <X size={24} />
+            </button>
             <NavLink
               href="/Home"
               text="Home"
               currentPath="/Home"
               onClick={toggleMenu}
             />
-           <button
-    onClick={() => {
-      topDriversRef.current?.scrollIntoView({ behavior: "smooth" });
-      setIsMenuOpen(false);
-    }}
-    className="text-white hover:text-[#cbe557] transition-colors"
-  >
-    Trusted Drivers
-  </button>
+            <button
+              onClick={() => {
+                topDriversRef.current?.scrollIntoView({ behavior: "smooth" });
+                setIsMenuOpen(false);
+              }}
+              className="text-white hover:text-[#cbe557] transition-colors"
+            >
+              Trusted Drivers
+            </button>
             <NavLink
               href="/OurServices"
               text="Our Services"
@@ -182,44 +189,43 @@ const [error, setError] = useState(null);
                 scrollToContact();
                 toggleMenu();
               }}
-              className="bg-[#cbe557] text-black px-4 py-2 rounded-lg hover:bg-opacity-80 transition-all mt-4"
+              className="bg-[#cbe557] text-black px-4 py-2 rounded-lg hover:bg-opacity-80 transition-all"
             >
               Contact Us
             </button>
           </div>
         )}
 
-        {/* Hero Section */}
+        {/* Hero */}
         <section className="min-h-screen flex items-center justify-center px-4">
           <div className="text-center text-white">
-            <h2 className="text-4xl md:text-6xl font-bold mb-8" style={{fontFamily:"Merriweather"}}>
+            <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-8" style={{ fontFamily: "Merriweather" }}>
               Book Drives or Start Driving
             </h2>
             <button
               onClick={handleGetStartedClick}
-              className="bg-[#cbe557] text-gray-800 font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-[#b8d93e] hover:shadow-xl transition-all focus:outline-none focus:ring-2 focus:ring-[#a8c834] focus:ring-offset-2"
-              style={{ borderRadius: "10px" }}
+              className="bg-[#cbe557] text-gray-800 font-bold py-3 px-6 sm:px-8 rounded-lg shadow-lg hover:bg-[#b8d93e] hover:shadow-xl transition-all"
             >
               Get Started
             </button>
           </div>
         </section>
 
-        {/* Stats Section */}
+        {/* Stats */}
         <section className="py-20 bg-black bg-opacity-70">
-          <div className="container mx-auto px-4">
-            <div className="flex flex-col md:flex-row justify-around text-white gap-8 md:gap-0">
-              <div className="text-center">
+          <div className="max-w-screen-xl mx-auto px-4 w-full">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-white text-center">
+              <div>
                 <Users size={48} className="mx-auto mb-4 text-[#cbe557]" />
                 <h2 className="text-4xl md:text-5xl font-bold">20k+</h2>
                 <p className="text-xl">Users</p>
               </div>
-              <div className="text-center">
+              <div>
                 <Car size={48} className="mx-auto mb-4 text-[#cbe557]" />
                 <h2 className="text-4xl md:text-5xl font-bold">100+</h2>
                 <p className="text-xl">Drivers</p>
               </div>
-              <div className="text-center">
+              <div>
                 <Clock size={48} className="mx-auto mb-4 text-[#cbe557]" />
                 <h2 className="text-4xl md:text-5xl font-bold">50k+</h2>
                 <p className="text-xl">Hours Driven</p>
@@ -228,13 +234,13 @@ const [error, setError] = useState(null);
           </div>
         </section>
 
-        {/* Top Drivers Section */}
-        <section className="py-16 bg-black bg-opacity-80"  ref={topDriversRef}>
-          <div className="container mx-auto px-4">
+        {/* Top Drivers */}
+        <section className="py-16 bg-black bg-opacity-80" ref={topDriversRef}>
+          <div className="max-w-screen-xl mx-auto px-4 w-full">
             <h2 className="text-3xl md:text-4xl font-bold mb-12 text-center text-white">
               Our Top-Rated Drivers
             </h2>
-            
+
             {loadingDrivers ? (
               <div className="flex justify-center items-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#cbe557]"></div>
@@ -253,7 +259,7 @@ const [error, setError] = useState(null);
                       onClick={onClickHandler}
                       disabled={!hasPrev}
                       aria-label={label}
-                      className="absolute left-0 top-1/2 z-10 -translate-y-1/2 bg-[#cbe557] bg-opacity-80 p-2 rounded-full hover:bg-opacity-100 transition-all"
+                      className="absolute left-0 top-1/2 z-10 -translate-y-1/2 bg-[#cbe557] bg-opacity-80 p-2 rounded-full hover:bg-opacity-100"
                     >
                       <ChevronLeft className="h-6 w-6 text-black" />
                     </button>
@@ -263,23 +269,23 @@ const [error, setError] = useState(null);
                       onClick={onClickHandler}
                       disabled={!hasNext}
                       aria-label={label}
-                      className="absolute right-0 top-1/2 z-10 -translate-y-1/2 bg-[#cbe557] bg-opacity-80 p-2 rounded-full hover:bg-opacity-100 transition-all"
+                      className="absolute right-0 top-1/2 z-10 -translate-y-1/2 bg-[#cbe557] bg-opacity-80 p-2 rounded-full hover:bg-opacity-100"
                     >
                       <ChevronRight className="h-6 w-6 text-black" />
                     </button>
                   )}
                 >
                   {topDrivers.map((driver) => (
-                    <div key={driver._id} className="px-4 py-4">
+                    <div key={driver._id} className="px-2 sm:px-4 py-4">
                       <div className="bg-white bg-opacity-10 backdrop-blur-md rounded-xl p-6 shadow-lg border border-[#cbe557] border-opacity-30">
                         <div className="flex flex-col items-center">
                           <div className="relative mb-6">
                             <img
-                              src={`http://localhost:3000/${driver.profileImage}` || '/default-driver.jpg'}
+                              src={`http://localhost:3000/${driver.profileImage}`}
                               alt={driver.name}
                               className="w-32 h-32 rounded-full object-cover border-4 border-[#cbe557]"
                               onError={(e) => {
-                                e.target.src = '/default-driver.jpg';
+                                e.target.src = "/default-driver.jpg";
                               }}
                             />
                             <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-[#cbe557] text-black px-3 py-1 rounded-full flex items-center">
@@ -298,8 +304,8 @@ const [error, setError] = useState(null);
                                 key={i}
                                 className={`h-5 w-5 ${
                                   i < Math.round(driver.avgRating)
-                                    ? 'fill-[#cbe557] text-[#cbe557]'
-                                    : 'text-gray-400'
+                                    ? "fill-[#cbe557] text-[#cbe557]"
+                                    : "text-gray-400"
                                 }`}
                               />
                             ))}
@@ -309,14 +315,7 @@ const [error, setError] = useState(null);
                     </div>
                   ))}
                 </Carousel>
-                <div className="text-center mt-8">
-                  <Link 
-                    to="/TrustedDrivers" 
-                    className="inline-block bg-[#cbe557] text-black px-6 py-2 rounded-lg hover:bg-opacity-90 transition-all"
-                  >
-                    View All Drivers
-                  </Link>
-                </div>
+                
               </div>
             ) : (
               <div className="text-center text-gray-400 py-12">
@@ -326,12 +325,12 @@ const [error, setError] = useState(null);
           </div>
         </section>
 
-        {/* Contact Section */}
+        {/* Contact */}
         <section
           ref={contactRef}
           className="py-20 bg-black bg-opacity-70 text-white"
         >
-          <div className="container mx-auto px-4">
+          <div className="max-w-screen-xl mx-auto px-4 w-full">
             <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center">
               Contact Us
             </h2>
@@ -341,7 +340,7 @@ const [error, setError] = useState(null);
               satisfaction matters to us, so don't hesitate to contact us
               anytime.
             </p>
-            <div className="flex flex-col md:flex-row justify-center items-center space-y-4 md:space-y-0 md:space-x-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 justify-items-center">
               <div className="flex items-center">
                 <Mail className="mr-2 text-[#cbe557]" />
                 <span>info@auto-drive.com</span>
@@ -358,10 +357,10 @@ const [error, setError] = useState(null);
           </div>
         </section>
 
-        {/* Card Prompt */}
+        {/* Role Selection Card */}
         {isCardVisible && (
           <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 z-50 p-4">
-            <div className="bg-white rounded-lg overflow-hidden shadow-lg w-full max-w-4xl h-3/4 flex flex-col md:flex-row">
+            <div className="bg-white rounded-lg overflow-hidden shadow-lg w-full max-w-4xl h-auto md:h-3/4 flex flex-col md:flex-row">
               <Link
                 to="/userhome"
                 className="w-full md:w-1/2 h-1/2 md:h-full relative group"
@@ -370,7 +369,7 @@ const [error, setError] = useState(null);
                   <img
                     src="/user.jpg"
                     alt="User"
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-cover object-center"
                   />
                   <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center group-hover:bg-opacity-50 transition">
                     <h3 className="text-white text-3xl font-bold">User</h3>
@@ -386,7 +385,7 @@ const [error, setError] = useState(null);
                   <img
                     src="/driver.jpg"
                     alt="Driver"
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-cover object-center"
                   />
                   <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center group-hover:bg-opacity-50 transition">
                     <h3 className="text-white text-3xl font-bold">Driver</h3>
@@ -394,7 +393,6 @@ const [error, setError] = useState(null);
                 </div>
               </Link>
             </div>
-
             <button
               onClick={handleCloseCard}
               className="absolute top-4 right-4 bg-red-500 text-white font-bold py-2 px-4 rounded-full hover:bg-red-600 transition-all"

@@ -1,8 +1,7 @@
-// Signup.jsx
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../Context/userContext";
-import GoogleSignInButton from "../Component/Googlesigninbutton"; // Import the Google button
+import GoogleSignInButton from "../Component/Googlesigninbutton";
 
 const Signup = () => {
   const { signup } = useAuth();
@@ -24,7 +23,7 @@ const Signup = () => {
     try {
       await signup(name, email, password, otp);
       alert("Signup successful!");
-      navigate("/userhome"); // Redirect to user home after successful signup
+      navigate("/userhome");
     } catch (err) {
       setError(err.message || "Something went wrong. Please try again.");
     } finally {
@@ -34,9 +33,9 @@ const Signup = () => {
 
   return (
     <div
-      className="flex justify-center items-center min-h-screen relative"
+      className="flex justify-center items-center min-h-screen relative px-4 sm:px-6"
       style={{
-        backgroundImage: "url('/bg1.jpg')", // Replace with your image path
+        backgroundImage: "url('/bg1.jpg')",
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
@@ -45,11 +44,9 @@ const Signup = () => {
       <div className="absolute inset-0 bg-black/50"></div>
 
       {/* Signup Form Container */}
-      <div
-        className="w-full max-w-md bg-white/10 backdrop-blur-lg rounded-xl shadow-lg p-8 relative z-10 border border-white/10 transition-all duration-300 hover:scale-105 hover:shadow-2xl"
-      >
+      <div className="w-full max-w-md bg-white/10 backdrop-blur-lg rounded-xl shadow-lg p-6 sm:p-8 relative z-10 border border-white/10 transition-all duration-300 hover:scale-105 hover:shadow-2xl">
         {/* Logo */}
-        <h1 className="text-2xl md:text-3xl font-extrabold lowercase tracking-wider shadow-md flex justify-center items-center gap-2 mb-6">
+        <h1 className="text-2xl md:text-3xl font-extrabold lowercase tracking-wider shadow-md flex justify-center items-center gap-2 mb-6 flex-wrap">
           {["a", "u", "t", "o", "-", "d", "r", "i", "v", "e"].map((letter, index) => (
             <span key={index} style={{ color: index % 2 === 0 ? "#cbe557" : "white" }}>
               {letter}
@@ -61,7 +58,7 @@ const Signup = () => {
           <h2 className="text-xl font-bold text-center text-white">Sign Up</h2>
 
           {error && (
-            <div className="bg-red-100 text-red-700 border border-red-400 rounded p-3 text-sm">
+            <div className="bg-red-100 text-red-700 border border-red-400 rounded p-3 text-sm break-words">
               {error}
             </div>
           )}
