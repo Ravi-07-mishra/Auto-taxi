@@ -48,7 +48,7 @@ const Payment = () => {
   // ─── 2. Fetch booking price ───────────────────────────────────────
   useEffect(() => {
     axios
-      .get(`${API_BASE}/api/user/driver/${bookingId}`, { withCredentials: true })
+      .get(`${API_BASE}/user/driver/${bookingId}`, { withCredentials: true })
       .then(({ data }) => {
         setRidePrice(data.booking.price);
       })
@@ -63,7 +63,7 @@ const Payment = () => {
     const fetchClientToken = async () => {
       try {
         const { data } = await axios.get(
-          `${API_BASE}/api/payment/braintree/token`,
+          `${API_BASE}/payment/braintree/token`,
           { withCredentials: true }
         );
         setClientToken(data.clientToken);
@@ -145,7 +145,7 @@ const Payment = () => {
     try {
       const { nonce } = await instance.requestPaymentMethod();
       const { data } = await axios.post(
-        `${API_BASE}/api/payment/braintree/pay`,
+        `${API_BASE}/payment/braintree/pay`,
         { nonce, bookingId, amount: ridePrice },
         { withCredentials: true }
       );

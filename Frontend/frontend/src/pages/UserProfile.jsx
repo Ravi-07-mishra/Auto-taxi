@@ -72,7 +72,7 @@ const UserProfilePage = () => {
     if (!userId) return;
     try {
       const response = await axios.get(
-        `${API_BASE}/api/user/profile/${userId}`,
+        `${API_BASE}/user/profile/${userId}`,
         { withCredentials: true }
       );
       const updatedUser = response.data.data.user;
@@ -130,7 +130,7 @@ const UserProfilePage = () => {
 
     try {
       const response = await axios.post(
-        `${API_BASE}/api/user/uploadProfileImage/${userId}`,
+        `${API_BASE}/user/uploadProfileImage/${userId}`,
         formData,
         { withCredentials: true }
       );

@@ -56,7 +56,7 @@ const ProfilePage = () => {
     setError(null);
     try {
       const response = await axios.get(
-        `${API_BASE}/api/driver/profile/${driverId}`,
+        `${API_BASE}/driver/profile/${driverId}`,
         { withCredentials: true }
       );
       const updatedDriver = response?.data?.data?.driver;
@@ -100,7 +100,7 @@ const ProfilePage = () => {
       formData.append("type", "profile");
       try {
         const response = await axios.post(
-          `${API_BASE}/api/driver/uploadProfileImage/${driverIdRef.current}`,
+          `${API_BASE}/driver/uploadProfileImage/${driverIdRef.current}`,
           formData,
           { withCredentials: true }
         );

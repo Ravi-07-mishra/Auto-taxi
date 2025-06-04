@@ -83,7 +83,7 @@ const DriverDashboard = () => {
       setBookingError(null);
 
       try {
-        const res = await fetch(`${API_BASE}/api/driver/${driverId}`, {
+        const res = await fetch(`${API_BASE}/driver/${driverId}`, {
           credentials: "include",
         });
         if (!res.ok) {
@@ -120,7 +120,7 @@ const DriverDashboard = () => {
       }
 
       try {
-        const url = new URL(`${API_BASE}/api/reverse-geocode`);
+        const url = new URL(`${API_BASE}/reverse-geocode`);
         url.searchParams.append("lat", lat);
         url.searchParams.append("lon", lng);
 
@@ -351,7 +351,7 @@ const DriverDashboard = () => {
       return;
     }
     try {
-      const res = await fetch(`${API_BASE}/api/driver/availability`, {
+      const res = await fetch(`${API_BASE}/driver/availability`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -380,7 +380,7 @@ const DriverDashboard = () => {
   // ─── Cancel booking handler (backend must support this) ───────────────
   const handleCancelBooking = async (bookingId) => {
     try {
-      const res = await fetch(`${API_BASE}/api/driver/cancel/${bookingId}`, {
+      const res = await fetch(`${API_BASE}/driver/cancel/${bookingId}`, {
         method: "PATCH",
         credentials: "include",
       });

@@ -48,7 +48,7 @@ const fetchAddressFromCoordinates = async (lat, lon, API_BASE, addressCache) => 
   }
   try {
     const res = await fetch(
-      `${API_BASE}/api/reverse-geocode?lat=${lat}&lon=${lon}`
+      `${API_BASE}/reverse-geocode?lat=${lat}&lon=${lon}`
     );
     if (!res.ok) throw new Error(res.statusText);
     const data = await res.json();
@@ -108,7 +108,7 @@ const UserHome = () => {
     (async () => {
       setLoadingBookings(true);
       try {
-        const res = await fetch(`${API_BASE}/api/user/${auth.user._id}`);
+        const res = await fetch(`${API_BASE}/user/${auth.user._id}`);
         if (!res.ok) throw new Error(res.statusText);
         const json = await res.json();
         setBookings(json.bookings || []);
@@ -165,7 +165,7 @@ const UserHome = () => {
   // ----------------------------------------
   const handleCancelBooking = async (bookingId) => {
     try {
-      const res = await fetch(`${API_BASE}/api/booking/cancel/${bookingId}`, {
+      const res = await fetch(`${API_BASE}/booking/cancel/${bookingId}`, {
         method: "PUT",
       });
       if (!res.ok) throw new Error(res.statusText);
@@ -187,7 +187,7 @@ const UserHome = () => {
   // ----------------------------------------
   const handleSubmitReview = async (bookingId) => {
     try {
-      const res = await fetch(`${API_BASE}/api/booking/review/${bookingId}`, {
+      const res = await fetch(`${API_BASE}/booking/review/${bookingId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rating, comment }),

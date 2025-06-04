@@ -158,7 +158,7 @@ const UserRidePage = () => {
     const fetchBookingDetails = async () => {
       try {
         const { data } = await axios.get(
-          `${API_BASE}/api/driver/driver/${bookingId}`
+          `${API_BASE}/driver/driver/${bookingId}`
         );
         const booking = data.booking;
         if (booking?.pickupLocation && booking?.destinationLocation) {

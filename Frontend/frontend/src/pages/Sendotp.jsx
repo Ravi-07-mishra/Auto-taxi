@@ -27,7 +27,7 @@ const Sendotp = () => {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/user/send-otp`, {
+      const res = await fetch(`${API_BASE}/user/send-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

@@ -69,7 +69,7 @@ const Navbar2 = () => {
     (async () => {
       try {
         const response = await fetch(
-          `${API_BASE}/api/user/completedBookings/${auth.user._id}`,
+          `${API_BASE}/user/completedBookings/${auth.user._id}`,
           { credentials: "include" }
         );
         if (!response.ok) throw new Error(response.statusText);

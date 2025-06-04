@@ -83,7 +83,7 @@ const DrivePage = () => {
     const fetchBookingDetails = async () => {
       try {
         const { data } = await axios.get(
-          `${API_BASE}/api/driver/driver/${bookingId}`,
+          `${API_BASE}/driver/driver/${bookingId}`,
           { withCredentials: true }
         );
         setRideStatus(data.booking.status.toLowerCase());
@@ -371,7 +371,7 @@ const DrivePage = () => {
       setTotalRideTime(totalTime);
       
       const res = await axios.patch(
-        `${API_BASE}/api/driver/end/${bookingId}`,
+        `${API_BASE}/driver/end/${bookingId}`,
         { totalRideTime: totalTime },
         { withCredentials: true, timeout: 10000 }
       );
@@ -391,7 +391,7 @@ const DrivePage = () => {
   const handleEndRide = useCallback(async () => {
     try {
       const res = await axios.patch(
-        `${API_BASE}/api/driver/end/${bookingId}`,
+        `${API_BASE}/driver/end/${bookingId}`,
         {},
         { withCredentials: true, timeout: 10000 }
       );

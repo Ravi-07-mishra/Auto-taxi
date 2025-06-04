@@ -68,7 +68,7 @@ const Home = () => {
       try {
         setLoadingDrivers(true);
         setError(null);
-        const response = await axios.get(`${API_BASE}/api/driver/top-rated`);
+        const response = await axios.get(`${API_BASE}/driver/top-rated`);
         const result = response.data;
         const normalizedDrivers = (result.data || []).map((driver) => ({
           ...driver,

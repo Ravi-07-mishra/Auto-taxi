@@ -16,7 +16,7 @@ const AdminLogin = () => {
     try {
       // Use API_BASE instead of hardcoded URL
       await axios.post(
-        `${API_BASE}/api/admin/login`,
+        `${API_BASE}/admin/login`,
         { username, password },
         { withCredentials: true }
       );

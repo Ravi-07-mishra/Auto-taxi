@@ -9,7 +9,7 @@ const GoogleSignInButton = () => {
 
   const handleGoogleSignIn = () => {
     // Redirect to Google OAuth authentication route
-    window.location.href = `${API_BASE}/api/user/auth/google`;
+    window.location.href = `${API_BASE}/user/auth/google`;
   };
 
   return (

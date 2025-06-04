@@ -36,7 +36,7 @@ const EditUserProfilePage = () => {
         payload.newPassword = newPassword;
       }
       const response = await axios.put(
-        `${API_BASE}/api/user/updateProfile`,
+        `${API_BASE}/user/updateProfile`,
         payload,
         { withCredentials: true }
       );

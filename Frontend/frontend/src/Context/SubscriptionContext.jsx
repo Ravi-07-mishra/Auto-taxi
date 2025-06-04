@@ -21,7 +21,7 @@ export const SubscriptionAuthProvider = ({ children }) => {
       const fetchSubscriptionStatus = async () => {
         try {
           const { data } = await axios.get(
-            `${API_BASE}/api/driver/subscription/${driver._id}`,
+            `${API_BASE}/driver/subscription/${driver._id}`,
             { withCredentials: true }
           );
           setSubscription({

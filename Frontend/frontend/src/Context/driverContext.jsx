@@ -65,7 +65,7 @@ export const DriverAuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await axios.post(
-        `${API_BASE}/api/driver/logout`,
+        `${API_BASE}/driver/logout`,
         {},
         { withCredentials: true }
       );

@@ -24,7 +24,7 @@ const SubscriptionPage = () => {
   useEffect(() => {
     const fetchPlans = async () => {
       try {
-        const { data } = await axios.get(`${API_BASE}/api/payment/plans`);
+        const { data } = await axios.get(`${API_BASE}/payment/plans`);
         setPlans(data.plans);
       } catch (err) {
         console.error("Failed to fetch subscription plans:", err);
@@ -35,7 +35,7 @@ const SubscriptionPage = () => {
     const fetchClientToken = async () => {
       try {
         const { data } = await axios.get(
-          `${API_BASE}/api/payment/braintree/token`
+          `${API_BASE}/payment/braintree/token`
         );
         setClientToken(data.clientToken);
       } catch (err) {
@@ -102,7 +102,7 @@ const SubscriptionPage = () => {
     try {
       const { nonce } = await dropinInstanceRef.current.requestPaymentMethod();
       const { data } = await axios.post(
-        `${API_BASE}/api/payment/braintree/subscribe`,
+        `${API_BASE}/payment/braintree/subscribe`,
         {
           paymentMethodNonce: nonce,
           planId: selectedPlan.plan_id,

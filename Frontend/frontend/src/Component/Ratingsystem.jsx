@@ -32,7 +32,7 @@ const RatingReview = () => {
 
     try {
       const response = await axios.post(
-        `${API_BASE}/api/user/${bookingId}/review`,
+        `${API_BASE}/user/${bookingId}/review`,
         { review, rating },
         { withCredentials: true }
       );

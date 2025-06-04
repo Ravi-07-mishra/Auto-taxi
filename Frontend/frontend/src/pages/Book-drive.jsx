@@ -102,7 +102,7 @@ const Bookdrive = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post(`${API_BASE}/api/user/booking`, formData);
+      const response = await axios.post(`${API_BASE}/user/booking`, formData);
       console.log("Booking Response:", response);
       alert("Booking successful!");
       setLoading(false);
@@ -115,7 +115,7 @@ const Bookdrive = () => {
 
   const fetchLocationSuggestions = async (query, type) => {
     try {
-      const response = await axios.get(`${API_BASE}/api/geocode`, {
+      const response = await axios.get(`${API_BASE}/geocode`, {
         params: { query },
       });
 
