@@ -29,9 +29,9 @@ const server = http.createServer(app);
 // ─── CORS CONFIGURATION ───────────────────────────────────────────
 // Whitelist of allowed origins (add more as needed)
 const allowedOrigins = [
-  "http://localhost:5173",               // Vite dev server
-  "https://auto-taxi-ha1i.vercel.app",   // Vercel‐deployed front end
-  // Add any other domains you want to allow (e.g. staging URLs)
+  "http://localhost:5173",
+  "https://auto-taxi-ha1i.vercel.app",
+  "https://auto-taxi-hcr5.vercel.app", // <-- Add this
 ];
 
 const corsOptions = {
