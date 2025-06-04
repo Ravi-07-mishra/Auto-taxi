@@ -36,19 +36,19 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // `origin` will be undefined for non‐browser requests (e.g. Postman, server‐to‐server)
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (
+      !origin || 
+      allowedOrigins.includes(origin) || 
+      /\.vercel\.app$/.test(origin)  // Allow all vercel.app subdomains
+    ) {
       callback(null, true);
     } else {
-      callback(
-        new Error(`CORS policy: origin "${origin}" is not allowed`),
-        false
-      );
+      callback(new Error(`CORS policy: origin "${origin}" is not allowed`));
     }
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true, // allow cookies / authorization headers
+  credentials: true,
 };
 
 app.use(cors(corsOptions));
