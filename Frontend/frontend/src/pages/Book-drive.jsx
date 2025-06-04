@@ -12,6 +12,7 @@ const OPEN_CAGE_API_KEY = import.meta.env.VITE_OPEN_CAGE_API_KEY;
 
 // Backend API base URL from environment variables
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const API_BASE2 = import.meta.env.VITE_API_URL2 || "http://localhost:3000";
 
 const Bookdrive = () => {
   const { user } = useAuth();
@@ -64,7 +65,7 @@ const Bookdrive = () => {
   }, []);
 
   useEffect(() => {
-    socketRef.current = io(API_BASE, {
+    socketRef.current = io(API_BASE2, {
       transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionAttempts: 5,

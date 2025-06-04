@@ -54,6 +54,8 @@ const DriverDashboard = () => {
   if (!API_BASE) {
     console.error("VITE_API_URL is not defined in environment variables.");
   }
+  const API_BASE2 = import.meta.env.VITE_API_URL2 || "http://localhost:3000";
+
 
   // ─── Redirect to login if not authenticated, set driver ID ─────
   useEffect(() => {
@@ -219,7 +221,7 @@ const DriverDashboard = () => {
     }
 
     // Initialize socket.io
-    const socket = io(API_BASE, {
+    const socket = io(API_BASE2, {
       transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionAttempts: 5,
@@ -278,7 +280,7 @@ const DriverDashboard = () => {
       socket.off("BookingRequest");
       socket.disconnect();
     };
-  }, [driverId, driver, navigate, API_BASE]);
+  }, [driverId, driver, navigate, API_BASE2]);
 
   // ─── Accept / Decline booking handlers ───────────────────────────────
   const handleAccept = useCallback(

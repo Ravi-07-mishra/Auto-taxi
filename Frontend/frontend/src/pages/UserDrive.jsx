@@ -82,6 +82,7 @@ const calculateETAAndSpeed = (
     setEta((remDist / currSpeed).toFixed(2));
   }
 };
+  const API_BASE2 = import.meta.env.VITE_API_URL2 || "http://localhost:3000";
 
 // ----------------------------------------
 // Logging Wrapper (swap out in prod)
@@ -255,7 +256,7 @@ const UserRidePage = () => {
     if (!user) return;
 
     // ─── 1. Initialize Socket.IO ───────────────────────────────────
-    const socket = io(API_BASE, {
+    const socket = io(API_BASE2, {
       transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionAttempts: 5,
@@ -357,7 +358,7 @@ const UserRidePage = () => {
         navigator.geolocation.clearWatch(geolocationWatchId.current);
       }
     };
-  }, [API_BASE, bookingId, user, navigate, destinationLocation]);
+  }, [API_BASE2, bookingId, user, navigate, destinationLocation]);
 
   // ─── Handlers ─────────────────────────────────────────────────────
   const handleRecenter = () => {

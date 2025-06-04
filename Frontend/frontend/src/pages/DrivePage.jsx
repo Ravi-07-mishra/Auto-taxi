@@ -18,6 +18,8 @@ import {
 
 // Constants
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const API_BASE2 = import.meta.env.VITE_API_URL2 || "http://localhost:3000";
+
 const NEAR_DESTINATION_THRESHOLD = 0.5; // km
 const MAP_ZOOM_LEVEL = 14;
 const EARTH_RADIUS_KM = 6371;
@@ -263,7 +265,7 @@ const DrivePage = () => {
   useEffect(() => {
     if (!driver) return;
 
-    const socket = io(API_BASE, {
+    const socket = io(API_BASE2, {
       transports: ["websocket"],
       reconnection: true,
       reconnectionAttempts: 5,
