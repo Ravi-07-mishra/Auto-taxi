@@ -4,8 +4,8 @@ const Driver = require("../Models/drivermodel");
 const validDrivers = require("../data");
 const bcrypt = require("bcryptjs");
 const Booking = require("../Models/Bookingmodel");
-const { createToken } = require("../utils/token-manager");
-const { DRIVER_COOKIE_NAME } = require("../utils/constants");
+const { createToken } = require('../utiils/token-manager')
+const { DRIVER_COOKIE_NAME } = require("../utiils/constants");
 const Subscriptionmodel = require("../Models/Subscriptionmodel");
 
 // Determine cookie domain at runtime

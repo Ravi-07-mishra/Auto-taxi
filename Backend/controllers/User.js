@@ -2,8 +2,8 @@
 const User = require("../Models/Usermodel");
 const OTP = require("../Models/otpModel");
 const bcrypt = require("bcryptjs");
-const { createToken } = require("../utils/token-manager");
-const { COOKIE_NAME } = require("../utils/constants");
+const { createToken } = require("../utiils/token-manager");
+const { COOKIE_NAME } = require("../utiils/constants");
 
 const COOKIE_DOMAIN =
   process.env.NODE_ENV === "production"
