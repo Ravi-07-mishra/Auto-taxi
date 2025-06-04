@@ -5,7 +5,6 @@ import { toast, ToastContainer } from "react-toastify";
 import axios from "axios";
 import io from "socket.io-client";
 import "react-toastify/dist/ReactToastify.css";
-import "../Css/Payment.css"; // Assume you have some basic styles
 
 const Payment = () => {
   // ─── Backend Base URL ───────────────────────────────────────────
