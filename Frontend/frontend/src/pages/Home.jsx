@@ -316,7 +316,7 @@ const Home = () => {
         {isCardVisible && (
           <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 z-50 p-4">
             <div className="bg-white rounded-lg overflow-hidden shadow-lg w-full max-w-4xl h-auto md:h-3/4 flex flex-col md:flex-row">
-              <Link to="/userhome" className="w-full md:w-1/2 h-1/2 md:h-full relative group">
+              <Link to="/usersend-otp" className="w-full md:w-1/2 h-1/2 md:h-full relative group">
                 <div className="h-full w-full">
                   <img src="/user.jpg" alt="User" className="h-full w-full object-cover object-center" />
                   <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center group-hover:bg-opacity-50 transition">

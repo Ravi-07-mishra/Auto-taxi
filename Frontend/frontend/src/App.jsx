@@ -68,7 +68,7 @@ const App = () => {
         {/* Conditionally render the appropriate navbar */}
         <Navbar />
         <Routes>
-          <Route path="/" element={<Sendotp />} />
+          <Route path="/usersend-otp" element={<Sendotp />} />
           <Route path="/userhome" element={<UserHome />} />
           <Route path="/userlogin" element={<LoginPage />} />
           <Route path="/usersignup" element={<Signup />} />
@@ -83,7 +83,7 @@ const App = () => {
           <Route path="/driver/drive/:bookingId" element={<DrivePage />} />
           <Route path="/payment/:bookingId" element={<Payment />} />
      
-          <Route path="/home" element={<Home />} />
+          <Route path="/" element={<Home />} />
           <Route path="/user/:bookingId" element={<UserRidePage />} />
           <Route path="/driverprofile" element={<ProfilePage />} />
        
