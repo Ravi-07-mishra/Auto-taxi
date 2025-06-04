@@ -4,7 +4,7 @@ import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import io from 'socket.io-client';
+import io from "socket.io-client";
 
 const Payment = () => {
   const [values, setValues] = useState({
@@ -12,18 +12,19 @@ const Payment = () => {
     success: "",
     errors: "",
     instance: null,
+    ridePrice: null, // NEW: To hold the booking price
   });
+
   const socketRef = useRef(null);
   const { bookingId } = useParams();
   const [loading, setLoading] = useState(false);
-  const { clientToken, success, errors, instance } = values;
+  const { clientToken, success, errors, instance, ridePrice } = values;
   const navigate = useNavigate();
 
-  // Establish socket connection and emit payment completion after payment
+  // Establish socket connection
   useEffect(() => {
-    // Only initiate the socket connection when payment has been completed
-    socketRef.current = io('http://localhost:3000', {
-      transports: ['websocket', 'polling'],
+    socketRef.current = io("http://localhost:3000", {
+      transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
@@ -31,22 +32,47 @@ const Payment = () => {
 
     const socket = socketRef.current;
 
-    socket.on('connect', () => {
-      console.log('Socket connected:', socket.id);
+    socket.on("connect", () => {
+      console.log("Socket connected:", socket.id);
     });
 
-    // Cleanup the socket connection on component unmount
     return () => {
       socket.disconnect();
-      console.log('Socket disconnected on cleanup.');
+      console.log("Socket disconnected on cleanup.");
     };
-  }, []); // This effect should run only once, after the component mounts.
+  }, []);
+
+  // Fetch booking price from backend
+  useEffect(() => {
+    axios
+      .get(`http://localhost:3000/api/user/driver/${bookingId}`)
+      .then(({ data }) => {
+        setValues((prevValues) => ({
+          ...prevValues,
+          ridePrice: data.booking.price,
+        }));
+      })
+      .catch(() => {
+        setValues((prevValues) => ({
+          ...prevValues,
+          errors: "Failed to load booking info.",
+        }));
+      });
+  }, [bookingId]);
 
   const handlePayment = async () => {
     if (!instance) {
       setValues((prevValues) => ({
         ...prevValues,
         errors: "Payment instance not initialized.",
+      }));
+      return;
+    }
+
+    if (ridePrice == null) {
+      setValues((prevValues) => ({
+        ...prevValues,
+        errors: "Ride price not loaded yet.",
       }));
       return;
     }
@@ -60,6 +86,7 @@ const Payment = () => {
         {
           nonce,
           bookingId,
+          amount: ridePrice, // Include ride price in the payment request
         }
       );
 
@@ -67,17 +94,15 @@ const Payment = () => {
         ...prevValues,
         success: "Payment completed successfully.",
       }));
-      // Show toast notification
+
       toast.success("Booking successful!");
 
-      // Emit 'Paymentcompleted' event to the driver after payment completion
       if (socketRef.current) {
-        socketRef.current.emit('Paymentcompleted', { bookingId });
-        console.log('Payment completed event emitted:', bookingId);
+        socketRef.current.emit("Paymentcompleted", { bookingId });
+        console.log("Payment completed event emitted:", bookingId);
       }
 
-      // Navigate to the Driver's Drive Page
-      navigate('/userhome');
+      navigate("/userhome");
     } catch (error) {
       setValues((prevValues) => ({
         ...prevValues,
@@ -88,6 +113,7 @@ const Payment = () => {
     }
   };
 
+  // Fetch Braintree client token
   useEffect(() => {
     const fetchClientToken = async () => {
       try {
@@ -108,8 +134,9 @@ const Payment = () => {
     };
 
     fetchClientToken();
-  }, []); // Fetch client token only once when the component mounts.
+  }, []);
 
+  // Load Braintree drop-in script
   useEffect(() => {
     const loadBraintreeScript = () => {
       const script = document.createElement("script");
@@ -159,13 +186,20 @@ const Payment = () => {
     };
 
     loadBraintreeScript();
-  }, [clientToken]); // Re-run the script load if the client token changes.
+  }, [clientToken]);
 
   return (
     <div className="payment-container">
-      <ToastContainer /> {/* Toast container to render notifications */}
+      <ToastContainer />
+
       {errors && <div className="error-message">{errors}</div>}
       {success && <div className="success-message">{success}</div>}
+
+      {ridePrice != null && (
+        <div className="fare">
+          <strong>Amount to pay:</strong> ₹{ridePrice}
+        </div>
+      )}
 
       {clientToken ? (
         <>

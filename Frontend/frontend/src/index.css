@@ -7,10 +7,22 @@
 /* Root Variables */
 
 
-html,body {
+/* Set a sane base font size */
+html {
+  font-size: 0.7rem; /* 70% of the browser default 1rem = 16px */
+}
+
+body, #root {
+  font-size: 16px !important;
   margin: 0;
   padding: 0;
-  background: #130522;
-  color: white;
-  font-family: "Work Sans", serif;
+  zoom: 1 !important;
+  transform: none !important;
+  font-family: 'Work Sans', serif !important;
+}
+
+
+/* Optional: Normalize box-sizing for easier sizing */
+*, *::before, *::after {
+  box-sizing: border-box;
 }

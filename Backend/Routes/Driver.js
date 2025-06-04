@@ -16,6 +16,7 @@ router.post('/login', upload.single('licenseDoc'), Login);
 router.route('/availability').put(updateAvailability)
 router.get('/',GetallDrivers);
 router.route('/auth-status').get(verifyDriverToken,verifyDriver)
+
 router.route('/driver/:bookingId').get(getBooking);
 router.route('/top-rated').get(getTopRatedDrivers);
 router.get('/:driverId',getallDriverBookings);

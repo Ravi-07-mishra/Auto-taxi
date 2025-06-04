@@ -11,7 +11,7 @@ import Signup from "./pages/Signup";
 import DriverRegistrationForm from "./pages/Register";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 
-import UserDashboard from "./pages/UserDashboard";
+
 import DriverLogin from "./pages/Driverlogin";
 import LoginPage from "./pages/Login";
 import DriverDashboard from "./pages/DriverDashboard";
@@ -75,7 +75,7 @@ const App = () => {
           <Route path="/driverregister" element={<DriverRegistrationForm />} />
           <Route path="/Aboutus" element={<AboutUs />} />
           <Route path="/ratings" element={<RatingPage />} />
-          <Route path="/userdashboard" element={<UserDashboard />} />
+        
           <Route path="/driverlogin" element={<DriverLogin />} />
           <Route path="/driverdashboard" element={<DriverDashboard />} />
           <Route path="/userbookdrive" element={<BookDrive />} />

@@ -44,6 +44,7 @@ const DrivePage = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isNearDestination, setIsNearDestination] = useState(false);
   const [isListening, setIsListening] = useState(false);
+
   const socketRef = useRef(null);
   const mapRef = useRef(null);
   const chatContainerRef = useRef(null);
@@ -55,10 +56,11 @@ const DrivePage = () => {
     height: window.innerHeight,
   });
   useEffect(() => {
-    const handleResize = () => setWindowSize({
-      width: window.innerWidth,
-      height: window.innerHeight,
-    });
+    const handleResize = () =>
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
@@ -72,9 +74,10 @@ const DrivePage = () => {
         const { data } = await axios.get(
           `http://localhost:3000/api/driver/driver/${bookingId}`
         );
+        // Normalize status to lowercase
+        setRideStatus(data.booking.status.toLowerCase());
         setPickupLocation(data.booking.pickupLocation);
         setDestinationLocation(data.booking.destinationLocation);
-        setRideStatus(data.booking.status);
       } catch (err) {
         console.error("Error fetching booking details:", err);
         alert("Failed to load booking details.");
@@ -84,7 +87,7 @@ const DrivePage = () => {
     })();
   }, [bookingId]);
 
-  // Distance & ETA/speed calculations
+  // Haversine formula
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371;
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -115,6 +118,8 @@ const DrivePage = () => {
         destinationLocation.lng
       );
       setEta((rem / currSpeed).toFixed(2));
+      // Determine if near destination (<0.5 km)
+      setIsNearDestination(rem <= 0.5);
     }
   };
 
@@ -202,10 +207,10 @@ const DrivePage = () => {
         { lat: pickupLocation.lat, lng: pickupLocation.lng },
         { lat: destinationLocation.lat, lng: destinationLocation.lng },
         setRoute
-      )
+      );
     }
-  }, [pickupLocation, destinationLocation])
-  
+  }, [pickupLocation, destinationLocation]);
+
   useEffect(() => {
     if (driverLocation && destinationLocation) {
       fetchRoute(driverLocation, destinationLocation, setDriverToDestinationRoute);
@@ -226,6 +231,7 @@ const DrivePage = () => {
 
     let prevLoc = null,
       prevTime = null;
+
     const watchId = navigator.geolocation.watchPosition(
       ({ coords }) => {
         const curr = { lat: coords.latitude, lng: coords.longitude };
@@ -255,7 +261,7 @@ const DrivePage = () => {
     };
   }, [driver, bookingId]);
 
-  // Scroll chat
+  // Scroll chat to bottom when new messages arrive
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
@@ -531,11 +537,7 @@ const DrivePage = () => {
           isMobile ? "bottom-4 right-2 p-3" : "bottom-4 right-4 p-4"
         }`}
       >
-        {isChatOpen ? (
-          <X size={isMobile ? 20 : 24} />
-        ) : (
-          <Send size={isMobile ? 20 : 24} />
-        )}
+        {isChatOpen ? <X size={isMobile ? 20 : 24} /> : <Send size={isMobile ? 20 : 24} />}
       </button>
 
       {/* Action Buttons */}
@@ -550,9 +552,7 @@ const DrivePage = () => {
           <button
             onClick={handleStartRide}
             className={`flex items-center rounded-lg shadow-lg transition-all ${
-              isMobile
-                ? "px-3 py-2 text-sm"
-                : "px-4 py-3 text-base"
+              isMobile ? "px-3 py-2 text-sm" : "px-4 py-3 text-base"
             } bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white`}
           >
             <Play size={isMobile ? 16 : 20} className="mr-1 sm:mr-2" />
@@ -569,10 +569,7 @@ const DrivePage = () => {
                 : "bg-gray-400 cursor-not-allowed text-white"
             } ${isMobile ? "px-3 py-2 text-sm" : "px-4 py-3 text-base"}`}
           >
-            <CheckCircle
-              size={isMobile ? 16 : 20}
-              className="mr-1 sm:mr-2"
-            />
+            <CheckCircle size={isMobile ? 16 : 20} className="mr-1 sm:mr-2" />
             {isMobile ? "Complete" : "Complete Ride"}
           </button>
         )}
@@ -580,9 +577,7 @@ const DrivePage = () => {
           <button
             onClick={handleEndRide}
             className={`rounded-lg shadow-lg transition-all ${
-              isMobile
-                ? "px-3 py-2 text-sm"
-                : "px-4 py-3 text-base"
+              isMobile ? "px-3 py-2 text-sm" : "px-4 py-3 text-base"
             } bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white`}
           >
             {isMobile ? "End" : "End Ride"}

@@ -9,18 +9,25 @@ const { Usersignup, userlogin, verifyUser, updateProfile,
   getUserProfile, 
   logoutUser } = require('../controllers/User');
 const otpController = require('../controllers/otpController');
-const { DoBooking, getallUserBookings, Review, GetCompletedBookings } = require('../controllers/Booking');
+const { DoBooking, getallUserBookings, Review, GetCompletedBookings, getBooking } = require('../controllers/Booking');
 const { verifyToken } = require('../utiils/token-manager');
 const { createToken } = require('../utiils/token-manager');
 const { COOKIE_NAME } = require('../utiils/constants');
+router.route('/driver/:bookingId').get(getBooking);
 
 router.route('/usersignup').post(Usersignup);
 router.route('/userlogin').post(userlogin);
+router.route('/tryingtodoit/:bookingId').get(getBooking);
+
+router.route('/completedBookings/:userId').get(GetCompletedBookings);
+// router.route('/completedBookings/:userId').get(GetCompletedBookings);
+
+
 router.route('/send-otp').post(otpController.sendOTP);
 router.route('/booking').post(DoBooking);
 router.route('/auth-status').get(verifyToken, verifyUser);
 router.route('/:userId').get(getallUserBookings);
-router.route('/completedBookings/:userId').get(GetCompletedBookings);
+// router.route('/completedBookings/:userId').get(GetCompletedBookings);
 router.route('/rating/:bookingId').post(Review);
 router.route('/logout').post(logoutUser);
 router.post(
