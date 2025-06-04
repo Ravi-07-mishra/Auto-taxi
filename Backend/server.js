@@ -27,34 +27,8 @@ const Paymentrouter = require("./Routes/payment");
 const server = http.createServer(app);
 
 // ─── CORS CONFIGURATION ───────────────────────────────────────────
-// Whitelist of allowed origins (add more as needed)
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://auto-taxi-ha1i.vercel.app",
-  "https://auto-taxi-hcr5.vercel.app",
-  "https://auto-taxi-1.onrender.com",   // ← add this
-  /\.vercel\.app$/,                     // (you already allow all vercel.app subdomains)
-];
-
-
-const corsOptions = {
-  origin: (origin, callback) => {
-    if (
-      !origin || 
-      allowedOrigins.includes(origin) || 
-      /\.vercel\.app$/.test(origin)  // Allow all vercel.app subdomains
-    ) {
-      callback(null, true);
-    } else {
-      callback(new Error(`CORS policy: origin "${origin}" is not allowed`));
-    }
-  },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true,
-};
-
-app.use(cors(corsOptions));
+// Temporarily allow all origins for testing
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(morgan("dev"));
@@ -65,18 +39,11 @@ app.use("/uploads", express.static(path.join(__dirname, "utiils/uploads")));
 // ─── SOCKET.IO INITIALIZATION ─────────────────────────────────────
 const io = socketIo(server, {
   cors: {
-    origin: (origin, callback) => {
-      // Same whitelist logic for WebSocket CORS
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error(`Socket.IO CORS: origin "${origin}" not allowed`));
-      }
-    },
+    origin: true,             // allow any origin
     methods: ["GET", "POST"],
     credentials: true,
   },
-  transports: ["websocket","polling"],
+  transports: ["websocket", "polling"],
   pingTimeout: 60000,
   pingInterval: 25000,
 });
@@ -296,8 +263,7 @@ io.on("connection", (socket) => {
   });
   socket.on("sendMessage", async (messageData) => {
     try {
-      const { bookingId, message, senderId, senderModel, senderName } =
-        messageData;
+      const { bookingId, message, senderId, senderModel, senderName } = messageData;
       let chat = await Chat.findOne({ booking: bookingId });
       if (!chat) {
         chat = new Chat({
