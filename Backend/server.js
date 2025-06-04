@@ -1,3 +1,4 @@
+// server.js (or index.js / app.js)
 const express = require("express");
 const connectDB = require("./connectDB/connectDB");
 require("dotenv").config();
@@ -10,105 +11,121 @@ const passport = require("passport");
 require("./controllers/googleauth");
 require("./controllers/drivergoogleauth");
 const adminRoutes = require("./Routes/adminRoutes");
-
-const axios = require("axios"); // Make sure this line is added
-
+const axios = require("axios");
 const cookieParser = require("cookie-parser");
 const morgan = require("morgan");
 const Chat = require("./Models/Chatmodel");
 const ChatRouter = require("./Routes/Chat");
 const Booking = require("./Models/Bookingmodel");
-
 const UserRouter = require("./Routes/User");
 const DriverRouter = require("./Routes/Driver");
 const Driver = require("./Models/drivermodel");
 const User = require("./Models/Usermodel");
 const Paymentrouter = require("./Routes/payment");
-// Create the HTTP server and pass the express app to it
+
+// Create HTTP server
 const server = http.createServer(app);
 
-// Initialize socket.io with CORS settings
-const io = socketIo(server, {
-  cors: {
-    origin: "http://localhost:5173",
-    methods: ["GET", "POST"],
-    allowedHeaders: ["Content-Type"],
-    credentials: true,
+// ─── CORS CONFIGURATION ───────────────────────────────────────────
+// Whitelist of allowed origins (add more as needed)
+const allowedOrigins = [
+  "http://localhost:5173",               // Vite dev server
+  "https://auto-taxi-ha1i.vercel.app",   // Vercel‐deployed front end
+  // Add any other domains you want to allow (e.g. staging URLs)
+];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // `origin` will be undefined for non‐browser requests (e.g. Postman, server‐to‐server)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(
+        new Error(`CORS policy: origin "${origin}" is not allowed`),
+        false
+      );
+    }
   },
-  transports: ["websocket"],
-  pingTimeout: 60000, // Adjust as necessary
-  pingInterval: 25000,
-});
-global.io = io; // Assigning io to global object
-app.use(passport.initialize());
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true, // allow cookies / authorization headers
+};
 
-// Middleware Setup
-app.use("/uploads", express.static(path.join(__dirname, "utiils/uploads")));
-
+app.use(cors(corsOptions));
 app.use(express.json());
-app.use(
-  cors({
-    origin: "http://localhost:5173", // The frontend URL
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true, // Allow credentials (cookies)
-  })
-);
-
-// API routes
 app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(morgan("dev"));
 
+// Static uploads folder
+app.use("/uploads", express.static(path.join(__dirname, "utiils/uploads")));
+
+// ─── SOCKET.IO INITIALIZATION ─────────────────────────────────────
+const io = socketIo(server, {
+  cors: {
+    origin: (origin, callback) => {
+      // Same whitelist logic for WebSocket CORS
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Socket.IO CORS: origin "${origin}" not allowed`));
+      }
+    },
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+  transports: ["websocket"],
+  pingTimeout: 60000,
+  pingInterval: 25000,
+});
+global.io = io;
+
+app.use(passport.initialize());
+
+// ─── ROUTES ─────────────────────────────────────────────────────────
 app.use("/api/user", UserRouter);
 app.use("/api/driver", DriverRouter);
 app.use("/api/chat", ChatRouter);
 app.use("/api/payment", Paymentrouter);
 app.use("/api/admin", adminRoutes);
-const listEndpoints = require('express-list-endpoints');
+
+// Debug: List all endpoints on startup
+const listEndpoints = require("express-list-endpoints");
 console.log(listEndpoints(app));
+
 const port = process.env.PORT || 3000;
 
-let driverLocations = {}; // Store driver locations by ID
-app.get("/api/geocode", async (req, res) => {
-  const { query } = req.query; // Get the query parameter (e.g., "Berlin")
-  const OPEN_CAGE_API_KEY = "a5c124e481d04249a8586ad2b15a817b"; // Your OpenCage API key
+let driverLocations = {};
 
+// ─── GEO CODING EXAMPLES ────────────────────────────────────────────
+// Forward raw query to OpenCage (forward geocoding)
+app.get("/api/geocode", async (req, res) => {
+  const { query } = req.query;
+  const OPEN_CAGE_API_KEY = process.env.OPEN_CAGE_API_KEY || "your-api-key-here";
+  if (!query) {
+    return res.status(400).json({ error: "Query parameter is required" });
+  }
   try {
-    const response = await axios.get(
-      `https://api.opencagedata.com/geocode/v1/json`,
-      {
-        params: {
-          q: query,
-          key: OPEN_CAGE_API_KEY,
-        },
-      }
-    );
-    res.json(response.data); // Forward the data from OpenCage to the frontend
+    const response = await axios.get("https://api.opencagedata.com/geocode/v1/json", {
+      params: { q: query, key: OPEN_CAGE_API_KEY },
+    });
+    res.json(response.data);
   } catch (error) {
     console.error("Error fetching geocoding data:", error);
     res.status(500).json({ error: "Failed to fetch geocoding data" });
   }
 });
+
+// Reverse geocoding
 app.get("/api/reverse-geocode", async (req, res) => {
   const { lat, lon } = req.query;
-  const OPEN_CAGE_API_KEY =
-    process.env.OPEN_CAGE_API_KEY || "your-api-key-here";
+  const OPEN_CAGE_API_KEY = process.env.OPEN_CAGE_API_KEY || "your-api-key-here";
   if (!lat || !lon) {
-    return res
-      .status(400)
-      .json({ error: "Latitude and longitude are required." });
+    return res.status(400).json({ error: "Latitude and longitude are required." });
   }
   try {
-    const response = await axios.get(
-      "https://api.opencagedata.com/geocode/v1/json",
-      {
-        params: {
-          key: OPEN_CAGE_API_KEY,
-          q: `${lat},${lon}`,
-          pretty: 1,
-        },
-      }
-    );
+    const response = await axios.get("https://api.opencagedata.com/geocode/v1/json", {
+      params: { key: OPEN_CAGE_API_KEY, q: `${lat},${lon}`, pretty: 1 },
+    });
     res.json(response.data);
   } catch (error) {
     console.error("Error fetching reverse geocoding data:", error);
@@ -116,44 +133,38 @@ app.get("/api/reverse-geocode", async (req, res) => {
   }
 });
 
+// Directions via OpenRouteService
 app.get("/directions", async (req, res) => {
   const { start, end } = req.query;
-  const apiKey = process.env.ORS_API_KEY; // Make sure this key is valid
-  const url = `https://api.openrouteservice.org/v2/directions/driving-car`;
-
+  const apiKey = process.env.ORS_API_KEY;
+  if (!start || !end) {
+    return res.status(400).json({ error: "Start and end parameters are required." });
+  }
   try {
+    const url = "https://api.openrouteservice.org/v2/directions/driving-car";
     const response = await axios.get(url, {
-      params: {
-        api_key: apiKey,
-        start: start, // Longitude, Latitude
-        end: end, // Longitude, Latitude
-      },
+      params: { api_key: apiKey, start, end },
     });
-
-    console.log("ORS API Response:", response.data); // Log the response data to help with debugging
-
-    res.json(response.data); // Return response data back to the frontend
+    console.log("ORS Response:", response.data);
+    res.json(response.data);
   } catch (error) {
-    console.error("Error fetching route from ORS:", error.message); // Log the error
-    // Check for specific ORS API errors
+    console.error("Error fetching route from ORS:", error.response || error.message);
     if (error.response) {
-      console.error("ORS API Response:", error.response.data);
       return res.status(500).json({ error: error.response.data });
-    } else {
-      return res.status(500).json({ error: "Failed to fetch route from ORS" });
     }
+    return res.status(500).json({ error: "Failed to fetch route from ORS" });
   }
 });
 
-// Socket.io event handling
+// ─── SOCKET.IO EVENT HANDLING ───────────────────────────────────────
 io.on("connection", (socket) => {
-  console.log("A client connected:", socket.id);
+  console.log("Client connected:", socket.id);
 
-  // Emit all driver locations to the client when a new socket connects
+  // Send existing driver locations on new connection
   socket.emit("updateLocations", driverLocations);
   socket.emit("testEvent", { message: "Hello from server!" });
 
-  // Handle driver location updates
+  // Driver location update handler
   socket.on("driverLocation", async (data) => {
     if (
       !data ||
@@ -165,31 +176,24 @@ io.on("connection", (socket) => {
       return;
     }
 
-    // Validate lat and lng ranges
     if (Math.abs(data.lat) > 90 || Math.abs(data.lng) > 180) {
-      console.error("Invalid lat/lng values:", {
-        lat: data.lat,
-        lng: data.lng,
-      });
+      console.error("Invalid lat/lng values:", data);
       return;
     }
 
     console.log("Driver location received:", data);
-
     try {
       const driver = await Driver.findById(data.id);
       if (!driver) {
-        console.log("Driver not found");
+        console.log("Driver not found for ID:", data.id);
         return;
       }
-
       driver.location.lat = data.lat;
       driver.location.lng = data.lng;
       driver.socketId = socket.id;
-
       await driver.save();
-      driverLocations[data.id] = { lat: data.lat, lng: data.lng };
 
+      driverLocations[data.id] = { lat: data.lat, lng: data.lng };
       io.emit("updateLocations", driverLocations);
       console.log("Updated driver locations:", driverLocations);
     } catch (error) {
@@ -200,10 +204,9 @@ io.on("connection", (socket) => {
   // Set user socket ID
   socket.on("setUserSocketId", async (userId) => {
     if (!userId || !/^[0-9a-fA-F]{24}$/.test(userId)) {
-      console.log("Invalid userId:", userId);
+      console.error("Invalid userId:", userId);
       return;
     }
-
     try {
       const user = await User.findById(userId);
       if (user) {
@@ -217,84 +220,64 @@ io.on("connection", (socket) => {
       console.error("Error updating user socketId:", error);
     }
   });
+
+  // Ride completed → notify user
   socket.on("rideCompleted", async (data) => {
     try {
       const { bookingId, paymentAmount } = data;
-
-      // Fetch the booking details
       const booking = await Booking.findById(bookingId).populate("user");
       if (!booking) {
-        console.error("Booking not found");
+        console.error("Booking not found:", bookingId);
         return;
       }
-
-      // Emit RideCompletednowpay event to the user
       io.to(booking.user.socketId).emit("RideCompletednowpay", {
         bookingId: booking._id,
         price: paymentAmount,
         paymentPageUrl: `/payment/${booking._id}`,
       });
-
-      console.log(
-        `RideCompletednowpay event emitted to user ${booking.user._id}`
-      );
+      console.log("RideCompletednowpay event sent to user");
     } catch (error) {
-      console.error("Error handling rideCompleted event:", error);
+      console.error("Error in rideCompleted handler:", error);
     }
   });
-  // Handle booking acceptance
+
+  // Accept booking → notify user
   socket.on("acceptBooking", async (data) => {
-  try {
-    console.log("Booking accepted");
-    const { bookingId } = data;  // no price extracted here
-    const booking = await Booking.findById(bookingId);
+    try {
+      const { bookingId } = data;
+      console.log("Booking accepted:", bookingId);
+      const booking = await Booking.findById(bookingId);
+      if (!booking) {
+        return socket.emit("bookingError", { msg: "Booking not found" });
+      }
+      booking.status = "Accepted";
+      await booking.save();
 
-    if (!booking) {
-      return socket.emit("bookingError", { msg: "Booking not found" });
+      const user = await User.findById(booking.user);
+      console.log("Emitting bookingAccepted to user socket:", user.socketId);
+      io.to(user.socketId).emit("bookingAccepted", {
+        msg: "Your booking has been accepted. Proceed to payment.",
+        bookingId: booking._id,
+        price: booking.price,
+        paymentPageUrl: `/payment/${booking._id}`,
+      });
+      console.log("Booking accepted notification sent");
+    } catch (error) {
+      console.error("Error accepting booking:", error);
     }
+  });
 
-    booking.status = "Accepted";
-    await booking.save();
-
-    const user = await User.findById(booking.user);
-
-    console.log("Emitting bookingAccepted to user socket ID:", user.socketId);
-    io.to(user.socketId).emit("bookingAccepted", {
-      msg: "Your booking has been accepted. Proceed to payment.",
-      bookingId: booking._id,
-      price: booking.price,  // always use booking.price here
-      paymentPageUrl: `/payment/${booking._id}`,
-    });
-
-    console.log("Booking accepted:", booking);
-    console.log(
-      "Emitting bookingAccepted notification to user's socket ID:",
-      user.socketId
-    );
-
-    // Removed Notification creation and emitting here
-
-  } catch (error) {
-    console.log("Error accepting booking", error);
-  }
-});
-
-
-  // Handle booking decline
+  // Decline booking → no direct user notification
   socket.on("declineBooking", async (data) => {
     try {
       const { bookingId } = data;
+      console.log("Booking declined:", bookingId);
       const booking = await Booking.findById(bookingId);
-
       if (!booking) {
         return socket.emit("bookingError", { msg: "Booking not found." });
       }
-
       booking.status = "Declined";
       await booking.save();
-
-      console.log(`Driver declined booking ${bookingId}`);
-      // NO socket.emit back to user
     } catch (error) {
       console.error("Error declining booking:", error);
       socket.emit("bookingError", {
@@ -303,27 +286,23 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Handle chat room joining
+  // Chat: join room & broadcast messages
   socket.on("joinRoom", (bookingId) => {
     console.log(`User joined booking room: ${bookingId}`);
     socket.join(bookingId);
   });
-
-  // Handle sending messages
   socket.on("sendMessage", async (messageData) => {
     try {
       const { bookingId, message, senderId, senderModel, senderName } =
         messageData;
-      const chat = await Chat.findOne({ booking: bookingId });
-
+      let chat = await Chat.findOne({ booking: bookingId });
       if (!chat) {
-        const newChat = new Chat({
+        chat = new Chat({
           booking: bookingId,
           messages: [
             { sender: senderId, senderModel, senderName, text: message },
           ],
         });
-        await newChat.save();
       } else {
         chat.messages.push({
           sender: senderId,
@@ -331,9 +310,8 @@ io.on("connection", (socket) => {
           senderName,
           text: message,
         });
-        await chat.save();
       }
-
+      await chat.save();
       io.to(bookingId).emit("newMessage", {
         sender: senderId,
         senderModel,
@@ -347,27 +325,26 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Handle disconnection
+  // Client disconnects
   socket.on("disconnect", (reason) => {
-    console.log(`User ${socket.id} disconnected. Reason: ${reason}`);
+    console.log(`Socket ${socket.id} disconnected: ${reason}`);
   });
 });
 
-// Start the server and connect to MongoDB
+// ─── START SERVER & MONGODB ────────────────────────────────────────
 const start = async () => {
   if (!process.env.MONGO_URI) {
-    console.error("MONGO_URI is not defined in environment variables.");
+    console.error("MONGO_URI not defined in .env");
     process.exit(1);
   }
-
   try {
-    await connectDB(process.env.MONGO_URI); // Connect to MongoDB
+    await connectDB(process.env.MONGO_URI);
     console.log("Connected to MongoDB");
     server.listen(port, () => {
-      console.log(`Server is listening on port ${port}`);
+      console.log(`Server listening on port ${port}`);
     });
   } catch (error) {
-    console.error(`Error connecting to the database: ${error.message}`);
+    console.error("Error connecting to MongoDB:", error.message);
     process.exit(1);
   }
 };
