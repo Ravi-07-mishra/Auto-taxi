@@ -1,110 +1,129 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useDriverAuth } from "../Context/driverContext";
 import { motion } from "framer-motion";
 import { FiStar, FiAward, FiTruck, FiClock, FiEdit2, FiCamera } from "react-icons/fi";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 
+/**
+ * ProfilePage
+ *
+ * - Redirects to login if unauthenticated.
+ * - Fetches driver profile data (name, email, avgRating, profileImage).
+ * - Allows uploading a new profile image.
+ * - Displays driver stats and achievements.
+ */
 const ProfilePage = () => {
   const [profileImage, setProfileImage] = useState(null);
   const [driverName, setDriverName] = useState("John Doe");
-  const [driverId, setDriverId] = useState(null);
   const [email, setEmail] = useState("johndoe@gmail.com");
   const [avgRating, setAvgRating] = useState("4.8");
+  const [stats, setStats] = useState([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const { driver } = useDriverAuth();
   const navigate = useNavigate();
-  const [isUploading, setIsUploading] = useState(false);
+  const driverIdRef = useRef(null);
 
-  // ─── Backend Base URL ───────────────────────────────────────────
-  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+  // Backend Base URL from environment
+  const API_BASE = import.meta.env.VITE_API_URL;
+  if (!API_BASE) {
+    console.error("VITE_API_URL is not defined.");
+  }
 
-  // ─── Redirect to login if not authenticated, set driver ID ─────
+  // Redirect to login if not authenticated, set driverId
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (!driver) {
-        navigate("/driverlogin");
-      } else {
-        setDriverId(driver._id);
-        console.log("Driver ID set to:", driver._id);
-      }
-    }, 1000);
-    return () => clearTimeout(timeout);
-  }, [driver, navigate]);
+    if (!driver) {
+      navigate("/driverlogin");
+    } else {
+      driverIdRef.current = driver._id;
+      setDriverName(driver.name);
+      setEmail(driver.email);
+      setAvgRating(driver.avgRating);
+      const initialImage = driver.profileImage
+        ? `${API_BASE}/${driver.profileImage}`
+        : `${API_BASE}/uploads/drivers/default.png`;
+      setProfileImage(initialImage);
+    }
+  }, [driver, navigate, API_BASE]);
 
-  // ─── Fetch driver data from backend ─────────────────────────────
-  const fetchDriverData = async () => {
+  // Fetch driver data from backend
+  const fetchDriverData = useCallback(async () => {
+    const driverId = driverIdRef.current;
     if (!driverId) return;
+    setLoading(true);
+    setError(null);
     try {
       const response = await axios.get(
         `${API_BASE}/api/driver/profile/${driverId}`,
         { withCredentials: true }
       );
-      const updatedDriver = response.data.data.driver;
-      setDriverName(updatedDriver.name);
-      setDriverId(updatedDriver._id);
-      setEmail(updatedDriver.email);
-      setAvgRating(updatedDriver.avgRating);
-      setProfileImage(
-        updatedDriver.profileImage
+      const updatedDriver = response?.data?.data?.driver;
+      if (updatedDriver) {
+        setDriverName(updatedDriver.name);
+        setEmail(updatedDriver.email);
+        setAvgRating(updatedDriver.avgRating);
+        const newImage = updatedDriver.profileImage
           ? `${API_BASE}/${updatedDriver.profileImage}`
-          : null
-      );
-    } catch (error) {
-      console.error("Error fetching driver data:", error);
-    }
-  };
-
-  useEffect(() => {
-    if (driverId) {
-      fetchDriverData();
-    }
-  }, [driverId]);
-
-  useEffect(() => {
-    if (driver) {
-      setDriverName(driver.name);
-      setDriverId(driver._id);
-      setEmail(driver.email);
-      setAvgRating(driver.avgRating);
-      setProfileImage(
-        driver.profileImage
-          ? `${API_BASE}/${driver.profileImage}`
-          : `${API_BASE}/uploads/drivers/profile/image-1738174511665-171767109.png`
-      );
-    }
-  }, [driver]);
-
-  // ─── Handle profile image upload ────────────────────────────────
-  const handleImageUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    setIsUploading(true);
-    const formData = new FormData();
-    formData.append("image", file);
-    formData.append("type", "profile");
-
-    try {
-      const response = await axios.post(
-        `${API_BASE}/api/driver/uploadProfileImage/${driverId}`,
-        formData,
-        { withCredentials: true }
-      );
-      if (response.data.profileImage) {
-        await fetchDriverData();
+          : `${API_BASE}/uploads/drivers/default.png`;
+        setProfileImage(newImage);
       }
-    } catch (error) {
-      console.error("Error uploading profile image:", error);
+    } catch (err) {
+      console.error("Error fetching driver data:", err);
+      setError("Unable to load profile. Please try again later.");
     } finally {
-      setIsUploading(false);
+      setLoading(false);
     }
-  };
+  }, [API_BASE]);
 
-  const stats = [
-    { icon: FiTruck, label: "Total Rides", value: "1,234" },
-    { icon: FiClock, label: "Hours Driven", value: "2,500" },
-    { icon: FiAward, label: "Driver Level", value: "Gold" },
-  ];
+  useEffect(() => {
+    if (driverIdRef.current) {
+      fetchDriverData();
+      setStats([
+        { icon: FiTruck, label: "Total Rides", value: "1,234" },
+        { icon: FiClock, label: "Hours Driven", value: "2,500" },
+        { icon: FiAward, label: "Driver Level", value: "Gold" },
+      ]);
+    }
+  }, [fetchDriverData]);
+
+  // Handle profile image upload
+  const handleImageUpload = useCallback(
+    async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      setIsUploading(true);
+      setError(null);
+      const formData = new FormData();
+      formData.append("image", file);
+      formData.append("type", "profile");
+      try {
+        const response = await axios.post(
+          `${API_BASE}/api/driver/uploadProfileImage/${driverIdRef.current}`,
+          formData,
+          { withCredentials: true }
+        );
+        if (response.data?.profileImage) {
+          await fetchDriverData();
+        }
+      } catch (err) {
+        console.error("Error uploading profile image:", err);
+        setError("Upload failed. Please try again.");
+      } finally {
+        setIsUploading(false);
+      }
+    },
+    [API_BASE, fetchDriverData]
+  );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-black">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-white"></div>
+      </div>
+    );
+  }
 
   return (
     <motion.div

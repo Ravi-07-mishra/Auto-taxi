@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from "react";
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 import {
   Users,
   Car,
@@ -30,9 +30,20 @@ const NavLink = ({ href, text, currentPath, onClick }) => {
   );
 };
 
+/**
+ * Home
+ *
+ * - Plays background video.
+ * - Fetches top-rated drivers and displays in carousel.
+ * - Includes navbar with responsive menu.
+ * - Provides role selection card (User vs Driver).
+ */
 const Home = () => {
-  // ─── Backend Base URL ───────────────────────────────────────────
-  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+  // Backend Base URL from environment
+  const API_BASE = import.meta.env.VITE_API_URL;
+  if (!API_BASE) {
+    console.error("VITE_API_URL is not defined.");
+  }
 
   const [isCardVisible, setIsCardVisible] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -41,23 +52,24 @@ const Home = () => {
   const [loadingDrivers, setLoadingDrivers] = useState(true);
   const contactRef = useRef(null);
   const topDriversRef = useRef(null);
+  const navigate = useNavigate();
 
   const handleGetStartedClick = () => setIsCardVisible(true);
   const handleCloseCard = () => setIsCardVisible(false);
-  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+  const toggleMenu = () => setIsMenuOpen((prev) => !prev);
   const scrollToContact = () => {
     contactRef.current?.scrollIntoView({ behavior: "smooth" });
     setIsMenuOpen(false);
   };
 
   useEffect(() => {
+    let isMounted = true;
     const fetchTopDrivers = async () => {
       try {
         setLoadingDrivers(true);
         setError(null);
-        const response = await fetch(`${API_BASE}/api/driver/top-rated`);
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error || "Failed to fetch drivers");
+        const response = await axios.get(`${API_BASE}/api/driver/top-rated`);
+        const result = response.data;
         const normalizedDrivers = (result.data || []).map((driver) => ({
           ...driver,
           name: driver.name || "Unknown Driver",
@@ -65,17 +77,24 @@ const Home = () => {
           numRatings: typeof driver.numRatings === "number" ? driver.numRatings : 0,
           profileImage: driver.profileImage || "/default-driver.jpg",
         }));
-        setTopDrivers(normalizedDrivers);
+        if (isMounted) {
+          setTopDrivers(normalizedDrivers);
+        }
       } catch (err) {
-        console.error("Fetch error:", err);
-        setError(err.message);
-        setTopDrivers([]);
+        console.error("Fetch top drivers error:", err);
+        if (isMounted) {
+          setError("Failed to load top drivers.");
+          setTopDrivers([]);
+        }
       } finally {
-        setLoadingDrivers(false);
+        if (isMounted) setLoadingDrivers(false);
       }
     };
     fetchTopDrivers();
-  }, []);
+    return () => {
+      isMounted = false;
+    };
+  }, [API_BASE]);
 
   return (
     <div className="relative min-h-screen">
@@ -92,7 +111,7 @@ const Home = () => {
           <div className="max-w-screen-xl mx-auto flex items-center justify-between w-full">
             <div className="flex items-center space-x-2">
               <h1 className="text-xl sm:text-2xl md:text-4xl font-extrabold lowercase tracking-wider shadow-md flex space-x-1 sm:space-x-2">
-                {["a", "u", "t", "o", "-", "d", "r", "i", "v", "e"].map((letter, index) => (
+                {Array.from("auto-drive").map((letter, index) => (
                   <span key={index} style={{ color: index % 2 === 0 ? "#cbe557" : "white" }}>
                     {letter}
                   </span>
@@ -135,7 +154,7 @@ const Home = () => {
             <button
               onClick={() => {
                 topDriversRef.current?.scrollIntoView({ behavior: "smooth" });
-                setIsMenuOpen(false);
+                toggleMenu();
               }}
               className="text-white hover:text-[#cbe557] transition-colors"
             >
@@ -233,16 +252,14 @@ const Home = () => {
                 >
                   {topDrivers.map((driver) => (
                     <div key={driver._id} className="px-2 sm:px-4 py-4">
-                      <div className="bg-white bg-opacity-10 backdrop-blur-md rounded-xl p-6 shadow-lg border border-[#cbe557] border-opacity-30">
+                      <div className="bg-white bg-opacity-10 backdrop-blur-md rounded-xl p-6 shadow-lg border border-[#cbe557]	border-opacity-30">
                         <div className="flex flex-col items-center">
                           <div className="relative mb-6">
                             <img
                               src={`${API_BASE}/${driver.profileImage}`}
                               alt={driver.name}
                               className="w-32 h-32 rounded-full object-cover border-4 border-[#cbe557]"
-                              onError={(e) => {
-                                e.target.src = "/default-driver.jpg";
-                              }}
+                              onError={(e) => { e.target.src = "/default-driver.jpg"; }}
                             />
                             <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 bg-[#cbe557] text-black px-3 py-1 rounded-full flex items-center">
                               <Star className="h-4 w-4 fill-current mr-1" />
@@ -254,11 +271,7 @@ const Home = () => {
                             {[...Array(5)].map((_, i) => (
                               <Star
                                 key={i}
-                                className={`h-5 w-5 ${
-                                  i < Math.round(driver.avgRating)
-                                    ? "fill-[#cbe557] text-[#cbe557]"
-                                    : "text-gray-400"
-                                }`}
+                                className={`h-5 w-5 ${i < Math.round(driver.avgRating) ? "fill-[#cbe557] text-[#cbe557]" : "text-gray-400"}`}
                               />
                             ))}
                           </div>

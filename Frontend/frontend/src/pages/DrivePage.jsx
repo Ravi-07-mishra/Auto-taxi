@@ -1,8 +1,7 @@
-
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Polyline, Tooltip } from "react-leaflet";
-import { Button, TextField } from "@mui/material";
+import { Button, TextField, LinearProgress, Snackbar, Alert } from "@mui/material";
 import L from "leaflet";
 import io from "socket.io-client";
 import axios from "axios";
@@ -17,14 +16,18 @@ import {
   Navigation
 } from "lucide-react";
 
+// Constants
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const NEAR_DESTINATION_THRESHOLD = 0.5; // km
+const MAP_ZOOM_LEVEL = 14;
+const EARTH_RADIUS_KM = 6371;
+
 const DrivePage = () => {
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const { driver } = useDriverAuth();
 
-  // ↓ Use VITE_API_URL from .env, or default to localhost
-  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
-
+  // State
   const [pickupLocation, setPickupLocation] = useState(null);
   const [destinationLocation, setDestinationLocation] = useState(null);
   const [route, setRoute] = useState([]);
@@ -36,62 +39,33 @@ const DrivePage = () => {
   const [routeLoading, setRouteLoading] = useState(false);
   const [rideStatus, setRideStatus] = useState("accepted");
   const [rideStartTime, setRideStartTime] = useState(null);
-  const [showRideInfo, setShowRideInfo] = useState(false);
   const [rideEnded, setRideEnded] = useState(false);
   const [totalRideTime, setTotalRideTime] = useState(null);
   const [progress, setProgress] = useState(0);
-  const [nextLandmark, setNextLandmark] = useState("");
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isNearDestination, setIsNearDestination] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
+  // Refs
   const socketRef = useRef(null);
   const mapRef = useRef(null);
   const chatContainerRef = useRef(null);
   const recognitionRef = useRef(null);
+  const prevLocationRef = useRef(null);
+  const prevTimeRef = useRef(null);
 
   // Window size for responsiveness
   const [windowSize, setWindowSize] = useState({
     width: window.innerWidth,
     height: window.innerHeight,
   });
-  useEffect(() => {
-    const handleResize = () =>
-      setWindowSize({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-  const isMobile = windowSize.width < 768;
-  const isTablet = windowSize.width >= 768 && windowSize.width < 1024;
 
-  // Fetch booking details
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await axios.get(
-          `${API_BASE}/api/driver/driver/${bookingId}`,
-          { withCredentials: true } // if you need cookies/session
-        );
-        setRideStatus(data.booking.status.toLowerCase());
-        setPickupLocation(data.booking.pickupLocation);
-        setDestinationLocation(data.booking.destinationLocation);
-      } catch (err) {
-        console.error("Error fetching booking details:", err);
-        alert("Failed to load booking details.");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [bookingId]);
-
-  // Haversine formula for distance
-  const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // Earth radius in km
+  // Memoized distance calculation
+  const calculateDistance = useCallback((lat1, lon1, lat2, lon2) => {
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
     const dLon = ((lon2 - lon1) * Math.PI) / 180;
     const a =
@@ -99,85 +73,146 @@ const DrivePage = () => {
       Math.cos((lat1 * Math.PI) / 180) *
         Math.cos((lat2 * Math.PI) / 180) *
         Math.sin(dLon / 2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  };
+    return EARTH_RADIUS_KM * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }, []);
+
+  // Fetch booking details
+  useEffect(() => {
+    const fetchBookingDetails = async () => {
+      try {
+        const { data } = await axios.get(
+          `${API_BASE}/api/driver/driver/${bookingId}`,
+          { withCredentials: true }
+        );
+        setRideStatus(data.booking.status.toLowerCase());
+        setPickupLocation(data.booking.pickupLocation);
+        setDestinationLocation(data.booking.destinationLocation);
+      } catch (err) {
+        console.error("Error fetching booking details:", err);
+        setError("Failed to load booking details. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBookingDetails();
+  }, [bookingId]);
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const isMobile = windowSize.width < 768;
+  const isTablet = windowSize.width >= 768 && windowSize.width < 1024;
 
   // Calculate ETA & speed
-  const calculateETAAndSpeed = (prevLoc, currLoc, prevTime, currTime) => {
+  const calculateETAAndSpeed = useCallback((prevLoc, currLoc, prevTime, currTime) => {
     const dist = calculateDistance(
       prevLoc.lat,
       prevLoc.lng,
       currLoc.lat,
       currLoc.lng
     );
-    const hours = (currTime - prevTime) / 3600000; // ms → hours
-    const currSpeed = dist / hours; // km/h
+    const hours = (currTime - prevTime) / 3600000;
+    const currSpeed = dist / hours;
     setSpeed(currSpeed.toFixed(2));
 
     if (destinationLocation) {
-      const rem = calculateDistance(
+      const remainingDistance = calculateDistance(
         currLoc.lat,
         currLoc.lng,
         destinationLocation.lat,
         destinationLocation.lng
       );
-      setEta((rem / currSpeed).toFixed(2)); // hours
-      setIsNearDestination(rem <= 0.5); // if < 0.5 km, near destination
+      setEta((remainingDistance / currSpeed).toFixed(2));
+      setIsNearDestination(remainingDistance <= NEAR_DESTINATION_THRESHOLD);
     }
-  };
+  }, [destinationLocation, calculateDistance]);
 
   // Track ride progress percentage
   useEffect(() => {
     if (driverLocation && pickupLocation && destinationLocation) {
-      const total = calculateDistance(
+      const totalDistance = calculateDistance(
         pickupLocation.lat,
         pickupLocation.lng,
         destinationLocation.lat,
         destinationLocation.lng
       );
-      const done = calculateDistance(
+      const completedDistance = calculateDistance(
         pickupLocation.lat,
         pickupLocation.lng,
         driverLocation.lat,
         driverLocation.lng
       );
-      setProgress(Math.min((done / total) * 100, 100));
+      setProgress(Math.min((completedDistance / totalDistance) * 100, 100));
     }
-  }, [driverLocation, pickupLocation, destinationLocation]);
+  }, [driverLocation, pickupLocation, destinationLocation, calculateDistance]);
 
   // Speech recognition setup
   useEffect(() => {
-    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRec) {
-      recognitionRef.current = new SpeechRec();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = "en-US";
-      recognitionRef.current.onresult = (e) => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = "en-US";
+      
+      recognition.onresult = (e) => {
         setNewMessage(e.results[0][0].transcript);
         setIsListening(false);
       };
-      recognitionRef.current.onerror = () => setIsListening(false);
+      
+      recognition.onerror = () => {
+        setIsListening(false);
+        setError("Speech recognition failed. Please try typing your message.");
+      };
+      
+      recognitionRef.current = recognition;
+    } else {
+      console.warn("Speech Recognition API not supported in this browser");
     }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
+    };
   }, []);
-  const startListening = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.start();
-      setIsListening(true);
+
+  const startListening = useCallback(() => {
+    if (recognitionRef.current && !isListening) {
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch (err) {
+        console.error("Speech recognition error:", err);
+        setError("Failed to start speech recognition.");
+      }
     }
-  };
+  }, [isListening]);
 
   // Emergency alert
-  const handleEmergency = () => {
-    alert("Emergency alert sent to passenger and support team!");
-    socketRef.current.emit("emergencyAlert", {
-      bookingId,
-      driverId: driver._id,
-    });
-  };
+  const handleEmergency = useCallback(() => {
+    if (socketRef.current) {
+      socketRef.current.emit("emergencyAlert", {
+        bookingId,
+        driverId: driver?._id,
+      });
+      setError("Emergency alert sent to passenger and support team!");
+    }
+  }, [bookingId, driver]);
 
   // Fetch route from point A → B
-  const fetchRoute = async (start, end, cb) => {
+  const fetchRoute = useCallback(async (start, end, cb) => {
     setRouteLoading(true);
     try {
       const res = await axios.get(`${API_BASE}/directions`, {
@@ -185,24 +220,26 @@ const DrivePage = () => {
           start: `${start.lng},${start.lat}`,
           end: `${end.lng},${end.lat}`,
         },
+        timeout: 10000 // 10 second timeout
       });
-      const feat = res.data.features?.[0];
-      if (feat?.geometry?.coordinates) {
-        cb(feat.geometry.coordinates);
+      
+      const feature = res.data.features?.[0];
+      if (feature?.geometry?.coordinates) {
+        cb(feature.geometry.coordinates);
         if (cb === setRoute) {
-          const dur = feat.properties.segments[0].duration; // seconds
-          setEta((dur / 60).toFixed(2)); // convert to minutes
+          const duration = feature.properties.segments[0].duration; // seconds
+          setEta((duration / 60).toFixed(2)); // convert to minutes
         }
       } else {
         throw new Error("Invalid route data");
       }
     } catch (err) {
       console.error("Route fetch error:", err);
-      alert("Failed to fetch route.");
+      setError("Failed to fetch route. Please check your connection.");
     } finally {
       setRouteLoading(false);
     }
-  };
+  }, []);
 
   // Fetch ride route once pickup & destination are known
   useEffect(() => {
@@ -213,59 +250,86 @@ const DrivePage = () => {
         setRoute
       );
     }
-  }, [pickupLocation, destinationLocation]);
+  }, [pickupLocation, destinationLocation, fetchRoute]);
 
   // Fetch route from driver → destination as driverLocation updates
   useEffect(() => {
     if (driverLocation && destinationLocation) {
       fetchRoute(driverLocation, destinationLocation, setDriverToDestinationRoute);
     }
-  }, [driverLocation, destinationLocation]);
+  }, [driverLocation, destinationLocation, fetchRoute]);
 
   // Socket + geolocation streaming
   useEffect(() => {
     if (!driver) return;
 
     const socket = io(API_BASE, {
-      transports: ["websocket", "polling"],
+      transports: ["websocket"],
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
+      timeout: 20000,
     });
     socketRef.current = socket;
 
-    let prevLoc = null,
-      prevTime = null;
+    const handleGeolocationSuccess = ({ coords }) => {
+      const currentLocation = { lat: coords.latitude, lng: coords.longitude };
+      setDriverLocation(currentLocation);
+
+      if (prevLocationRef.current && prevTimeRef.current) {
+        calculateETAAndSpeed(
+          prevLocationRef.current,
+          currentLocation,
+          prevTimeRef.current,
+          Date.now()
+        );
+      }
+      
+      prevLocationRef.current = currentLocation;
+      prevTimeRef.current = Date.now();
+
+      socket.emit("driverLocation", {
+        id: driver._id,
+        lat: coords.latitude,
+        lng: coords.longitude,
+      });
+    };
+
+    const handleGeolocationError = (err) => {
+      console.error("Geolocation error:", err);
+      setError("Unable to get your location. Please enable location services.");
+    };
+
+    const geolocationOptions = {
+      enableHighAccuracy: true,
+      maximumAge: 10000,
+      timeout: 15000,
+    };
 
     const watchId = navigator.geolocation.watchPosition(
-      ({ coords }) => {
-        const curr = { lat: coords.latitude, lng: coords.longitude };
-        setDriverLocation(curr);
-
-        if (prevLoc && prevTime) {
-          calculateETAAndSpeed(prevLoc, curr, prevTime, Date.now());
-        }
-        prevLoc = curr;
-        prevTime = Date.now();
-
-        socket.emit("driverLocation", {
-          id: driver._id,
-          lat: coords.latitude,
-          lng: coords.longitude,
-        });
-      },
-      console.error,
-      { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+      handleGeolocationSuccess,
+      handleGeolocationError,
+      geolocationOptions
     );
 
-    socket.on("connect", () => socket.emit("joinRoom", bookingId));
-    socket.on("newMessage", (msg) => setMessages((m) => [...m, msg]));
+    socket.on("connect", () => {
+      socket.emit("joinRoom", bookingId);
+    });
+
+    socket.on("newMessage", (msg) => {
+      setMessages((prev) => [...prev, msg]);
+    });
+
+    socket.on("connect_error", (err) => {
+      console.error("Socket connection error:", err);
+      setError("Connection issues. Trying to reconnect...");
+    });
 
     return () => {
       navigator.geolocation.clearWatch(watchId);
       socket.disconnect();
     };
-  }, [driver, bookingId]);
+  }, [driver, bookingId, calculateETAAndSpeed]);
 
   // Auto-scroll chat
   useEffect(() => {
@@ -275,229 +339,338 @@ const DrivePage = () => {
   }, [messages]);
 
   // Send chat message
-  const sendMessage = () => {
-    if (!newMessage.trim()) return;
-    socketRef.current.emit("sendMessage", {
+  const sendMessage = useCallback(() => {
+    if (!newMessage.trim() || !socketRef.current || !driver?._id) return;
+    
+    const messageData = {
       bookingId,
-      message: newMessage,
+      message: newMessage.trim(),
       senderId: driver._id,
       senderModel: "Driver",
       senderName: "Driver",
-    });
+      timestamp: new Date().toISOString(),
+    };
+
+    socketRef.current.emit("sendMessage", messageData);
     setNewMessage("");
-  };
+  }, [newMessage, bookingId, driver]);
 
   // Ride controls
-  const handleStartRide = () => {
+  const handleStartRide = useCallback(() => {
     setRideStatus("started");
     setRideStartTime(Date.now());
-  };
+    setSuccess("Ride started successfully!");
+  }, []);
 
-  const handleCompleteRide = async () => {
+  const handleCompleteRide = useCallback(async () => {
     try {
-      const end = Date.now();
-      const total = end - rideStartTime;
-      setTotalRideTime(total);
+      const endTime = Date.now();
+      const totalTime = endTime - rideStartTime;
+      setTotalRideTime(totalTime);
+      
       const res = await axios.patch(
         `${API_BASE}/api/driver/end/${bookingId}`,
-        { totalRideTime: total },
-        { withCredentials: true }
+        { totalRideTime: totalTime },
+        { withCredentials: true, timeout: 10000 }
       );
+      
       setRideStatus("completed");
-      setShowRideInfo(true);
       socketRef.current.emit("rideCompleted", {
         bookingId,
         paymentAmount: res.data.paymentAmount,
       });
-      alert("Ride completed successfully!");
+      setSuccess("Ride completed successfully!");
     } catch (err) {
-      console.error(err);
-      alert("Failed to complete ride.");
+      console.error("Complete ride error:", err);
+      setError("Failed to complete ride. Please try again.");
     }
-  };
+  }, [bookingId, rideStartTime]);
 
-  const handleEndRide = async () => {
+  const handleEndRide = useCallback(async () => {
     try {
       const res = await axios.patch(
         `${API_BASE}/api/driver/end/${bookingId}`,
         {},
-        { withCredentials: true }
+        { withCredentials: true, timeout: 10000 }
       );
-      alert(res.data.message);
+      
       setRideEnded(true);
+      setSuccess(res.data.message || "Ride has ended successfully!");
     } catch (err) {
-      console.error(err);
-      alert("Failed to end ride.");
+      console.error("End ride error:", err);
+      setError("Failed to end ride. Please try again.");
     }
-  };
+  }, [bookingId]);
 
-  if (loading)
+  // Recenter map
+  const handleRecenter = useCallback(() => {
+    if (mapRef.current && driverLocation) {
+      mapRef.current.flyTo([driverLocation.lat, driverLocation.lng], MAP_ZOOM_LEVEL);
+    }
+  }, [driverLocation]);
+
+  // Handle message input key press
+  const handleMessageKeyPress = useCallback((e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  }, [sendMessage]);
+
+  // Close alerts
+  const handleCloseError = useCallback(() => setError(null), []);
+  const handleCloseSuccess = useCallback(() => setSuccess(null), []);
+
+  if (loading) {
     return (
-      <div className="text-center py-5 text-xl text-gray-700">
-        Loading booking details...
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+        <LinearProgress className="w-64" />
+        <p className="mt-4 text-gray-700">Loading booking details...</p>
       </div>
     );
-  if (routeLoading)
+  }
+
+  if (routeLoading) {
     return (
-      <div className="text-center py-5 text-xl text-gray-700">
-        Loading route...
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+        <LinearProgress className="w-64" />
+        <p className="mt-4 text-gray-700">Calculating optimal route...</p>
       </div>
     );
-  if (rideEnded)
+  }
+
+  if (rideEnded) {
     return (
-      <div className="text-center py-5 text-xl font-semibold text-green-600">
-        Ride has ended successfully!
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+        <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
+        <h1 className="text-2xl font-bold text-green-600 mb-2">
+          Ride Completed
+        </h1>
+        <p className="text-gray-700 mb-6">{success || "Ride has ended successfully!"}</p>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => navigate("/driver/dashboard")}
+        >
+          Return to Dashboard
+        </Button>
       </div>
     );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black to-gray-900 p-2 sm:p-4 md:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-black to-gray-900 p-2 sm:p-4 md:p-6 relative">
+      {/* Error/Success Alerts */}
+      <Snackbar
+        open={!!error}
+        autoHideDuration={6000}
+        onClose={handleCloseError}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert onClose={handleCloseError} severity="error" className="w-full">
+          {error}
+        </Alert>
+      </Snackbar>
+
+      <Snackbar
+        open={!!success}
+        autoHideDuration={4000}
+        onClose={handleCloseSuccess}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert onClose={handleCloseSuccess} severity="success" className="w-full">
+          {success}
+        </Alert>
+      </Snackbar>
+
       {/* Full-screen map */}
       <div className="fixed inset-0 z-0">
         <MapContainer
           center={
-            driverLocation ||
-            (pickupLocation && {
-              lat: pickupLocation.lat,
-              lng: pickupLocation.lng,
-            })
+            driverLocation || pickupLocation || [0, 0]
           }
-          zoom={14}
+          zoom={MAP_ZOOM_LEVEL}
           whenCreated={(map) => (mapRef.current = map)}
-          className="w-screen h-screen"
+          className="w-full h-full"
+          zoomControl={false}
         >
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          />
+          
           {pickupLocation && (
-            <Marker position={pickupLocation}>
-              <Tooltip>Pickup Location</Tooltip>
+            <Marker
+              position={pickupLocation}
+              icon={L.icon({
+                iconUrl: '/pickup-icon.png',
+                iconSize: [32, 32],
+                iconAnchor: [16, 32],
+              })}
+            >
+              <Tooltip permanent>Pickup Location</Tooltip>
             </Marker>
           )}
+          
           {destinationLocation && (
-            <Marker position={destinationLocation}>
-              <Tooltip>Destination</Tooltip>
+            <Marker
+              position={destinationLocation}
+              icon={L.icon({
+                iconUrl: '/destination-icon.png',
+                iconSize: [32, 32],
+                iconAnchor: [16, 32],
+              })}
+            >
+              <Tooltip permanent>Destination</Tooltip>
             </Marker>
           )}
+          
           {driverLocation && (
             <Marker
               position={driverLocation}
               icon={L.icon({
-                iconUrl: "/driver-icon.png",
-                iconSize: [30, 30],
+                iconUrl: '/driver-icon.png',
+                iconSize: [32, 32],
+                iconAnchor: [16, 32],
               })}
             >
-              <Tooltip>Driver's Location</Tooltip>
+              <Tooltip permanent>Your Location</Tooltip>
             </Marker>
           )}
+          
           {route.length > 0 && (
             <Polyline
               positions={route.map(([lng, lat]) => [lat, lng])}
               color="blue"
-              weight={4}
+              weight={5}
+              opacity={0.7}
             />
           )}
+          
           {driverToDestinationRoute.length > 0 && (
             <Polyline
               positions={driverToDestinationRoute.map(([lng, lat]) => [lat, lng])}
               color="green"
-              weight={4}
+              weight={5}
+              opacity={0.7}
+              dashArray="10, 10"
             />
           )}
         </MapContainer>
       </div>
 
       {/* Progress bar + stats */}
-      <div
-        className={`fixed bg-white bg-opacity-90 rounded-lg shadow-lg z-50 ${
-          isMobile ? "top-2 left-2 right-2 p-2" : "top-4 left-4 right-4 p-3"
-        }`}
-      >
+      <div className={`fixed bg-white bg-opacity-90 rounded-lg shadow-lg z-50 ${
+        isMobile ? "top-2 left-2 right-2 p-2" : "top-4 left-4 right-4 p-3"
+      }`}>
         <div className="w-full bg-gray-200 rounded-full h-2.5">
           <div
-            className="bg-blue-600 h-2.5 rounded-full"
+            className="bg-blue-600 h-2.5 rounded-full transition-all duration-500"
             style={{ width: `${progress}%` }}
           />
         </div>
-        <div
-          className={`mt-2 grid gap-1 ${
-            isMobile ? "grid-cols-2" : "grid-cols-3"
-          }`}
-        >
-          <span className="text-xs sm:text-sm text-black">
-            Next: {nextLandmark || "Main Street"}
-          </span>
-          <span className="text-xs sm:text-sm text-black">
-            ETA: {eta ? `${eta} hrs` : "Calculating..."}
-          </span>
+        <div className={`mt-2 grid gap-1 ${
+          isMobile ? "grid-cols-2" : "grid-cols-3"
+        }`}>
+          <div className="text-xs sm:text-sm text-gray-800 truncate">
+            <span className="font-semibold">ETA:</span> {eta ? `${eta} hrs` : "--"}
+          </div>
+          <div className="text-xs sm:text-sm text-gray-800">
+            <span className="font-semibold">Progress:</span> {progress.toFixed(1)}%
+          </div>
           {!isMobile && (
-            <span className="text-xs sm:text-sm text-black">
-              Speed: {speed ? `${speed} km/h` : "Calculating..."}
-            </span>
+            <div className="text-xs sm:text-sm text-gray-800">
+              <span className="font-semibold">Speed:</span> {speed ? `${speed} km/h` : "--"}
+            </div>
           )}
         </div>
       </div>
 
-      {/* Recenter button */}
-      <button
-        onClick={() => {
-          if (mapRef.current && driverLocation) {
-            mapRef.current.setView([driverLocation.lat, driverLocation.lng], 14);
-          }
-        }}
-        className={`fixed bg-white bg-opacity-90 rounded-full shadow-lg hover:bg-gray-100 transition-all z-50 ${
-          isMobile ? "bottom-24 right-2 p-2" : "bottom-32 right-4 p-3"
-        }`}
-      >
-        <Navigation size={isMobile ? 20 : 24} className="text-gray-800" />
-      </button>
+      {/* Control Buttons */}
+      <div className="fixed right-2 sm:right-4 bottom-20 sm:bottom-24 flex flex-col space-y-2 z-50">
+        {/* Recenter button */}
+        <button
+          onClick={handleRecenter}
+          className="bg-white bg-opacity-90 rounded-full shadow-lg hover:bg-gray-100 transition-all p-3"
+          aria-label="Recenter map"
+        >
+          <Navigation size={isMobile ? 20 : 24} className="text-gray-800" />
+        </button>
 
-      {/* Emergency button */}
-      <button
-        onClick={handleEmergency}
-        className={`fixed bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-all z-50 ${
-          isMobile ? "bottom-16 right-2 p-3" : "bottom-20 right-4 p-4"
-        }`}
-      >
-        <AlertTriangle size={isMobile ? 20 : 24} />
-      </button>
+        {/* Emergency button */}
+        <button
+          onClick={handleEmergency}
+          className="bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-all p-3"
+          aria-label="Emergency alert"
+        >
+          <AlertTriangle size={isMobile ? 20 : 24} />
+        </button>
+
+        {/* Chat toggle button */}
+        <button
+          onClick={() => setIsChatOpen((o) => !o)}
+          className={`rounded-full shadow-lg transition-all p-3 ${
+            isChatOpen 
+              ? "bg-gray-500 text-white hover:bg-gray-600"
+              : "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700"
+          }`}
+          aria-label={isChatOpen ? "Close chat" : "Open chat"}
+        >
+          {isChatOpen ? <X size={isMobile ? 20 : 24} /> : <Send size={isMobile ? 20 : 24} />}
+        </button>
+      </div>
 
       {/* Chat window */}
       {isChatOpen && (
-        <div
-          className={`fixed bg-white rounded-lg shadow-xl flex flex-col z-50 ${
-            isMobile ? "bottom-16 right-2 w-72 h-64" : "bottom-20 right-4 w-80 h-96"
-          }`}
-        >
-          <div className="bg-blue-500 text-white p-2 sm:p-3 rounded-t-lg">
-            <h2 className="text-sm sm:text-lg font-semibold">Chat with Passenger</h2>
+        <div className={`fixed bg-white rounded-lg shadow-xl flex flex-col z-50 ${
+          isMobile ? "bottom-16 right-2 w-72 h-64" : "bottom-20 right-4 w-80 h-96"
+        }`}>
+          <div className="bg-blue-500 text-white p-2 sm:p-3 rounded-t-lg flex justify-between items-center">
+            <h2 className="text-sm sm:text-base font-semibold">Chat with Passenger</h2>
+            <button 
+              onClick={() => setIsChatOpen(false)}
+              className="text-white hover:text-gray-200"
+              aria-label="Close chat"
+            >
+              <X size={18} />
+            </button>
           </div>
+          
           <div
             ref={chatContainerRef}
-            className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-2 sm:space-y-4"
+            className="flex-1 overflow-y-auto p-2 sm:p-3 space-y-2"
           >
-            {messages.map((msg, idx) => (
-              <div
-                key={idx}
-                className={`max-w-[70%] ${
-                  msg.senderModel === "Driver" ? "ml-auto" : "mr-auto"
-                }`}
-              >
+            {messages.length === 0 ? (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                No messages yet. Start the conversation!
+              </div>
+            ) : (
+              messages.map((msg, idx) => (
                 <div
-                  className={`p-2 sm:p-3 rounded-lg text-xs sm:text-base ${
-                    msg.senderModel === "Driver"
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-200 text-gray-800"
+                  key={`msg-${idx}`}
+                  className={`max-w-[80%] ${
+                    msg.senderModel === "Driver" ? "ml-auto" : "mr-auto"
                   }`}
                 >
-                  {msg.text}
+                  <div
+                    className={`p-2 rounded-lg text-sm ${
+                      msg.senderModel === "Driver"
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-200 text-gray-800"
+                    }`}
+                  >
+                    {msg.text}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  {new Date(msg.timestamp).toLocaleTimeString()}
-                </p>
-              </div>
-            ))}
+              ))
+            )}
           </div>
-          <div className="p-2 sm:p-3 border-t">
-            <div className="flex items-center">
+          
+          <div className="p-2 border-t">
+            <div className="flex items-center space-x-1">
               <TextField
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
@@ -505,78 +678,80 @@ const DrivePage = () => {
                 variant="outlined"
                 size="small"
                 className="flex-1"
-                onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+                multiline
+                maxRows={3}
+                onKeyPress={handleMessageKeyPress}
+                inputProps={{ "aria-label": "Message input" }}
               />
-              <Button onClick={startListening} disabled={isListening} className="ml-1 sm:ml-2 min-w-0">
-                <Mic size={isMobile ? 16 : 20} />
+              
+              <Button 
+                onClick={startListening} 
+                disabled={isListening}
+                className="min-w-0"
+                aria-label="Voice input"
+              >
+                <Mic size={20} className={isListening ? "text-red-500 animate-pulse" : "text-gray-600"} />
               </Button>
+              
               <Button
                 variant="contained"
                 color="primary"
                 onClick={sendMessage}
-                className="ml-1 sm:ml-2 min-w-0"
+                disabled={!newMessage.trim()}
+                className="min-w-0"
+                aria-label="Send message"
               >
-                <Send size={isMobile ? 16 : 20} />
+                <Send size={20} />
               </Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Chat toggle button */}
-      <button
-        onClick={() => setIsChatOpen((o) => !o)}
-        className={`fixed bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-lg hover:from-blue-700 hover:to-purple-700 transition-all z-50 ${
-          isMobile ? "bottom-4 right-2 p-3" : "bottom-4 right-4 p-4"
-        }`}
-      >
-        {isChatOpen ? <X size={isMobile ? 20 : 24} /> : <Send size={isMobile ? 20 : 24} />}
-      </button>
-
       {/* Ride action buttons */}
-      <div
-        className={`fixed flex justify-center z-50 ${
-          isMobile ? "bottom-2 left-2 right-2 space-x-2" : "bottom-4 left-4 right-4 space-x-4"
-        }`}
-      >
-        {rideStatus === "accepted" && (
-          <button
-            onClick={handleStartRide}
-            className={`flex items-center rounded-lg shadow-lg transition-all ${
-              isMobile ? "px-3 py-2 text-sm" : "px-4 py-3 text-base"
-            } bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white`}
-          >
-            <Play size={isMobile ? 16 : 20} className="mr-1 sm:mr-2" />
-            {isMobile ? "Start" : "Start Ride"}
-          </button>
-        )}
-        {rideStatus === "started" && (
-          <button
-            onClick={handleCompleteRide}
-            disabled={!isNearDestination}
-            className={`flex items-center rounded-lg shadow-lg transition-all ${
-              isNearDestination
-                ? "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white"
-                : "bg-gray-400 cursor-not-allowed text-white"
-            } ${isMobile ? "px-3 py-2 text-sm" : "px-4 py-3 text-base"}`}
-          >
-            <CheckCircle size={isMobile ? 16 : 20} className="mr-1 sm:mr-2" />
-            {isMobile ? "Complete" : "Complete Ride"}
-          </button>
-        )}
-        {rideStatus === "completed" && (
-          <button
-            onClick={handleEndRide}
-            className={`rounded-lg shadow-lg transition-all ${
-              isMobile ? "px-3 py-2 text-sm" : "px-4 py-3 text-base"
-            } bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white`}
-          >
-            {isMobile ? "End" : "End Ride"}
-          </button>
-        )}
+      <div className={`fixed left-0 right-0 flex justify-center z-50 ${
+        isMobile ? "bottom-2 px-2" : "bottom-4 px-4"
+      }`}>
+        <div className="bg-white bg-opacity-90 rounded-lg shadow-lg p-1">
+          {rideStatus === "accepted" && (
+            <Button
+              onClick={handleStartRide}
+              variant="contained"
+              color="success"
+              startIcon={<Play size={18} />}
+              className="whitespace-nowrap"
+            >
+              {isMobile ? "Start" : "Start Ride"}
+            </Button>
+          )}
+          
+          {rideStatus === "started" && (
+            <Button
+              onClick={handleCompleteRide}
+              disabled={!isNearDestination}
+              variant="contained"
+              color="primary"
+              startIcon={<CheckCircle size={18} />}
+              className="whitespace-nowrap"
+            >
+              {isMobile ? "Complete" : "Complete Ride"}
+            </Button>
+          )}
+          
+          {rideStatus === "completed" && (
+            <Button
+              onClick={handleEndRide}
+              variant="contained"
+              color="error"
+              className="whitespace-nowrap"
+            >
+              {isMobile ? "End" : "End Ride"}
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
 };
 
-export default DrivePage;
+export default React.memo(DrivePage);

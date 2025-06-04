@@ -1,4 +1,3 @@
-// LoginPage.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../Context/userContext";
@@ -11,6 +10,7 @@ import {
   Divider,
   useMediaQuery,
   useTheme,
+  CircularProgress,
 } from "@mui/material";
 import { RiLoginCircleFill } from "react-icons/ri";
 import { keyframes } from "@emotion/react";
@@ -22,11 +22,19 @@ const float = keyframes`
   100% { transform: translateY(0px); }
 `;
 
+/**
+ * LoginPage
+ *
+ * - Handles email/password login via `login` from userContext.
+ * - Displays errors, shows spinner when logging in.
+ * - Provides Google Sign-In button.
+ */
 const LoginPage = () => {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const theme = useTheme();
@@ -34,15 +42,19 @@ const LoginPage = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
     try {
       const response = await login(email, password);
-      if (response.user) {
+      if (response?.user) {
         navigate("/userhome");
       } else {
-        setError(response.data.msg || "Unexpected error occurred.");
+        setError(response.data?.msg || "Unexpected error occurred.");
       }
     } catch (err) {
       setError(err.response?.data?.msg || "Login failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -61,13 +73,7 @@ const LoginPage = () => {
       }}
     >
       {/* Dark translucent overlay */}
-      <Box
-        sx={{
-          position: "absolute",
-          inset: 0,
-          backgroundColor: "rgba(0, 0, 0, 0.6)",
-        }}
-      />
+      <Box sx={{ position: "absolute", inset: 0, backgroundColor: "rgba(0, 0, 0, 0.6)" }} />
 
       {/* Login Form Container */}
       <Box
@@ -102,13 +108,11 @@ const LoginPage = () => {
             flexWrap: "wrap",
           }}
         >
-          {["a", "u", "t", "o", "-", "d", "r", "i", "v", "e"].map(
-            (letter, index) => (
-              <span key={index} style={{ color: index % 2 === 0 ? "#cbe557" : "#fff" }}>
-                {letter}
-              </span>
-            )
-          )}
+          {Array.from("auto-drive").map((letter, index) => (
+            <span key={index} style={{ color: index % 2 === 0 ? "#cbe557" : "#fff" }}>
+              {letter}
+            </span>
+          ))}
         </Typography>
 
         {error && (
@@ -173,6 +177,7 @@ const LoginPage = () => {
           fullWidth
           variant="contained"
           endIcon={<RiLoginCircleFill />}
+          disabled={loading}
           sx={{
             py: 1.5,
             mb: 2,
@@ -190,7 +195,7 @@ const LoginPage = () => {
             },
           }}
         >
-          Login
+          {loading ? <CircularProgress size={20} color="inherit" /> : "Login"}
         </Button>
 
         <Divider sx={{ my: 2, color: "rgba(255,255,255,0.7)" }}>OR</Divider>

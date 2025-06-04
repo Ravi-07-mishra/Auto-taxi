@@ -1,13 +1,14 @@
-// DriverLogin.jsx
-import React, { useState } from "react";
-import { useSocket } from "../Context/SocketContext";
+// src/components/DriverLogin.jsx
+
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useDriverAuth } from "../Context/driverContext";
-import { Box, Button, Typography, TextField, Divider } from "@mui/material";
+import { Box, Button, Typography, TextField, Divider, CircularProgress } from "@mui/material";
 import { RiLoginCircleFill } from "react-icons/ri";
 import toast from "react-hot-toast";
 import { keyframes } from "@emotion/react";
 import DriverGoogleSignInButton from "../Component/Drivergooglesigninbutton";
+import { useSocket } from "../Context/SocketContext";
+import { useDriverAuth } from "../Context/driverContext";
 
 const float = keyframes`
   0% { transform: translateY(0px); }
@@ -15,6 +16,14 @@ const float = keyframes`
   100% { transform: translateY(0px); }
 `;
 
+/**
+ * DriverLogin
+ *
+ * - Handles email/password login via `login` from driverContext.
+ * - Once logged in, emits driver location via WebSocket every 10 seconds.
+ * - Provides Google Sign-In button (DriverGoogleSignInButton).
+ * - Displays feedback via toast and on-screen message box.
+ */
 const DriverLogin = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
@@ -22,59 +31,77 @@ const DriverLogin = () => {
   const socket = useSocket();
   const { login } = useDriverAuth();
   const navigate = useNavigate();
+  const locationIntervalRef = useRef(null);
+
+  /**
+   * Clears the periodic location interval when the component unmounts.
+   */
+  useEffect(() => {
+    return () => {
+      if (locationIntervalRef.current) {
+        clearInterval(locationIntervalRef.current);
+      }
+    };
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
+
+  const sendDriverLocation = useCallback((driverId) => {
+    /**
+     * Attempts to get geolocation and emit via socket.
+     * Retries every 5 seconds if socket is not connected.
+     */
+    const attemptSend = () => {
+      if (!navigator.geolocation) {
+        console.error("Geolocation not supported.");
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const location = {
+            id: driverId,
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          if (socket?.connected) {
+            socket.emit("driverLocation", location);
+          } else {
+            setTimeout(attemptSend, 5000);
+          }
+        },
+        (error) => {
+          console.error("Geolocation error:", error.message);
+        }
+      );
+    };
+
+    attemptSend();
+    const intervalId = setInterval(attemptSend, 10000);
+    locationIntervalRef.current = intervalId;
+  }, [socket]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setMsg("");
     try {
       const data = await login(formData.email, formData.password);
-      if (data && data.driver) {
+      if (data?.driver) {
         sendDriverLocation(data.driver._id);
-        setMsg("Login successful!");
         toast.success("Logged in Successfully", { id: "login" });
         setTimeout(() => navigate("/driverdashboard"), 500);
       } else {
         throw new Error("Login failed: Driver data not found");
       }
     } catch (error) {
-      setMsg(error.message);
-      toast.error(error.message, { id: "loginError" });
+      setMsg(error.message || "Login failed. Please try again.");
+      toast.error(error.message || "Login failed.", { id: "loginError" });
     } finally {
       setLoading(false);
     }
-  };
-
-  const sendDriverLocation = (driverId) => {
-    const sendLocation = () => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const location = {
-              id: driverId,
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            };
-            if (socket?.connected) {
-              socket.emit("driverLocation", location);
-              console.log("Location sent:", location);
-            } else {
-              console.error("Socket not connected. Retrying...");
-              setTimeout(sendLocation, 5000);
-            }
-          },
-          (error) => console.error("Geolocation error:", error.message)
-        );
-      } else {
-        console.error("Geolocation not supported.");
-      }
-    };
-    sendLocation();
-    setInterval(sendLocation, 10000);
   };
 
   return (
@@ -136,16 +163,22 @@ const DriverLogin = () => {
             gap: "0.5rem",
           }}
         >
-          {["a", "u", "t", "o", "-", "d", "r", "i", "v", "e"].map(
-            (letter, index) => (
-              <span
-                key={index}
-                style={{ color: index % 2 === 0 ? "#cbe557" : "white" }}
-              >
-                {letter}
-              </span>
-            )
-          )}
+          {[
+            "a",
+            "u",
+            "t",
+            "o",
+            "-",
+            "d",
+            "r",
+            "i",
+            "v",
+            "e",
+          ].map((letter, index) => (
+            <span key={index} style={{ color: index % 2 === 0 ? "#cbe557" : "white" }}>
+              {letter}
+            </span>
+          ))}
         </Typography>
 
         <Typography
@@ -187,9 +220,7 @@ const DriverLogin = () => {
             sx={{
               "& .MuiOutlinedInput-root": {
                 "& fieldset": { borderColor: "rgba(255, 255, 255, 0.3)" },
-                "&:hover fieldset": {
-                  borderColor: "rgba(255, 255, 255, 0.5)",
-                },
+                "&:hover fieldset": { borderColor: "rgba(255, 255, 255, 0.5)" },
                 "&.Mui-focused fieldset": { borderColor: "#cbe557" },
               },
               "& .MuiInputBase-input": { color: "#fff" },
@@ -210,9 +241,7 @@ const DriverLogin = () => {
             sx={{
               "& .MuiOutlinedInput-root": {
                 "& fieldset": { borderColor: "rgba(255, 255, 255, 0.3)" },
-                "&:hover fieldset": {
-                  borderColor: "rgba(255, 255, 255, 0.5)",
-                },
+                "&:hover fieldset": { borderColor: "rgba(255, 255, 255, 0.5)" },
                 "&.Mui-focused fieldset": { borderColor: "#cbe557" },
               },
               "& .MuiInputBase-input": { color: "#fff" },
@@ -241,7 +270,7 @@ const DriverLogin = () => {
           endIcon={<RiLoginCircleFill />}
           disabled={loading}
         >
-          {loading ? "Logging in..." : "Login"}
+          {loading ? <CircularProgress size={20} color="inherit" /> : "Login"}
         </Button>
 
         <Divider sx={{ my: 2, backgroundColor: "rgba(255,255,255,0.5)" }} />

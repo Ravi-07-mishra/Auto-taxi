@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useRef } from "react";
+// src/pages/UserHome.jsx
+
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "../Context/userContext";
 import { useNavigate } from "react-router-dom";
 import {
   MapPin,
-  DollarSign,
   Star,
   Eye,
-  X,
+  X as CloseIcon,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -14,140 +15,154 @@ import BackgroundSlider from "../Component/BackgroundSlider";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import {
+  Box,
+  Typography,
+  Button,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  CircularProgress,
+  Snackbar,
+  Alert as MuiAlert,
+} from "@mui/material";
 
+// ----------------------------------------
+// Logging Helper
+// ----------------------------------------
+const logError = (message, error) => {
+  // Swap this out for Sentry, LogRocket, etc., in production
+  console.error(message, error);
+};
+
+// ----------------------------------------
+// Reverse‐Geocode Helper (with in‐memory cache)
+// ----------------------------------------
+const fetchAddressFromCoordinates = async (lat, lon, API_BASE, addressCache) => {
+  const key = `${lat},${lon}`;
+  if (addressCache.current[key]) {
+    return addressCache.current[key];
+  }
+  try {
+    const res = await fetch(
+      `${API_BASE}/api/reverse-geocode?lat=${lat}&lon=${lon}`
+    );
+    if (!res.ok) throw new Error(res.statusText);
+    const data = await res.json();
+    const addr =
+      data.formatted ||
+      data.results?.[0]?.formatted ||
+      data.results?.[0]?.display_name ||
+      "Address not available";
+    addressCache.current[key] = addr;
+    return addr;
+  } catch (err) {
+    logError("Reverse geocode error:", err);
+    return "Address not available";
+  }
+};
+
+// ----------------------------------------
+// Main Component
+// ----------------------------------------
 const UserHome = () => {
   // ─── Backend Base URL ───────────────────────────────────────────
-  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+  const API_BASE =
+    import.meta.env.VITE_API_URL ||
+    (process.env.NODE_ENV === "production"
+      ? "https://api.yourdomain.com"
+      : "http://localhost:3000");
 
   const auth = useAuth();
   const navigate = useNavigate();
   const sliderRef = useRef(null);
 
+  // ─── State Variables ─────────────────────────────────────────────
   const [bookings, setBookings] = useState([]);
-  const [addresses, setAddresses] = useState({});        // { [bookingId]: { pickup, destination } }
-  const [currentIndex, setCurrentIndex] = useState(0);   // which slide is active
-  const [reviewVisible, setReviewVisible] = useState(null);
+  const [addresses, setAddresses] = useState({}); // { [bookingId]: { pickupAddress, destinationAddress } }
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [reviewVisible, setReviewVisible] = useState(null); // bookingId for review modal
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
-  const [rideDetails, setRideDetails] = useState(null);
+  const [rideDetails, setRideDetails] = useState(null); // booking object for details modal
 
-  // In-memory cache so we don't repeat lookups for same coords
+  const [loadingBookings, setLoadingBookings] = useState(true);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+
+  // In‐memory cache for reverse‐geocoding
   const addressCache = useRef({});
 
-  // Fetch bookings when user loads
+  // ----------------------------------------
+  // Fetch user's bookings on mount (or when auth.user changes)
+  // ----------------------------------------
   useEffect(() => {
-    if (!auth.user?._id) return;
+    if (!auth.user?._id) {
+      setLoadingBookings(false);
+      return;
+    }
+
     (async () => {
+      setLoadingBookings(true);
       try {
         const res = await fetch(`${API_BASE}/api/user/${auth.user._id}`);
         if (!res.ok) throw new Error(res.statusText);
         const json = await res.json();
         setBookings(json.bookings || []);
       } catch (err) {
-        console.error("Error fetching bookings:", err);
+        logError("Error fetching bookings:", err);
+        setErrorMsg("Failed to load bookings.");
+        setSnackbarOpen(true);
+      } finally {
+        setLoadingBookings(false);
       }
     })();
-  }, [auth.user?._id]);
+  }, [auth.user?._id, API_BASE]);
 
-  // Reverse-geocode helper with caching
-  const fetchAddressFromCoordinates = async (lat, lon) => {
-    const key = `${lat},${lon}`;
-    if (addressCache.current[key]) {
-      return addressCache.current[key];
-    }
-    try {
-      const res = await fetch(
-        `${API_BASE}/api/reverse-geocode?lat=${lat}&lon=${lon}`
-      );
-      if (!res.ok) throw new Error(res.statusText);
-      const data = await res.json();
-      const addr =
-        data.formatted ||
-        data.results?.[0]?.formatted ||
-        data.results?.[0]?.display_name ||
-        "Address not available";
-      addressCache.current[key] = addr;
-      return addr;
-    } catch (err) {
-      console.error("Reverse geocode error:", err);
-      return "Address not available";
-    }
-  };
-
-  // Whenever the active slide changes, fetch that booking’s addresses if not already
+  // ----------------------------------------
+  // Whenever the active slide (currentIndex) changes, fetch that booking’s addresses if needed
+  // ----------------------------------------
   useEffect(() => {
-    const b = bookings[currentIndex];
-    if (!b) return;
+    const booking = bookings[currentIndex];
+    if (!booking) return;
+    const id = booking._id.toString();
+    if (addresses[id]) return; // already have addresses
 
-    const id = b._id.toString();
-    if (addresses[id]) return; // already fetched
-
+    const { pickupLocation, destinationLocation } = booking;
     (async () => {
-      const { pickupLocation, destinationLocation } = b;
-      const pickupAddress =
-        pickupLocation?.lat && pickupLocation?.lng
-          ? await fetchAddressFromCoordinates(
-              pickupLocation.lat,
-              pickupLocation.lng
-            )
-          : "Address not available";
-      const destinationAddress =
-        destinationLocation?.lat && destinationLocation?.lng
-          ? await fetchAddressFromCoordinates(
-              destinationLocation.lat,
-              destinationLocation.lng
-            )
-          : "Address not available";
+      let pickupAddress = "Address not available";
+      let destinationAddress = "Address not available";
+
+      if (pickupLocation?.lat && pickupLocation?.lng) {
+        pickupAddress = await fetchAddressFromCoordinates(
+          pickupLocation.lat,
+          pickupLocation.lng,
+          API_BASE,
+          addressCache
+        );
+      }
+      if (destinationLocation?.lat && destinationLocation?.lng) {
+        destinationAddress = await fetchAddressFromCoordinates(
+          destinationLocation.lat,
+          destinationLocation.lng,
+          API_BASE,
+          addressCache
+        );
+      }
 
       setAddresses((prev) => ({
         ...prev,
         [id]: { pickupAddress, destinationAddress },
       }));
     })();
-  }, [currentIndex, bookings, addresses]);
+  }, [currentIndex, bookings, addresses, API_BASE]);
 
-  // Carousel arrows
-  const CustomPrevArrow = () => (
-    <div
-      className="absolute top-1/2 left-6 -translate-y-1/2 bg-black/50 backdrop-blur-md rounded-full p-3 cursor-pointer hover:bg-indigo-600/80 transition-all z-30 shadow-lg hover:scale-110"
-      onClick={() => sliderRef.current.slickPrev()}
-    >
-      <ChevronLeft className="w-6 h-6 text-white" />
-    </div>
-  );
-  const CustomNextArrow = () => (
-    <div
-      className="absolute top-1/2 right-6 -translate-y-1/2 bg-black/50 backdrop-blur-md rounded-full p-3 cursor-pointer hover:bg-indigo-600/80 transition-all z-30 shadow-lg hover:scale-110"
-      onClick={() => sliderRef.current.slickNext()}
-    >
-      <ChevronRight className="w-6 h-6 text-white" />
-    </div>
-  );
-
-  // Slider settings with afterChange
-  const carouselSettings = {
-    dots: true,
-    infinite: true,
-    speed: 500,
-    slidesToShow: 1,
-    slidesToScroll: 1,
-    autoplay: true,
-    autoplaySpeed: 5000,
-    arrows: false,
-    prevArrow: <CustomPrevArrow />,
-    nextArrow: <CustomNextArrow />,
-    afterChange: (idx) => setCurrentIndex(idx),
-    appendDots: (dots) => (
-      <div className="slick-dots-container">
-        <ul className="flex justify-center gap-2">{dots}</ul>
-      </div>
-    ),
-    customPaging: () => (
-      <div className="w-3 h-3 bg-white/30 rounded-full transition-all hover:bg-white/80 dot-indicator"></div>
-    ),
-  };
-
-  // Cancel & review handlers
+  // ----------------------------------------
+  // Cancel Booking Handler
+  // ----------------------------------------
   const handleCancelBooking = async (bookingId) => {
     try {
       const res = await fetch(`${API_BASE}/api/booking/cancel/${bookingId}`, {
@@ -155,18 +170,21 @@ const UserHome = () => {
       });
       if (!res.ok) throw new Error(res.statusText);
       await res.json();
-      setBookings((bks) =>
-        bks.map((bk) =>
-          bk._id.toString() === bookingId
-            ? { ...bk, status: "Cancelled" }
-            : bk
+      setBookings((prev) =>
+        prev.map((bk) =>
+          bk._id.toString() === bookingId ? { ...bk, status: "Cancelled" } : bk
         )
       );
     } catch (err) {
-      console.error("Cancel booking error:", err);
+      logError("Cancel booking error:", err);
+      setErrorMsg("Failed to cancel booking.");
+      setSnackbarOpen(true);
     }
   };
 
+  // ----------------------------------------
+  // Submit Review Handler
+  // ----------------------------------------
   const handleSubmitReview = async (bookingId) => {
     try {
       const res = await fetch(`${API_BASE}/api/booking/review/${bookingId}`, {
@@ -176,282 +194,535 @@ const UserHome = () => {
       });
       if (!res.ok) throw new Error(res.statusText);
       await res.json();
+
+      // Reset review form & close modal
       setReviewVisible(null);
       setRating(0);
       setComment("");
-      alert("Review submitted!");
+
+      setErrorMsg("Review submitted!");
+      setSnackbarOpen(true);
     } catch (err) {
-      console.error("Submit review error:", err);
+      logError("Submit review error:", err);
+      setErrorMsg("Failed to submit review.");
+      setSnackbarOpen(true);
     }
   };
 
-  const handleShowRideDetails = (booking) => setRideDetails(booking);
+  // ----------------------------------------
+  // Show Ride Details Modal
+  // ----------------------------------------
+  const handleShowRideDetails = (booking) => {
+    setRideDetails(booking);
+  };
 
-  const backgroundImages = ["/bg1.jpg", "/bg2.jpg", "/bg3.jpg"];
+  // ----------------------------------------
+  // Carousel Arrow Components
+  // ----------------------------------------
+  const CustomPrevArrow = () => (
+    <Box
+      component="div"
+      onClick={() => sliderRef.current.slickPrev()}
+      sx={{
+        position: "absolute",
+        top: "50%",
+        left: 16,
+        transform: "translateY(-50%)",
+        bgcolor: "rgba(0,0,0,0.5)",
+        borderRadius: "50%",
+        p: 1,
+        cursor: "pointer",
+        zIndex: 30,
+        "&:hover": { bgcolor: "rgba(63,81,181,0.8)", transform: "scale(1.1)" },
+      }}
+    >
+      <ChevronLeft size={24} color="#fff" />
+    </Box>
+  );
+  const CustomNextArrow = () => (
+    <Box
+      component="div"
+      onClick={() => sliderRef.current.slickNext()}
+      sx={{
+        position: "absolute",
+        top: "50%",
+        right: 16,
+        transform: "translateY(-50%)",
+        bgcolor: "rgba(0,0,0,0.5)",
+        borderRadius: "50%",
+        p: 1,
+        cursor: "pointer",
+        zIndex: 30,
+        "&:hover": { bgcolor: "rgba(63,81,181,0.8)", transform: "scale(1.1)" },
+      }}
+    >
+      <ChevronRight size={24} color="#fff" />
+    </Box>
+  );
+
+  // ----------------------------------------
+  // Slider Settings
+  // ----------------------------------------
+  const carouselSettings = {
+    dots: true,
+    infinite: true,
+    speed: 500,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    autoplay: true,
+    autoplaySpeed: 5000,
+    arrows: false, // We'll render our custom arrows
+    afterChange: (idx) => setCurrentIndex(idx),
+    appendDots: (dots) => (
+      <Box sx={{ mt: 2, display: "flex", justifyContent: "center", gap: 1 }}>
+        {dots}
+      </Box>
+    ),
+    customPaging: () => (
+      <Box
+        sx={{
+          width: 8,
+          height: 8,
+          bgcolor: "rgba(255,255,255,0.3)",
+          borderRadius: "50%",
+          "&:hover": { bgcolor: "rgba(255,255,255,0.8)" },
+        }}
+      />
+    ),
+  };
+
+  // ----------------------------------------
+  // Snackbar Close Handler
+  // ----------------------------------------
+  const handleCloseSnackbar = () => {
+    setSnackbarOpen(false);
+  };
+
+  // ----------------------------------------
+  // Loading State for Bookings
+  // ----------------------------------------
+  if (loadingBookings) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          bgcolor: "grey.900",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <CircularProgress color="primary" />
+      </Box>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-indigo-900 text-white relative font-sans">
+    <Box
+      sx={{
+        minHeight: "100vh",
+        bgcolor: "linear-gradient(to bottom right, #1f2937, #4338ca)",
+        color: "#fff",
+        fontFamily: "sans-serif",
+        position: "relative",
+      }}
+    >
+      {/* Background Slider */}
       <BackgroundSlider
-        images={backgroundImages}
+        images={["/bg1.jpg", "/bg2.jpg", "/bg3.jpg"]}
         interval={7000}
         className="absolute inset-0 z-0"
       />
 
-      {/* Welcome */}
-      <section className="pt-24 pb-12 flex items-center justify-center relative z-10 px-4">
-        <div className="text-center max-w-4xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 drop-shadow-lg">
-            Welcome,{" "}
-            {auth.user ? auth.user.name || "User" : "Please Login"}!
-          </h1>
-          <p className="text-lg md:text-xl text-gray-300 drop-shadow-sm">
-            Manage your bookings and explore your dashboard.
-          </p>
-        </div>
-      </section>
+      {/* Snackbar for Errors / Success */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <MuiAlert
+          onClose={handleCloseSnackbar}
+          severity={errorMsg.includes("Failed") ? "error" : "success"}
+          sx={{ width: "100%" }}
+        >
+          {errorMsg}
+        </MuiAlert>
+      </Snackbar>
 
-      {/* Bookings */}
-      <section className="py-12 relative z-10">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold mb-10 text-center">
+      {/* Welcome Section */}
+      <Box
+        component="section"
+        sx={{
+          pt: 24,
+          pb: 12,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+          zIndex: 10,
+          px: 2,
+        }}
+      >
+        <Box sx={{ textAlign: "center", maxWidth: 800, mx: "auto" }}>
+          <Typography variant="h3" component="h1" sx={{ fontWeight: "bold", mb: 2 }}>
+            Welcome, {auth.user ? auth.user.name || "User" : "Please Login"}!
+          </Typography>
+          <Typography variant="h6" sx={{ color: "rgba(255,255,255,0.8)" }}>
+            Manage your bookings and explore your dashboard.
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* Bookings Carousel Section */}
+      <Box
+        component="section"
+        sx={{
+          py: 12,
+          position: "relative",
+          zIndex: 10,
+          px: 2,
+        }}
+      >
+        <Box sx={{ maxWidth: 1000, mx: "auto" }}>
+          <Typography variant="h4" component="h2" sx={{ fontWeight: "bold", mb: 6, textAlign: "center" }}>
             Your Bookings
-          </h2>
-          <div className="relative max-w-3xl mx-auto">
-            {bookings.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-gray-400 text-lg">
-                  You don't have any bookings yet
-                </p>
-              </div>
-            ) : (
+          </Typography>
+
+          {bookings.length === 0 ? (
+            <Box sx={{ textAlign: "center", py: 12 }}>
+              <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.6)" }}>
+                You don’t have any bookings yet.
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ position: "relative" }}>
               <Slider ref={sliderRef} {...carouselSettings}>
-                {bookings.map((bk, idx) => {
+                {bookings.map((bk) => {
                   const id = bk._id.toString();
                   return (
-                    <div key={id} className="px-2 sm:px-4">
-                      <div className="bg-gradient-to-br from-gray-800/80 to-indigo-900/80 backdrop-blur-lg rounded-2xl overflow-hidden shadow-2xl border border-white/10 transition-all hover:shadow-indigo-500/20 hover:border-indigo-400/30">
+                    <Box key={id} sx={{ px: { xs: 1, sm: 2 } }}>
+                      <Box
+                        sx={{
+                          bgcolor: "rgba(31,41,55,0.8)",
+                          backdropFilter: "blur(8px)",
+                          borderRadius: 3,
+                          overflow: "hidden",
+                          boxShadow: 3,
+                          border: "1px solid rgba(255,255,255,0.1)",
+                          transition: "box-shadow 0.3s ease, border-color 0.3s ease",
+                          "&:hover": {
+                            boxShadow: "0 0 20px rgba(67,56,202,0.3)",
+                            borderColor: "rgba(67,56,202,0.3)",
+                          },
+                        }}
+                      >
                         {/* Header */}
-                        <div className="p-6 pb-4 border-b border-white/10">
-                          <div className="flex items-center">
-                            <div className="relative">
-                              <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-indigo-400/50 shadow-md">
-                                <img
-                                  src={
-                                    `${API_BASE}/${bk.profileImage}` ||
-                                    "/placeholder.svg"
-                                  }
-                                  alt="Driver"
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    e.target.src = "/placeholder.svg";
-                                  }}
-                                />
-                              </div>
-                              {bk.driver?.avgRating && (
-                                <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-indigo-600 text-white px-2 py-1 rounded-full flex items-center text-xs font-bold shadow-md">
-                                  <Star className="w-3 h-3 fill-current mr-1" />
-                                  {bk.driver.avgRating.toFixed(1)}
-                                </div>
-                              )}
-                            </div>
-                            <div className="ml-4">
-                              <h3 className="font-bold text-xl text-white">
-                                {bk.driver?.name || "Driver"}
-                              </h3>
-                              <span
-                                className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                  bk.status === "completed"
-                                    ? "bg-green-500/20 text-green-300"
-                                    : bk.status === "in-progress"
-                                    ? "bg-yellow-500/20 text-yellow-300"
-                                    : bk.status === "Cancelled"
-                                    ? "bg-red-500/20 text-red-300"
-                                    : "bg-indigo-500/20 text-indigo-300"
-                                }`}
+                        <Box sx={{ display: "flex", alignItems: "center", p: 4, pb: 2, borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+                          <Box sx={{ position: "relative" }}>
+                            <Box
+                              component="img"
+                              src={`${API_BASE}/${bk.profileImage}` || "/placeholder.svg"}
+                              alt="Driver"
+                              onError={(e) => {
+                                e.currentTarget.src = "/placeholder.svg";
+                              }}
+                              sx={{
+                                width: 64,
+                                height: 64,
+                                borderRadius: "50%",
+                                objectFit: "cover",
+                                border: "2px solid rgba(99,102,241,0.5)",
+                                boxShadow: 2,
+                              }}
+                            />
+                            {bk.driver?.avgRating != null && (
+                              <Box
+                                sx={{
+                                  position: "absolute",
+                                  bottom: -8,
+                                  left: "50%",
+                                  transform: "translateX(-50%)",
+                                  bgcolor: "rgba(99,102,241,0.8)",
+                                  color: "#fff",
+                                  px: 1.5,
+                                  py: 0.5,
+                                  borderRadius: "16px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  typography: "caption",
+                                  fontWeight: "bold",
+                                  boxShadow: 1,
+                                }}
                               >
-                                {bk.status}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
+                                <Star size={12} />
+                                <Box component="span" sx={{ ml: 0.5 }}>
+                                  {bk.driver.avgRating.toFixed(1)}
+                                </Box>
+                              </Box>
+                            )}
+                          </Box>
+                          <Box sx={{ ml: 3 }}>
+                            <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                              {bk.driver?.name || "Driver"}
+                            </Typography>
+                            <Box
+                              component="span"
+                              sx={{
+                                typography: "caption",
+                                fontWeight: "medium",
+                                px: 1,
+                                py: 0.25,
+                                borderRadius: 1,
+                                bgcolor:
+                                  bk.status === "completed"
+                                    ? "rgba(16,185,129,0.2)"
+                                    : bk.status === "in-progress"
+                                    ? "rgba(234,179,8,0.2)"
+                                    : bk.status === "Cancelled"
+                                    ? "rgba(239,68,68,0.2)"
+                                    : "rgba(99,102,241,0.2)",
+                                color:
+                                  bk.status === "completed"
+                                    ? "rgba(16,185,129,0.8)"
+                                    : bk.status === "in-progress"
+                                    ? "rgba(234,179,8,0.8)"
+                                    : bk.status === "Cancelled"
+                                    ? "rgba(239,68,68,0.8)"
+                                    : "rgba(99,102,241,0.8)",
+                              }}
+                            >
+                              {bk.status}
+                            </Box>
+                          </Box>
+                        </Box>
 
-                        {/* Body */}
-                        <div className="p-6 pt-4">
-                          <div className="space-y-4 mb-6">
-                            <div className="flex items-start">
-                              <div className="bg-indigo-500/20 p-2 rounded-lg mr-3">
-                                <MapPin className="w-5 h-5 text-indigo-300" />
-                              </div>
-                              <div>
-                                <p className="text-indigo-300/80 text-xs font-medium uppercase tracking-wider mb-1">
+                        {/* Body (Pickup / Destination) */}
+                        <Box sx={{ p: 4, pt: 2 }}>
+                          <Box sx={{ mb: 4 }}>
+                            <Box sx={{ display: "flex", alignItems: "flex-start", mb: 1 }}>
+                              <Box
+                                sx={{
+                                  bgcolor: "rgba(99,102,241,0.2)",
+                                  p: 1,
+                                  borderRadius: 1,
+                                  mr: 2,
+                                }}
+                              >
+                                <MapPin size={20} color="rgba(147,197,253,1)" />
+                              </Box>
+                              <Box>
+                                <Typography
+                                  variant="overline"
+                                  sx={{ color: "rgba(147,197,253,0.8)", mb: 0.5 }}
+                                >
                                   Pickup Location
-                                </p>
-                                <p className="text-white font-medium">
-                                  {
-                                    addresses[id]?.pickupAddress ||
-                                    (idx === currentIndex
+                                </Typography>
+                                <Typography variant="body1" sx={{ fontWeight: "medium" }}>
+                                  {addresses[id]?.pickupAddress ||
+                                    (bookings.indexOf(bk) === currentIndex
                                       ? "Loading address..."
-                                      : "–")
-                                  }
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="flex items-start">
-                              <div className="bg-indigo-500/20 p-2 rounded-lg mr-3">
-                                <MapPin className="w-5 h-5 text-indigo-300" />
-                              </div>
-                              <div>
-                                <p className="text-indigo-300/80 text-xs font-medium uppercase tracking-wider mb-1">
+                                      : "–")}
+                                </Typography>
+                              </Box>
+                            </Box>
+                            <Box sx={{ display: "flex", alignItems: "flex-start" }}>
+                              <Box
+                                sx={{
+                                  bgcolor: "rgba(99,102,241,0.2)",
+                                  p: 1,
+                                  borderRadius: 1,
+                                  mr: 2,
+                                }}
+                              >
+                                <MapPin size={20} color="rgba(147,197,253,1)" />
+                              </Box>
+                              <Box>
+                                <Typography
+                                  variant="overline"
+                                  sx={{ color: "rgba(147,197,253,0.8)", mb: 0.5 }}
+                                >
                                   Destination
-                                </p>
-                                <p className="text-white font-medium">
-                                  {
-                                    addresses[id]?.destinationAddress ||
-                                    (idx === currentIndex
+                                </Typography>
+                                <Typography variant="body1" sx={{ fontWeight: "medium" }}>
+                                  {addresses[id]?.destinationAddress ||
+                                    (bookings.indexOf(bk) === currentIndex
                                       ? "Loading address..."
-                                      : "–")
-                                  }
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                                      : "–")}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </Box>
+                        </Box>
 
                         {/* Footer Actions */}
                         {bk.status === "completed" ? (
-                          <button
+                          <Button
+                            fullWidth
+                            variant="contained"
+                            color="primary"
                             onClick={() => setReviewVisible(id)}
-                            className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 text-white py-3 rounded-lg flex items-center justify-center gap-2"
+                            startIcon={<Star size={20} />}
+                            sx={{
+                              borderRadius: 2,
+                              py: 1.5,
+                              bgcolor: "rgba(99,102,241,0.9)",
+                              "&:hover": { bgcolor: "rgba(79,84,230,0.9)" },
+                            }}
                           >
-                            <Star className="w-5 h-5" />
                             Leave a Review
-                          </button>
+                          </Button>
                         ) : (
-                          <div className="flex justify-between gap-3">
-                            <button
+                          <Box sx={{ display: "flex", gap: 2, p: 4, pt: 2 }}>
+                            <Button
+                              fullWidth
+                              variant="contained"
+                              color="info"
                               onClick={() => handleShowRideDetails(bk)}
-                              className="flex-1 bg-indigo-600/90 text-white font-medium py-3 px-4 rounded-lg shadow flex items-center justify-center gap-2"
+                              startIcon={<Eye size={20} />}
+                              sx={{
+                                borderRadius: 2,
+                                py: 1.5,
+                                bgcolor: "rgba(99,102,241,0.7)",
+                                "&:hover": { bgcolor: "rgba(79,84,230,0.7)" },
+                              }}
                             >
-                              <Eye className="w-4 h-4" /> Details
-                            </button>
+                              Details
+                            </Button>
                             {bk.status !== "Cancelled" && (
-                              <button
+                              <Button
+                                fullWidth
+                                variant="contained"
+                                color="error"
                                 onClick={() => handleCancelBooking(id)}
-                                className="flex-1 bg-gradient-to-r from-red-600 to-red-700 text-white py-3 px-4 rounded-lg flex items-center justify-center gap-2"
+                                startIcon={<CloseIcon size={20} />}
+                                sx={{
+                                  borderRadius: 2,
+                                  py: 1.5,
+                                  bgcolor: "rgba(239,68,68,0.8)",
+                                  "&:hover": { bgcolor: "rgba(220,38,38,0.8)" },
+                                }}
                               >
-                                <X className="w-4 h-4" /> Cancel
-                              </button>
+                                Cancel
+                              </Button>
                             )}
-                          </div>
+                          </Box>
                         )}
-                      </div>
-                    </div>
+                      </Box>
+                    </Box>
                   );
                 })}
               </Slider>
-            )}
-          </div>
-        </div>
-      </section>
 
-      {/* Ride Details Modal */}
-      {rideDetails && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 w-11/12 max-w-lg shadow-2xl border border-white/10">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-2xl font-semibold text-white">
-                Ride Details
-              </h3>
-              <button onClick={() => setRideDetails(null)}>
-                <X className="w-6 h-6 text-gray-400 hover:text-white" />
-              </button>
-            </div>
-            <div className="space-y-3 text-white text-sm">
-              <p>
+              {/* Custom Arrows */}
+              <CustomPrevArrow />
+              <CustomNextArrow />
+            </Box>
+          )}
+        </Box>
+      </Box>
+
+      {/* Ride Details Dialog */}
+      <Dialog
+        open={Boolean(rideDetails)}
+        onClose={() => setRideDetails(null)}
+        aria-labelledby="ride-details-title"
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle id="ride-details-title">Ride Details</DialogTitle>
+        <DialogContent dividers>
+          {rideDetails && (
+            <Box sx={{ color: "#000" }}>
+              <Typography variant="body1" gutterBottom>
                 <strong>Driver:</strong> {rideDetails.driver?.name || "N/A"}
-              </p>
-              <p>
+              </Typography>
+              <Typography variant="body1" gutterBottom>
                 <strong>Status:</strong> {rideDetails.status}
-              </p>
-              <p>
-                <strong>Price:</strong> ${rideDetails.price?.toFixed(2) || "0.00"}
-              </p>
-              <p>
+              </Typography>
+              <Typography variant="body1" gutterBottom>
+                <strong>Price:</strong> $
+                {rideDetails.price?.toFixed(2) || "0.00"}
+              </Typography>
+              <Typography variant="body1" gutterBottom>
                 <strong>Pickup:</strong>{" "}
                 {addresses[rideDetails._id]?.pickupAddress || "Loading..."}
-              </p>
-              <p>
+              </Typography>
+              <Typography variant="body1" gutterBottom>
                 <strong>Destination:</strong>{" "}
                 {addresses[rideDetails._id]?.destinationAddress || "Loading..."}
-              </p>
-              <p>
+              </Typography>
+              <Typography variant="body1" gutterBottom>
                 <strong>Booked At:</strong>{" "}
                 {new Date(rideDetails.createdAt).toLocaleString()}
-              </p>
-              {rideDetails.rating && (
-                <p>
+              </Typography>
+              {rideDetails.rating != null && (
+                <Typography variant="body1" gutterBottom>
                   <strong>Your Rating:</strong> {rideDetails.rating} / 5
-                </p>
+                </Typography>
               )}
               {rideDetails.review && (
-                <p>
+                <Typography variant="body1" gutterBottom>
                   <strong>Your Review:</strong> “{rideDetails.review}”
-                </p>
+                </Typography>
               )}
-            </div>
-          </div>
-        </div>
-      )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRideDetails(null)} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
 
-      {/* Review Modal */}
-      {reviewVisible && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 w-11/12 max-w-lg shadow-2xl border border-white/10">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-2xl font-semibold text-white">
-                Leave a Review
-              </h3>
-              <button onClick={() => setReviewVisible(null)}>
-                <X className="w-6 h-6 text-gray-400 hover:text-white" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm text-white mb-2">
-                  Rating (1-5)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="5"
-                  value={rating}
-                  onChange={(e) => setRating(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg bg-gray-700 text-white"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-white mb-2">
-                  Review
-                </label>
-                <textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg bg-gray-700 text-white"
-                  rows="4"
-                />
-              </div>
-              <button
-                onClick={() => handleSubmitReview(reviewVisible)}
-                className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 text-white py-3 rounded-lg font-medium"
-              >
-                Submit Review
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      {/* Review Dialog */}
+      <Dialog
+        open={Boolean(reviewVisible)}
+        onClose={() => setReviewVisible(null)}
+        aria-labelledby="review-dialog-title"
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle id="review-dialog-title">Leave a Review</DialogTitle>
+        <DialogContent dividers>
+          <Box component="form" noValidate>
+            <TextField
+              type="number"
+              label="Rating (1–5)"
+              inputProps={{ min: 1, max: 5 }}
+              fullWidth
+              variant="outlined"
+              value={rating}
+              onChange={(e) => setRating(Number(e.target.value))}
+              sx={{ mb: 3 }}
+            />
+            <TextField
+              label="Review"
+              fullWidth
+              multiline
+              rows={4}
+              variant="outlined"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              sx={{ mb: 2 }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setReviewVisible(null)} color="secondary">
+            Cancel
+          </Button>
+          <Button
+            onClick={() => handleSubmitReview(reviewVisible)}
+            color="primary"
+            variant="contained"
+          >
+            Submit Review
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 };
 
