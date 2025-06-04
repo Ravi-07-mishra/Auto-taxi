@@ -1,10 +1,13 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import dropin from "braintree-web-drop-in";
 import React from "react";
 import { useDriverAuth } from "../Context/driverContext";
 
 const SubscriptionPage = () => {
+  // ─── Backend Base URL ───────────────────────────────────────────
+  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
   const [plans, setPlans] = useState([]);
   const { driver } = useDriverAuth();
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -17,7 +20,7 @@ const SubscriptionPage = () => {
   useEffect(() => {
     const fetchPlans = async () => {
       try {
-        const { data } = await axios.get("http://localhost:3000/api/payment/plans");
+        const { data } = await axios.get(`${API_BASE}/api/payment/plans`);
         setPlans(data.plans);
       } catch (error) {
         setErrors("Failed to fetch subscription plans.");
@@ -26,7 +29,7 @@ const SubscriptionPage = () => {
 
     const fetchClientToken = async () => {
       try {
-        const { data } = await axios.get("http://localhost:3000/api/payment/braintree/token");
+        const { data } = await axios.get(`${API_BASE}/api/payment/braintree/token`);
         setClientToken(data.clientToken);
       } catch (error) {
         setErrors("Failed to fetch client token.");
@@ -69,11 +72,14 @@ const SubscriptionPage = () => {
     setLoading(true);
     try {
       const { nonce } = await instance.requestPaymentMethod();
-      const { data } = await axios.post("http://localhost:3000/api/payment/braintree/subscribe", {
-        paymentMethodNonce: nonce,
-        planId: selectedPlan.plan_id, // Corrected to use the proper field
-        driverId: driver._id, // Ensuring driver._id is passed correctly
-      });
+      const { data } = await axios.post(
+        `${API_BASE}/api/payment/braintree/subscribe`,
+        {
+          paymentMethodNonce: nonce,
+          planId: selectedPlan.plan_id,
+          driverId: driver._id,
+        }
+      );
       if (data.success) {
         setSuccess("Subscription successful.");
       } else {

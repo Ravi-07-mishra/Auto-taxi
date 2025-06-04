@@ -1,36 +1,39 @@
-import { useState, useEffect, useRef } from "react";
-import axios from "axios";
-import React from "react";
+// Payment.jsx
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import axios from "axios";
 import io from "socket.io-client";
+import "react-toastify/dist/ReactToastify.css";
+import "../Css/Payment.css"; // Assume you have some basic styles
 
 const Payment = () => {
+  // ─── Backend Base URL ───────────────────────────────────────────
+  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
   const [values, setValues] = useState({
     clientToken: null,
     success: "",
     errors: "",
     instance: null,
-    ridePrice: null, // NEW: To hold the booking price
+    ridePrice: null,
   });
+  const { clientToken, success, errors, instance, ridePrice } = values;
 
   const socketRef = useRef(null);
   const { bookingId } = useParams();
   const [loading, setLoading] = useState(false);
-  const { clientToken, success, errors, instance, ridePrice } = values;
   const navigate = useNavigate();
 
   // Establish socket connection
   useEffect(() => {
-    socketRef.current = io("http://localhost:3000", {
+    const socket = io(API_BASE, {
       transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
     });
-
-    const socket = socketRef.current;
+    socketRef.current = socket;
 
     socket.on("connect", () => {
       console.log("Socket connected:", socket.id);
@@ -40,61 +43,55 @@ const Payment = () => {
       socket.disconnect();
       console.log("Socket disconnected on cleanup.");
     };
-  }, []);
+  }, [API_BASE]);
 
   // Fetch booking price from backend
   useEffect(() => {
     axios
-      .get(`http://localhost:3000/api/user/driver/${bookingId}`)
+      .get(`${API_BASE}/api/user/driver/${bookingId}`, { withCredentials: true })
       .then(({ data }) => {
-        setValues((prevValues) => ({
-          ...prevValues,
+        setValues((prev) => ({
+          ...prev,
           ridePrice: data.booking.price,
         }));
       })
       .catch(() => {
-        setValues((prevValues) => ({
-          ...prevValues,
+        setValues((prev) => ({
+          ...prev,
           errors: "Failed to load booking info.",
         }));
       });
-  }, [bookingId]);
+  }, [bookingId, API_BASE]);
 
   const handlePayment = async () => {
     if (!instance) {
-      setValues((prevValues) => ({
-        ...prevValues,
+      setValues((prev) => ({
+        ...prev,
         errors: "Payment instance not initialized.",
       }));
       return;
     }
-
     if (ridePrice == null) {
-      setValues((prevValues) => ({
-        ...prevValues,
+      setValues((prev) => ({
+        ...prev,
         errors: "Ride price not loaded yet.",
       }));
       return;
     }
 
     setLoading(true);
-
     try {
       const { nonce } = await instance.requestPaymentMethod();
       const { data } = await axios.post(
-        "http://localhost:3000/api/payment/braintree/pay",
-        {
-          nonce,
-          bookingId,
-          amount: ridePrice, // Include ride price in the payment request
-        }
+        `${API_BASE}/api/payment/braintree/pay`,
+        { nonce, bookingId, amount: ridePrice },
+        { withCredentials: true }
       );
 
-      setValues((prevValues) => ({
-        ...prevValues,
+      setValues((prev) => ({
+        ...prev,
         success: "Payment completed successfully.",
       }));
-
       toast.success("Booking successful!");
 
       if (socketRef.current) {
@@ -103,9 +100,9 @@ const Payment = () => {
       }
 
       navigate("/userhome");
-    } catch (error) {
-      setValues((prevValues) => ({
-        ...prevValues,
+    } catch {
+      setValues((prev) => ({
+        ...prev,
         errors: "Payment failed. Please try again.",
       }));
     } finally {
@@ -118,23 +115,22 @@ const Payment = () => {
     const fetchClientToken = async () => {
       try {
         const { data } = await axios.get(
-          "http://localhost:3000/api/payment/braintree/token"
+          `${API_BASE}/api/payment/braintree/token`,
+          { withCredentials: true }
         );
-        setValues((prevValues) => ({
-          ...prevValues,
+        setValues((prev) => ({
+          ...prev,
           clientToken: data.clientToken,
         }));
-      } catch (error) {
-        console.error("Error fetching client token:", error);
-        setValues((prevValues) => ({
-          ...prevValues,
+      } catch {
+        setValues((prev) => ({
+          ...prev,
           errors: "Failed to initialize payment.",
         }));
       }
     };
-
     fetchClientToken();
-  }, []);
+  }, [API_BASE]);
 
   // Load Braintree drop-in script
   useEffect(() => {
@@ -147,39 +143,31 @@ const Payment = () => {
         if (clientToken) {
           const container = document.getElementById("dropin-container");
           if (!container) {
-            setValues((prevValues) => ({
-              ...prevValues,
+            setValues((prev) => ({
+              ...prev,
               errors: "Drop-in container is missing.",
             }));
             return;
           }
-
           container.innerHTML = "";
 
-          try {
-            window.braintree.dropin
-              .create({
-                authorization: clientToken,
-                container: "#dropin-container",
-              })
-              .then((instance) => {
-                setValues((prevValues) => ({
-                  ...prevValues,
-                  instance,
-                }));
-              })
-              .catch((error) => {
-                setValues((prevValues) => ({
-                  ...prevValues,
-                  errors: `Failed to initialize payment gateway: ${error.message}`,
-                }));
-              });
-          } catch (error) {
-            setValues((prevValues) => ({
-              ...prevValues,
-              errors: `Error initializing Drop-in: ${error.message}`,
-            }));
-          }
+          window.braintree.dropin
+            .create({
+              authorization: clientToken,
+              container: "#dropin-container",
+            })
+            .then((dropinInstance) => {
+              setValues((prev) => ({
+                ...prev,
+                instance: dropinInstance,
+              }));
+            })
+            .catch((error) => {
+              setValues((prev) => ({
+                ...prev,
+                errors: `Failed to initialize payment gateway: ${error.message}`,
+              }));
+            });
         }
       };
       document.body.appendChild(script);
@@ -204,7 +192,11 @@ const Payment = () => {
       {clientToken ? (
         <>
           <div id="dropin-container"></div>
-          <button onClick={handlePayment} disabled={!instance || loading}>
+          <button
+            onClick={handlePayment}
+            disabled={!instance || loading}
+            className="payment-button"
+          >
             {loading ? "Processing..." : "Make Payment"}
           </button>
         </>

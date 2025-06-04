@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useDriverAuth } from "../Context/driverContext";
 import { motion } from "framer-motion";
 import { FiUser, FiMail, FiLock } from "react-icons/fi";
@@ -7,18 +7,23 @@ import { toast } from "react-hot-toast";
 import { CircularProgress } from "@mui/material";
 
 const EditProfilePage = () => {
+  // ─── Backend Base URL ───────────────────────────────────────────
+  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
   const [driverName, setDriverName] = useState("");
   const [email, setEmail] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { driver, setDriver } = useDriverAuth();
+  const [userId, setUserId] = useState(null);
 
   // Initialize form fields with current driver details
   useEffect(() => {
     if (driver) {
       setDriverName(driver.name);
       setEmail(driver.email);
+      setUserId(driver._id);
     }
   }, [driver]);
 
@@ -33,7 +38,7 @@ const EditProfilePage = () => {
         payload.newPassword = newPassword;
       }
       const response = await axios.put(
-        "http://localhost:3000/api/driver/updateProfile",
+        `${API_BASE}/api/driver/updateProfile`,
         payload,
         { withCredentials: true }
       );

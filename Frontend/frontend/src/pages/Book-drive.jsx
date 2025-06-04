@@ -1,38 +1,41 @@
-import React, { useEffect, useState, useRef } from "react"
-import axios from "axios"
-import MapSelector from "../Component/mapselector"
-import { useNavigate } from "react-router-dom"
-import io from "socket.io-client"
-import { TextField, Button, CircularProgress, Typography } from "@mui/material"
-import { useAuth } from "../Context/userContext"
-import { MapPin, Navigation, ArrowRight } from "lucide-react"
+import React, { useEffect, useState, useRef } from "react";
+import axios from "axios";
+import MapSelector from "../Component/mapselector";
+import { useNavigate } from "react-router-dom";
+import io from "socket.io-client";
+import { TextField, Button, CircularProgress, Typography } from "@mui/material";
+import { useAuth } from "../Context/userContext";
+import { MapPin, Navigation, ArrowRight } from "lucide-react";
 
 // OpenCage Geocoder API Key
-const OPEN_CAGE_API_KEY = import.meta.env.VITE_OPEN_CAGE_API_KEY
+const OPEN_CAGE_API_KEY = import.meta.env.VITE_OPEN_CAGE_API_KEY;
+
+// Backend API base URL from environment variables
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 const Bookdrive = () => {
-  const { user } = useAuth()
-  const navigate = useNavigate()
-  const socketRef = useRef(null)
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const socketRef = useRef(null);
   const [formData, setFormData] = useState({
     userId: user ? user._id : "",
     pickupLocation: { lat: "", lng: "" },
     destinationLocation: { lat: "", lng: "" },
-  })
-  const [loading, setLoading] = useState(false)
-  const [pickupSuggestions, setPickupSuggestions] = useState([])
-  const [destinationSuggestions, setDestinationSuggestions] = useState([])
-  const [pickupQuery, setPickupQuery] = useState("")
-  const [destinationQuery, setDestinationQuery] = useState("")
+  });
+  const [loading, setLoading] = useState(false);
+  const [pickupSuggestions, setPickupSuggestions] = useState([]);
+  const [destinationSuggestions, setDestinationSuggestions] = useState([]);
+  const [pickupQuery, setPickupQuery] = useState("");
+  const [destinationQuery, setDestinationQuery] = useState("");
 
   useEffect(() => {
     if (user) {
       setFormData((prev) => ({
         ...prev,
         userId: user._id,
-      }))
+      }));
     }
-  }, [user])
+  }, [user]);
 
   useEffect(() => {
     const fetchLocation = () => {
@@ -44,123 +47,123 @@ const Bookdrive = () => {
               lat: position.coords.latitude,
               lng: position.coords.longitude,
             },
-          }))
+          }));
         },
         (error) => {
-          console.error("Error fetching location:", error)
-          alert("Unable to fetch your location. Please set it manually on the map.")
-        },
-      )
-    }
+          console.error("Error fetching location:", error);
+          alert("Unable to fetch your location. Please set it manually on the map.");
+        }
+      );
+    };
 
     if ("geolocation" in navigator) {
-      fetchLocation()
+      fetchLocation();
     } else {
-      alert("Geolocation is not supported by your browser.")
+      alert("Geolocation is not supported by your browser.");
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
-    socketRef.current = io("http://localhost:3000", {
+    socketRef.current = io(API_BASE, {
       transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
-    })
+    });
 
-    const socket = socketRef.current
+    const socket = socketRef.current;
 
     socket.on("connect", () => {
-      console.log("Socket connected with ID:", socket.id)
+      console.log("Socket connected with ID:", socket.id);
       if (formData.userId) {
-        socket.emit("setUserSocketId", formData.userId)
+        socket.emit("setUserSocketId", formData.userId);
       }
-    })
+    });
 
     socket.on("bookingAccepted", (data) => {
-      console.log("Booking accepted event received:", data)
-      alert("Booking successful!")
+      console.log("Booking accepted event received:", data);
+      alert("Booking successful!");
       if (data && data.paymentPageUrl) {
-        navigate(data.paymentPageUrl)
+        navigate(data.paymentPageUrl);
       } else {
-        console.error("Payment page URL missing in bookingAccepted event data")
+        console.error("Payment page URL missing in bookingAccepted event data");
       }
-    })
+    });
 
     return () => {
-      socket.disconnect()
-      console.log("Socket disconnected")
-    }
-  }, [formData.userId, navigate])
+      socket.disconnect();
+      console.log("Socket disconnected");
+    };
+  }, [formData.userId, navigate]);
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
 
     try {
-      const response = await axios.post("http://localhost:3000/api/user/booking", formData)
-      console.log("Booking Response:", response)
-      alert("Booking successful!")
-      setLoading(false)
+      const response = await axios.post(`${API_BASE}/api/user/booking`, formData);
+      console.log("Booking Response:", response);
+      alert("Booking successful!");
+      setLoading(false);
     } catch (error) {
-      console.error("Booking error:", error.response || error)
-      alert(error.response?.data?.msg || "Booking failed. Please try again.")
-      setLoading(false)
+      console.error("Booking error:", error.response || error);
+      alert(error.response?.data?.msg || "Booking failed. Please try again.");
+      setLoading(false);
     }
-  }
+  };
 
   const fetchLocationSuggestions = async (query, type) => {
     try {
-      const response = await axios.get(`http://localhost:3000/api/geocode`, {
+      const response = await axios.get(`${API_BASE}/api/geocode`, {
         params: { query },
-      })
+      });
 
-      const results = response.data.results
+      const results = response.data.results;
 
       if (type === "pickup") {
-        setPickupSuggestions(results)
+        setPickupSuggestions(results);
       } else {
-        setDestinationSuggestions(results)
+        setDestinationSuggestions(results);
       }
     } catch (error) {
-      console.error("Error fetching suggestions:", error)
+      console.error("Error fetching suggestions:", error);
     }
-  }
+  };
 
   const handleLocationChange = (e, type) => {
-    const query = e.target.value
+    const query = e.target.value;
     if (type === "pickup") {
-      setPickupQuery(query)
+      setPickupQuery(query);
     } else {
-      setDestinationQuery(query)
+      setDestinationQuery(query);
     }
 
     if (query.length > 2) {
-      fetchLocationSuggestions(query, type)
+      fetchLocationSuggestions(query, type);
     } else {
       if (type === "pickup") {
-        setPickupSuggestions([])
+        setPickupSuggestions([]);
       } else {
-        setDestinationSuggestions([])
+        setDestinationSuggestions([]);
       }
     }
-  }
+  };
 
   const handleLocationSelect = (selectedLocation, type) => {
     const location = {
       lat: selectedLocation.geometry.lat,
       lng: selectedLocation.geometry.lng,
-    }
+    };
     if (type === "pickup") {
-      setFormData((prev) => ({ ...prev, pickupLocation: location }))
-      setPickupQuery(selectedLocation.formatted)
-      setPickupSuggestions([])
+      setFormData((prev) => ({ ...prev, pickupLocation: location }));
+      setPickupQuery(selectedLocation.formatted);
+      setPickupSuggestions([]);
     } else {
-      setFormData((prev) => ({ ...prev, destinationLocation: location }))
-      setDestinationQuery(selectedLocation.formatted)
-      setDestinationSuggestions([])
+      setFormData((prev) => ({ ...prev, destinationLocation: location }));
+      setDestinationQuery(selectedLocation.formatted);
+      setDestinationSuggestions([]);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-[#121212] text-white pt-16 px-2 sm:px-4">
@@ -171,9 +174,9 @@ const Bookdrive = () => {
             <Typography
               variant="h2"
               sx={{
-                fontSize: { xs: '2.25rem', md: '3.75rem' },
-                fontWeight: 'bold',
-                marginBottom: '2rem',
+                fontSize: { xs: "2.25rem", md: "3.75rem" },
+                fontWeight: "bold",
+                marginBottom: "2rem",
               }}
             >
               Book Your Ride
@@ -208,7 +211,7 @@ const Bookdrive = () => {
                     InputProps={{
                       className: "rounded-xl bg-[#2A2A2A] text-white pl-12",
                       sx: {
-                        color: 'white',
+                        color: "white",
                         "& .MuiOutlinedInput-notchedOutline": {
                           borderColor: "#3A3A3A",
                         },
@@ -255,7 +258,7 @@ const Bookdrive = () => {
                     InputProps={{
                       className: "rounded-xl bg-[#2A2A2A] text-white pl-12",
                       sx: {
-                        color: 'white',
+                        color: "white",
                         "& .MuiOutlinedInput-notchedOutline": {
                           borderColor: "#3A3A3A",
                         },
@@ -295,7 +298,7 @@ const Bookdrive = () => {
                   ) : (
                     <>
                       <ArrowRight size={20} />
-                      <span style={{ color: 'white' }}>Book Drive</span>
+                      <span style={{ color: "white" }}>Book Drive</span>
                     </>
                   )}
                 </Button>
@@ -328,7 +331,7 @@ const Bookdrive = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default Bookdrive
+export default Bookdrive;

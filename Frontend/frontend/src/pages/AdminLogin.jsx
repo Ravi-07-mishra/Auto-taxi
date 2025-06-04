@@ -8,11 +8,18 @@ const AdminLogin = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  // Use backend URL from env variable
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Login endpoint sets the httpOnly cookie automatically
-      await axios.post('http://localhost:3000/api/admin/login', { username, password }, { withCredentials: true });
+      // Use API_BASE instead of hardcoded URL
+      await axios.post(
+        `${API_BASE}/api/admin/login`,
+        { username, password },
+        { withCredentials: true }
+      );
       navigate('/admin');
     } catch (err) {
       setError('Invalid credentials');
@@ -21,10 +28,15 @@ const AdminLogin = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-800 via-gray-900 to-black">
-      <form onSubmit={handleSubmit} className="bg-black bg-opacity-70 p-8 md:p-12 rounded-lg shadow-xl max-w-md w-full">
-        <h2 className="text-4xl text-white mb-6 text-center font-extrabold tracking-wide">Admin Login</h2>
+      <form
+        onSubmit={handleSubmit}
+        className="bg-black bg-opacity-70 p-8 md:p-12 rounded-lg shadow-xl max-w-md w-full"
+      >
+        <h2 className="text-4xl text-white mb-6 text-center font-extrabold tracking-wide">
+          Admin Login
+        </h2>
         {error && <p className="text-red-500 text-center mb-4">{error}</p>}
-        
+
         <div className="space-y-4">
           <input
             type="text"
@@ -43,7 +55,7 @@ const AdminLogin = () => {
             required
           />
         </div>
-        
+
         <button
           type="submit"
           className="w-full bg-[#cbe557] text-black p-4 rounded-md font-semibold hover:bg-[#b8d93e] transition duration-200 mt-6"

@@ -11,8 +11,8 @@ import { Logout, Person } from "@mui/icons-material";
 const NavLink = ({ href, text, currentPath, onClick }) => {
   const isActive = currentPath === href;
   return (
-    <a 
-      href={href} 
+    <a
+      href={href}
       className={`navbar-link ${isActive ? "active" : ""}`}
       onClick={onClick}
     >
@@ -22,6 +22,9 @@ const NavLink = ({ href, text, currentPath, onClick }) => {
 };
 
 const Navbar2 = () => {
+  // ─── Backend Base URL ───────────────────────────────────────────
+  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
   const auth = useAuth();
   const location = useLocation();
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -35,10 +38,18 @@ const Navbar2 = () => {
   const handleAvatarClick = (event) => setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
 
+  const closeAllMenus = () => {
+    setIsMobileMenuOpen(false);
+    setIsCalendarOpen(false);
+  };
+
   useEffect(() => {
-    const fetchCompletedBookings = async () => {
+    if (!auth.user?._id) return;
+    (async () => {
       try {
-        const response = await fetch(`/api/user/completedBookings/${auth.user._id}`);
+        const response = await fetch(
+          `${API_BASE}/api/user/completedBookings/${auth.user._id}`
+        );
         const data = await response.json();
         if (Array.isArray(data.bookings)) {
           setCompletedBookings(data.bookings);
@@ -49,11 +60,7 @@ const Navbar2 = () => {
         console.error("Error fetching completed bookings:", error);
         setCompletedBookings([]);
       }
-    };
-
-    if (auth.user) {
-      fetchCompletedBookings();
-    }
+    })();
   }, [auth.user]);
 
   useEffect(() => {
@@ -74,40 +81,45 @@ const Navbar2 = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const closeAllMenus = () => {
-    setIsMobileMenuOpen(false);
-    setIsCalendarOpen(false);
-  };
-
   return (
     <>
       <nav className="fixed w-full z-20 top-0 left-0" style={navbarStyle}>
         <div className="flex items-center justify-between px-6 py-4">
-          
           {/* Left side: Logo and navigation buttons */}
           <div className="flex items-center gap-10">
             {/* Mobile Menu Button */}
-            <button 
-              className="md:hidden text-white"
-              onClick={toggleMobileMenu}
-            >
+            <button className="md:hidden text-white" onClick={toggleMobileMenu}>
               {isMobileMenuOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
             </button>
 
             {/* Logo */}
             <h1
               className="text-2xl sm:text-3xl text-white"
-              style={{ fontFamily: "'Concert One', sans-serif", fontWeight: "400" }}
+              style={{ fontFamily: "'Concert One', sans-serif", fontWeight: 400 }}
             >
               Auto Drive
             </h1>
 
             {/* Desktop Navigation Links */}
             <div className="hidden md:flex items-center gap-6">
-              <NavLink href="/userhome" text="Home" currentPath={location.pathname} />
-              <NavLink href="/userbookdrive" text="Book Drive" currentPath={location.pathname} />
-              <NavLink href="/Aboutus" text="About us" currentPath={location.pathname} />
-
+              <NavLink
+                href="/userhome"
+                text="Home"
+                currentPath={location.pathname}
+                onClick={closeAllMenus}
+              />
+              <NavLink
+                href="/userbookdrive"
+                text="Book Drive"
+                currentPath={location.pathname}
+                onClick={closeAllMenus}
+              />
+              <NavLink
+                href="/Aboutus"
+                text="About us"
+                currentPath={location.pathname}
+                onClick={closeAllMenus}
+              />
               {location.pathname === "/userhome" && (
                 <button
                   onClick={toggleCalendar}
@@ -130,9 +142,14 @@ const Navbar2 = () => {
                 "&:hover": { transform: "scale(1.1)" },
               }}
               onClick={handleAvatarClick}
-              src={`http://localhost:3000/${auth.user?.profileImage}` || ""}
+              src={
+                auth.user?.profileImage
+                  ? `${API_BASE}/${auth.user.profileImage}`
+                  : ""
+              }
             >
-              {!auth.user?.profileImage && (auth.user?.name?.[0]?.toUpperCase() || "U")}
+              {!auth.user?.profileImage &&
+                (auth.user?.name?.[0]?.toUpperCase() || "U")}
             </Avatar>
             <Menu
               anchorEl={anchorEl}
@@ -196,9 +213,24 @@ const Navbar2 = () => {
         {isMobileMenuOpen && (
           <div className="md:hidden bg-gray-900 bg-opacity-95 w-full pb-4">
             <div className="flex flex-col space-y-4 px-4">
-              <NavLink href="/userhome" text="Home" currentPath={location.pathname} onClick={closeAllMenus} />
-              <NavLink href="/userbookdrive" text="Book Drive" currentPath={location.pathname} onClick={closeAllMenus} />
-              <NavLink href="/Aboutus" text="About us" currentPath={location.pathname} onClick={closeAllMenus} />
+              <NavLink
+                href="/userhome"
+                text="Home"
+                currentPath={location.pathname}
+                onClick={closeAllMenus}
+              />
+              <NavLink
+                href="/userbookdrive"
+                text="Book Drive"
+                currentPath={location.pathname}
+                onClick={closeAllMenus}
+              />
+              <NavLink
+                href="/Aboutus"
+                text="About us"
+                currentPath={location.pathname}
+                onClick={closeAllMenus}
+              />
               {location.pathname === "/userhome" && (
                 <button
                   onClick={() => {
@@ -238,7 +270,9 @@ const Navbar2 = () => {
             <Calendar
               onClickDay={(date) => {
                 const booking = completedBookings.find(
-                  (b) => new Date(b.createdAt).toDateString() === date.toDateString()
+                  (b) =>
+                    new Date(b.createdAt).toDateString() ===
+                    date.toDateString()
                 );
                 if (booking) {
                   alert(
@@ -247,7 +281,11 @@ const Navbar2 = () => {
                 }
               }}
               tileClassName={({ date }) =>
-                completedBookings.some((b) => new Date(b.createdAt).toDateString() === date.toDateString())
+                completedBookings.some(
+                  (b) =>
+                    new Date(b.createdAt).toDateString() ===
+                    date.toDateString()
+                )
                   ? "react-calendar__tile--has-booking"
                   : ""
               }

@@ -15,30 +15,40 @@ const ProfilePage = () => {
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
 
+  // ─── Backend Base URL ───────────────────────────────────────────
+  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+  // ─── Redirect to login if not authenticated, set driver ID ─────
   useEffect(() => {
     const timeout = setTimeout(() => {
-      // Redirect to login if not authenticated
       if (!driver) {
         navigate("/driverlogin");
       } else {
         setDriverId(driver._id);
         console.log("Driver ID set to:", driver._id);
       }
-    }, 1000); // Wait for 1 second (1000 milliseconds)
-
-    return () => clearTimeout(timeout); // Cleanup the timeout on component unmount
+    }, 1000);
+    return () => clearTimeout(timeout);
   }, [driver, navigate]);
 
+  // ─── Fetch driver data from backend ─────────────────────────────
   const fetchDriverData = async () => {
     if (!driverId) return;
     try {
-      const response = await axios.get(`http://localhost:3000/api/driver/profile/${driverId}`, { withCredentials: true });
+      const response = await axios.get(
+        `${API_BASE}/api/driver/profile/${driverId}`,
+        { withCredentials: true }
+      );
       const updatedDriver = response.data.data.driver;
       setDriverName(updatedDriver.name);
       setDriverId(updatedDriver._id);
       setEmail(updatedDriver.email);
       setAvgRating(updatedDriver.avgRating);
-      setProfileImage(updatedDriver.profileImage ? `http://localhost:3000/${driver.profileImage}` : 'null');
+      setProfileImage(
+        updatedDriver.profileImage
+          ? `${API_BASE}/${updatedDriver.profileImage}`
+          : null
+      );
     } catch (error) {
       console.error("Error fetching driver data:", error);
     }
@@ -56,28 +66,37 @@ const ProfilePage = () => {
       setDriverId(driver._id);
       setEmail(driver.email);
       setAvgRating(driver.avgRating);
-      setProfileImage(driver.profileImage ? `http://localhost:3000/${driver.profileImage}` : 'http://localhost:3000/uploads/drivers/profile/image-1738174511665-171767109.png');
+      setProfileImage(
+        driver.profileImage
+          ? `${API_BASE}/${driver.profileImage}`
+          : `${API_BASE}/uploads/drivers/profile/image-1738174511665-171767109.png`
+      );
     }
   }, [driver]);
 
+  // ─── Handle profile image upload ────────────────────────────────
   const handleImageUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    setIsUploading(true);  // Show loading state
+    setIsUploading(true);
     const formData = new FormData();
-    formData.append('image', event.target.files[0]);
-    formData.append('type', 'profile');
+    formData.append("image", file);
+    formData.append("type", "profile");
 
     try {
-      const response = await axios.post(`http://localhost:3000/api/driver/uploadProfileImage/${driverId}`, formData, { withCredentials: true });
+      const response = await axios.post(
+        `${API_BASE}/api/driver/uploadProfileImage/${driverId}`,
+        formData,
+        { withCredentials: true }
+      );
       if (response.data.profileImage) {
         await fetchDriverData();
       }
     } catch (error) {
       console.error("Error uploading profile image:", error);
     } finally {
-      setIsUploading(false);  // Hide loading state after upload
+      setIsUploading(false);
     }
   };
 
@@ -129,15 +148,21 @@ const ProfilePage = () => {
                   />
                 </label>
               </div>
+
               <div className="mt-6 sm:mt-0 sm:ml-8 text-center sm:text-left">
-                <h1 className="text-2xl sm:text-4xl font-bold text-white">{driverName}</h1>
+                <h1 className="text-2xl sm:text-4xl font-bold text-white">
+                  {driverName}
+                </h1>
                 <p className="text-sm sm:text-lg text-gray-400">{email}</p>
                 <div className="mt-3 flex items-center justify-center sm:justify-start">
                   <FiStar className="text-yellow-500 mr-1" />
-                  <span className="text-xl sm:text-2xl font-semibold text-white">{avgRating}</span>
+                  <span className="text-xl sm:text-2xl font-semibold text-white">
+                    {avgRating}
+                  </span>
                   <span className="ml-1 text-gray-400">/ 5.0</span>
                 </div>
               </div>
+
               <Link
                 to="/driveredit-profile"
                 className="mt-6 sm:mt-0 sm:ml-auto px-6 py-3 bg-cyan-600 text-white rounded-full flex items-center hover:bg-cyan-700 transition duration-300"
@@ -155,34 +180,45 @@ const ProfilePage = () => {
                   className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 flex flex-col items-center shadow-lg hover:shadow-xl transition-shadow duration-300"
                 >
                   <item.icon className="h-10 w-10 text-cyan-600 mb-4" />
-                  <h2 className="text-lg sm:text-xl font-semibold text-white">{item.label}</h2>
-                  <p className="mt-2 text-3xl sm:text-4xl font-bold text-cyan-600">{item.value}</p>
+                  <h2 className="text-lg sm:text-xl font-semibold text-white">
+                    {item.label}
+                  </h2>
+                  <p className="mt-2 text-3xl sm:text-4xl font-bold text-cyan-600">
+                    {item.value}
+                  </p>
                 </div>
               ))}
             </div>
 
             {/* About Section */}
             <div className="mt-10">
-              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6">About Me</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6">
+                About Me
+              </h2>
               <p className="text-gray-400 leading-relaxed text-base sm:text-lg">
-                Passionate driver with over 5 years of experience in providing safe and efficient transportation
-                services. Known for punctuality, professionalism, and excellent customer service. Always striving to
+                Passionate driver with over 5 years of experience in providing safe
+                and efficient transportation services. Known for punctuality,
+                professionalism, and excellent customer service. Always striving to
                 ensure a comfortable and enjoyable ride for all passengers.
               </p>
             </div>
 
             {/* Achievements Section */}
             <div className="mt-10">
-              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6">Achievements</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6">
+                Achievements
+              </h2>
               <ul className="space-y-4">
                 <li className="flex items-center text-gray-400 text-sm sm:text-lg">
-                  <FiAward className="text-cyan-600 mr-3" /> Driver of the Month - March 2023
+                  <FiAward className="text-cyan-600 mr-3" /> Driver of the Month -
+                  March 2023
                 </li>
                 <li className="flex items-center text-gray-400 text-sm sm:text-lg">
                   <FiAward className="text-cyan-600 mr-3" /> 1000 Rides Milestone
                 </li>
                 <li className="flex items-center text-gray-400 text-sm sm:text-lg">
-                  <FiAward className="text-cyan-600 mr-3" /> Perfect 5-Star Rating Week
+                  <FiAward className="text-cyan-600 mr-3" /> Perfect 5-Star Rating
+                  Week
                 </li>
               </ul>
             </div>

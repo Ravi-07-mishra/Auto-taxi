@@ -1,10 +1,11 @@
-import axios from 'axios';
+import axiosInstance from './axiosInstance'
 
+// User APIs
 export const loginUser = async (email, password) => {
     try {
-        const res = await axios.post('http://localhost:3000/api/user/userlogin', { email, password }, { withCredentials: true });
-        if (res.status !== 201){ throw new Error('Unable to login');}
-        return res.data;  // This should return the full response with `user` and `token`
+        const res = await axiosInstance.post('/user/userlogin', { email, password });
+        if (res.status !== 201) throw new Error('Unable to login');
+        return res.data;
     } catch (error) {
         console.error(error.message);
         throw error;
@@ -13,9 +14,9 @@ export const loginUser = async (email, password) => {
 
 export const signupUser = async (name, email, password, otp) => {
     try {
-        const res = await axios.post('http://localhost:3000/api/user/usersignup', { name, email, password, otp }, { withCredentials: true });
+        const res = await axiosInstance.post('/user/usersignup', { name, email, password, otp });
         if (res.status !== 201) throw new Error('Unable to signup');
-        return res.data;  // This should return the full response with `user` and `token`
+        return res.data;
     } catch (error) {
         console.error(error.message);
         throw error;
@@ -24,7 +25,7 @@ export const signupUser = async (name, email, password, otp) => {
 
 export const checkAuthStatus = async () => {
     try {
-        const res = await axios.get('http://localhost:3000/api/user/auth-status', { withCredentials: true });
+        const res = await axiosInstance.get('/user/auth-status');
         if (res.status !== 200) throw new Error('Unable to authenticate');
         return res.data;
     } catch (error) {
@@ -34,17 +35,18 @@ export const checkAuthStatus = async () => {
 };
 
 export const logoutUser = async () => {
-    await fetch("http://localhost:3000/api/user/logout", {
-      method: "GET",
-      credentials: "include", // This ensures cookies are sent
-    });
-  };
-  
+    try {
+        await axiosInstance.get('/user/logout');
+    } catch (error) {
+        console.error(error.message);
+        throw error;
+    }
+};
 
-
+// Driver APIs
 export const loginDriver = async (email, password) => {
     try {
-        const res = await axios.post('http://localhost:3000/api/driver/login', { email, password }, { withCredentials: true });
+        const res = await axiosInstance.post('/driver/login', { email, password });
         if (res.status !== 201) throw new Error('Unable to login driver');
         return res.data;
     } catch (error) {
@@ -60,11 +62,9 @@ export const registerDriver = async (driverData) => {
             form.append(key, driverData[key]);
         });
 
-        const res = await axios.post('http://localhost:3000/api/driver/register', form, {
-            headers: { 'Accept': 'application/json' },
-            withCredentials: true,
+        const res = await axiosInstance.post('/driver/register', form, {
+            headers: { 'Accept': 'application/json' }
         });
-        
 
         if (res.status !== 201) throw new Error('Unable to register driver');
         return res.data;
@@ -76,7 +76,7 @@ export const registerDriver = async (driverData) => {
 
 export const checkDriverAuthStatus = async () => {
     try {
-        const res = await axios.get('http://localhost:3000/api/driver/auth-status', { withCredentials: true });
+        const res = await axiosInstance.get('/driver/auth-status');
         if (res.status !== 200) throw new Error('Unable to authenticate driver');
         return res.data;
     } catch (error) {
@@ -84,5 +84,3 @@ export const checkDriverAuthStatus = async () => {
         throw error;
     }
 };
-
-

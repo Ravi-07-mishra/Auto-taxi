@@ -1,10 +1,14 @@
+// SubscriptionContext.jsx
 import React, { createContext, useContext, useEffect, useState } from "react";
-import axios from "axios"; 
+import axios from "axios";
 import { useDriverAuth } from "./driverContext";
 
 const SubscriptionContext = createContext(null);
 
 export const SubscriptionAuthProvider = ({ children }) => {
+  // ─── Backend Base URL ───────────────────────────────────────────
+  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
   const { driver } = useDriverAuth();
   const [subscription, setSubscription] = useState({
     isSubscribed: false,
@@ -16,7 +20,10 @@ export const SubscriptionAuthProvider = ({ children }) => {
     if (driver?._id) {
       const fetchSubscriptionStatus = async () => {
         try {
-          const { data } = await axios.get(`/api/driver/subscription/${driver._id}`);
+          const { data } = await axios.get(
+            `${API_BASE}/api/driver/subscription/${driver._id}`,
+            { withCredentials: true }
+          );
           setSubscription({
             isSubscribed: data.isSubscribed,
             planId: data.planId,
@@ -34,7 +41,7 @@ export const SubscriptionAuthProvider = ({ children }) => {
 
       fetchSubscriptionStatus();
     }
-  }, [driver?._id]); // Dependency added to prevent unnecessary calls
+  }, [driver?._id, API_BASE]);
 
   return (
     <SubscriptionContext.Provider value={{ subscription, setSubscription }}>

@@ -21,17 +21,21 @@ const DriverDashboard = () => {
   const [driverId, setDriverId] = useState("");
   const [bookingRequests, setBookingRequests] = useState([]);
   const [bookings, setBookings] = useState([]);
-  const [addresses, setAddresses] = useState({}); // Reverse geocoded addresses keyed by booking ID
+  const [addresses, setAddresses] = useState({});
 
   const { subscription } = useSubscription();
   const sliderRef = useRef(null);
   const { driver, dispatch } = useDriverAuth();
   const socketRef = useRef(null);
   const navigate = useNavigate();
+
   const isSubscriptionValid =
     subscription.isSubscribed && new Date(subscription.expiryDate) > new Date();
 
-  // Redirect to login if not authenticated and set driver ID
+  // ─── Backend Base URL ───────────────────────────────────────────
+  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
+  // ─── Redirect to login if not authenticated, set driver ID ─────
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (!driver) {
@@ -44,33 +48,40 @@ const DriverDashboard = () => {
     return () => clearTimeout(timeout);
   }, [driver, navigate]);
 
-  // Fetch bookings for the driver
+  // ─── Fetch bookings for the driver ─────────────────────────────
   useEffect(() => {
     if (!driverId || !isSubscriptionValid) return;
+
     const fetchBookings = async () => {
       try {
-        const response = await fetch(`/api/driver/${driverId}`);
+        const response = await fetch(`${API_BASE}/api/driver/${driverId}`, {
+          credentials: "include", // if using cookies/session
+        });
         const json = await response.json();
         setBookings(json.bookings || []);
       } catch (error) {
         console.error("Error fetching bookings:", error);
       }
     };
+
     fetchBookings();
   }, [driverId, isSubscriptionValid]);
 
-  // Reverse geocode function: call backend endpoint and return address string
+  // ─── Reverse geocode function ──────────────────────────────────
   const fetchAddressFromCoordinates = async (lat, lon) => {
     try {
-      const url = `http://localhost:3000/api/reverse-geocode?lat=${lat}&lon=${lon}`;
+      const url = `${API_BASE}/api/reverse-geocode?lat=${lat}&lon=${lon}`;
       console.log("Fetching reverse geocode from:", url);
+
       const response = await fetch(url);
       if (!response.ok) {
         console.error("Reverse geocode response not ok:", response.status);
         return "Address not available";
       }
+
       const data = await response.json();
       console.log("Full API response:", data);
+
       if (data.formatted) return data.formatted;
       if (data.results && data.results.length > 0) {
         return (
@@ -86,7 +97,7 @@ const DriverDashboard = () => {
     }
   };
 
-  // Fetch reverse geocoded addresses for each booking
+  // ─── Fetch reverse-geocoded addresses for each booking ────────
   useEffect(() => {
     if (bookings.length > 0) {
       const fetchAllAddresses = async () => {
@@ -96,6 +107,7 @@ const DriverDashboard = () => {
               const id = booking._id.toString();
               const pickupLocation = booking.pickupLocation;
               const destLocation = booking.destinationLocation;
+
               const pickupAddress =
                 pickupLocation && pickupLocation.lat && pickupLocation.lng
                   ? await fetchAddressFromCoordinates(
@@ -103,6 +115,7 @@ const DriverDashboard = () => {
                       pickupLocation.lng
                     )
                   : "Address not available";
+
               const destinationAddress =
                 destLocation && destLocation.lat && destLocation.lng
                   ? await fetchAddressFromCoordinates(
@@ -110,56 +123,68 @@ const DriverDashboard = () => {
                       destLocation.lng
                     )
                   : "Address not available";
+
               return { id, pickupAddress, destinationAddress };
             })
           );
+
           const newAddresses = {};
           addressPairs.forEach(({ id, pickupAddress, destinationAddress }) => {
             newAddresses[id] = { pickupAddress, destinationAddress };
           });
+
           console.log("Fetched addresses:", newAddresses);
           setAddresses(newAddresses);
         } catch (error) {
           console.error("Error fetching all addresses:", error);
         }
       };
+
       fetchAllAddresses();
     }
   }, [bookings]);
 
-  // Socket setup and location updates
+  // ─── Socket setup and location updates ────────────────────────
   useEffect(() => {
     if (!driverId) return;
 
-    socketRef.current = io("http://localhost:3000", {
+    socketRef.current = io(API_BASE, {
       transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
     });
+
     const socket = socketRef.current;
+
     socket.on("connect", () => {
       console.log("Socket connected:", socket.id);
     });
+
     socket.on("BookingRequest", (data) => {
       console.log("Received booking request:", data);
       if (data.driverId === driverId) {
         setBookingRequests((prev) => [...prev, data]);
       }
     });
+
     socket.on("connect_error", (error) => {
       console.error("Socket connection error:", error);
     });
+
     socket.on("disconnect", (reason) => {
       console.log("Socket disconnected:", reason);
     });
+
     socket.on("paymentcompleted", (bookingId) => {
       console.log("Payment completed for bookingId:", bookingId);
       navigate(`/driver/drive/${bookingId}`);
     });
+
     socket.on("reconnect_attempt", () => {
       console.log("Reconnecting to socket...");
     });
+
     const updateDriverLocation = () => {
       if (driver && driver.location && driver.location.lat && driver.location.lng) {
         socket.emit("driverLocation", {
@@ -168,7 +193,7 @@ const DriverDashboard = () => {
           lng: driver.location.lng,
         });
       } else {
-        // Fallback location
+        // Fallback location if driver location not available
         socket.emit("driverLocation", {
           id: driverId,
           lat: 20.2960587,
@@ -178,6 +203,7 @@ const DriverDashboard = () => {
     };
 
     updateDriverLocation();
+
     return () => {
       socket.off("BookingRequest");
       socket.disconnect();
@@ -185,6 +211,7 @@ const DriverDashboard = () => {
     };
   }, [driverId, driver, navigate]);
 
+  // ─── Accept / Decline booking handlers ───────────────────────
   const handleAccept = (bookingId) => {
     const socket = socketRef.current;
     socket.emit("acceptBooking", { bookingId, price: 100 });
@@ -201,7 +228,7 @@ const DriverDashboard = () => {
     );
   };
 
-  // Custom carousel arrows for active bookings slider
+  // ─── Carousel Arrow Components ───────────────────────────────
   const CustomPrevArrow = () => (
     <div
       className="absolute top-1/2 left-4 -translate-y-1/2 bg-black/30 backdrop-blur-md rounded-full p-2 cursor-pointer hover:bg-black/50 transition-all z-30"
@@ -220,7 +247,7 @@ const DriverDashboard = () => {
     </div>
   );
 
-  // Carousel settings for active bookings
+  // ─── Carousel settings for active bookings ───────────────────
   const carouselSettings = {
     dots: true,
     infinite: true,
@@ -242,13 +269,15 @@ const DriverDashboard = () => {
     ),
   };
 
-  // Additional handlers for toggling availability, inbox, logout, etc.
+  // ─── Toggle availability handler ─────────────────────────────
   const toggleAvailability = async () => {
     if (!driver || !driver.user) return;
+
     try {
-      const response = await fetch("/api/driver/availability", {
+      const response = await fetch(`${API_BASE}/api/driver/availability`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           driverId: driver.user.id,
           isAvailable: !driver.isAvailable,
@@ -265,48 +294,96 @@ const DriverDashboard = () => {
     }
   };
 
+  // ─── Logout handler ─────────────────────────────────────────
   const logout = () => {
     localStorage.removeItem("driver");
-    navigate("/login");
+    navigate("/driverlogin");
+  };
+
+  // ─── (Optional) Cancel booking handler if implemented on backend ─
+  const handleCancelBooking = async (bookingId) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/driver/cancel/${bookingId}`, {
+        method: "PATCH",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        // Remove from local state
+        setBookings((prev) => prev.filter((b) => b._id.toString() !== bookingId));
+      } else {
+        console.error(data.msg);
+      }
+    } catch (error) {
+      console.error("Error canceling booking:", error);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-cover bg-center bg-fixed" style={{ backgroundImage: 'url("driverbg3.jpg")' }}>
-  <button
-  onClick={toggleAvailability}
-  className={`fixed top-20 right-6 z-50 px-6 py-3 rounded-full font-semibold shadow-lg transition-all duration-300 flex items-center gap-2
-    ${driver?.isAvailable
-      ? 'bg-red-600 hover:bg-red-700 text-white'
-      : 'bg-green-600 hover:bg-green-700 text-white'}
-  `}
->
-  {driver?.isAvailable ? (
-    <>
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M18 12H6" />
-      </svg>
-      Go Offline
-    </>
-  ) : (
-    <>
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" />
-      </svg>
-      Go Online
-    </>
-  )}
-</button>
+    <div
+      className="min-h-screen bg-cover bg-center bg-fixed"
+      style={{ backgroundImage: 'url("driverbg3.jpg")' }}
+    >
+      {/* Toggle Availability Button */}
+      <button
+        onClick={toggleAvailability}
+        className={`fixed top-20 right-6 z-50 px-6 py-3 rounded-full font-semibold shadow-lg transition-all duration-300 flex items-center gap-2
+          ${driver?.isAvailable
+            ? "bg-red-600 hover:bg-red-700 text-white"
+            : "bg-green-600 hover:bg-green-700 text-white"
+          }`}
+      >
+        {driver?.isAvailable ? (
+          <>
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M18 12H6" />
+            </svg>
+            Go Offline
+          </>
+        ) : (
+          <>
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" />
+            </svg>
+            Go Online
+          </>
+        )}
+      </button>
 
       {/* Hero Section */}
       <section className="h-screen flex items-center justify-center relative">
         <div className="text-center z-10">
-          <h1 className="text-6xl font-bold text-white mb-4 tracking-tight mt-14">Driver Dashboard</h1>
+          <h1 className="text-6xl font-bold text-white mb-4 tracking-tight mt-14">
+            Driver Dashboard
+          </h1>
           <p className="text-xl text-gray-300">Welcome back, {driver?.name}</p>
           <div className="mt-8 animate-bounce">
             <p className="text-gray-400">Scroll to view bookings</p>
             <div className="mt-2">
-              <svg className="w-6 h-6 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              <svg
+                className="w-6 h-6 mx-auto text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                />
               </svg>
             </div>
           </div>
@@ -317,7 +394,9 @@ const DriverDashboard = () => {
       {/* Booking Requests Section */}
       <section className="py-20 bg-black bg-opacity-80">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-white mb-12 text-center">New Booking Requests</h2>
+          <h2 className="text-3xl font-bold text-white mb-12 text-center">
+            New Booking Requests
+          </h2>
           <div className="overflow-x-auto pb-6">
             <div className="flex space-x-6 snap-x snap-mandatory">
               {bookingRequests.map((req) => (
@@ -334,8 +413,12 @@ const DriverDashboard = () => {
                           />
                         </div>
                         <div className="ml-4">
-                          <h3 className="text-white font-semibold text-lg">{req.userName || "New Request"}</h3>
-                          <span className="text-indigo-300 text-sm">Pending Confirmation</span>
+                          <h3 className="text-white font-semibold text-lg">
+                            {req.userName || "New Request"}
+                          </h3>
+                          <span className="text-indigo-300 text-sm">
+                            Pending Confirmation
+                          </span>
                         </div>
                       </div>
 
@@ -365,7 +448,9 @@ const DriverDashboard = () => {
                           <DollarSign className="w-5 h-5 text-yellow-400 mt-1" />
                           <div>
                             <p className="text-indigo-200 text-sm">Estimated Price</p>
-                            <p className="text-white font-medium text-sm">${req.estimatedPrice || "100"}</p>
+                            <p className="text-white font-medium text-sm">
+                              ${req.estimatedPrice || "100"}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -395,116 +480,110 @@ const DriverDashboard = () => {
       </section>
 
       {/* Active Bookings Section */}
-     
       <section className="py-20 bg-transparent relative z-10">
-  <div className="container mx-auto px-4">
-    <h2 className="text-3xl font-bold text-white mb-12 text-center">
-      Your Active Bookings
-    </h2>
-    <div className="relative max-w-3xl mx-auto">
-      <Slider ref={sliderRef} {...carouselSettings}>
-        {bookings.map((booking) => {
-          const id = booking._id.toString();
-          return (
-            <div key={id} className="px-2 sm:px-4">
-              {/* Booking Card */}
-              <div className="bg-gradient-to-br from-gray-800/80 to-indigo-900/80 backdrop-blur-lg rounded-2xl overflow-hidden shadow-2xl border border-white/10 transition-all duration-300 hover:shadow-indigo-500/20 hover:scale-105">
-                
-                {/* Card Header */}
-                <div className="p-6 pb-4 border-b border-white/10 flex items-center">
-                  <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-indigo-400/50 shadow-md">
-                    <img
-                      src={booking.userImage || "/placeholder.svg?height=64&width=64"}
-                      alt="User"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="font-semibold text-xl text-white">
-                      {booking.userName || "User"}
-                    </h3>
-                    <span
-                      className={`text-sm px-2 py-1 rounded-full ${
-                        booking.status === "completed"
-                          ? "bg-green-500/20 text-green-400"
-                          : booking.status === "in-progress"
-                          ? "bg-yellow-500/20 text-yellow-400"
-                          : "bg-indigo-500/20 text-indigo-400"
-                      }`}
-                    >
-                      {booking.status || "Active"}
-                    </span>
-                  </div>
-                </div>
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold text-white mb-12 text-center">
+            Your Active Bookings
+          </h2>
+          <div className="relative max-w-3xl mx-auto">
+            <Slider ref={sliderRef} {...carouselSettings}>
+              {bookings.map((booking) => {
+                const id = booking._id.toString();
+                return (
+                  <div key={id} className="px-2 sm:px-4">
+                    {/* Booking Card */}
+                    <div className="bg-gradient-to-br from-gray-800/80 to-indigo-900/80 backdrop-blur-lg rounded-2xl overflow-hidden shadow-2xl border border-white/10 transition-all duration-300 hover:shadow-indigo-500/20 hover:scale-105">
+                      {/* Card Header */}
+                      <div className="p-6 pb-4 border-b border-white/10 flex items-center">
+                        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-indigo-400/50 shadow-md">
+                          <img
+                            src={booking.userImage || "/placeholder.svg?height=64&width=64"}
+                            alt="User"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="ml-4">
+                          <h3 className="font-semibold text-xl text-white">
+                            {booking.userName || "User"}
+                          </h3>
+                          <span
+                            className={`text-sm px-2 py-1 rounded-full ${
+                              booking.status === "completed"
+                                ? "bg-green-500/20 text-green-400"
+                                : booking.status === "in-progress"
+                                ? "bg-yellow-500/20 text-yellow-400"
+                                : "bg-indigo-500/20 text-indigo-400"
+                            }`}
+                          >
+                            {booking.status || "Active"}
+                          </span>
+                        </div>
+                      </div>
 
-                {/* Card Body */}
-                <div className="p-6 space-y-3">
-                  <div className="flex items-start space-x-2">
-                    <MapPin className="w-5 h-5 text-indigo-300 mt-1" />
-                    <div>
-                      <p className="text-indigo-300/80 text-xs uppercase tracking-wider mb-1">
-                        Pickup Location
-                      </p>
-                      <p className="text-white font-medium">
-                        {addresses[id]?.pickupAddress || "Loading address..."}
-                      </p>
+                      {/* Card Body */}
+                      <div className="p-6 space-y-3">
+                        <div className="flex items-start space-x-2">
+                          <MapPin className="w-5 h-5 text-indigo-300 mt-1" />
+                          <div>
+                            <p className="text-indigo-300/80 text-xs uppercase tracking-wider mb-1">
+                              Pickup Location
+                            </p>
+                            <p className="text-white font-medium">
+                              {addresses[id]?.pickupAddress || "Loading address..."}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start space-x-2">
+                          <MapPin className="w-5 h-5 text-indigo-300 mt-1" />
+                          <div>
+                            <p className="text-indigo-300/80 text-xs uppercase tracking-wider mb-1">
+                              Destination
+                            </p>
+                            <p className="text-white font-medium">
+                              {addresses[id]?.destinationAddress || "Loading address..."}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start space-x-2">
+                          <DollarSign className="w-5 h-5 text-indigo-300 mt-1" />
+                          <div>
+                            <p className="text-indigo-300/80 text-xs uppercase tracking-wider mb-1">
+                              Price
+                            </p>
+                            <p className="text-white font-medium">
+                              ${booking.price || "N/A"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="p-6 pt-0 flex justify-between gap-3">
+                        {booking.status === "Accepted" && (
+                          <button
+                            onClick={() => navigate(`/driver/drive/${id}`)}
+                            className="bg-indigo-600/90 text-white font-medium py-3 px-4 rounded-lg shadow hover:bg-indigo-700 transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-2"
+                          >
+                            <Check className="w-4 h-4" />
+                            Start Ride
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleCancelBooking(id)}
+                          className="bg-gradient-to-r from-red-600 to-red-700 text-white py-3 rounded-lg transition-all duration-300 hover:from-red-700 hover:to-red-800 hover:scale-[1.02] flex items-center justify-center gap-2"
+                        >
+                          <X className="w-4 h-4" />
+                          Cancel
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-start space-x-2">
-                    <MapPin className="w-5 h-5 text-indigo-300 mt-1" />
-                    <div>
-                      <p className="text-indigo-300/80 text-xs uppercase tracking-wider mb-1">
-                        Destination
-                      </p>
-                      <p className="text-white font-medium">
-                        {addresses[id]?.destinationAddress || "Loading address..."}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-2">
-                    <DollarSign className="w-5 h-5 text-indigo-300 mt-1" />
-                    <div>
-                      <p className="text-indigo-300/80 text-xs uppercase tracking-wider mb-1">
-                        Price
-                      </p>
-                      <p className="text-white font-medium">
-                        ${booking.price || "N/A"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="p-6 pt-0 flex justify-between gap-3">
-                  {booking.status === "Accepted" && (
-                    <button
-                      onClick={() => navigate(`/driver/drive/${id}`)}
-                      className="bg-indigo-600/90 text-white font-medium py-3 px-4 rounded-lg shadow hover:bg-indigo-700 transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-2"
-                    >
-                      <Check className="w-4 h-4" />
-                      Start Ride
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleCancelBooking(id)}
-                    className="bg-gradient-to-r from-red-600 to-red-700 text-white py-3 rounded-lg transition-all duration-300 hover:from-red-700 hover:to-red-800 hover:scale-[1.02] flex items-center justify-center gap-2"
-                  >
-                    <X className="w-4 h-4" />
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </Slider>
-    </div>
-  </div>
-</section>
-
-
-      {/* Footer */}
-   
+                );
+              })}
+            </Slider>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };

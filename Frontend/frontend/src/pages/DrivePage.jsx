@@ -23,6 +23,9 @@ const DrivePage = () => {
   const navigate = useNavigate();
   const { driver } = useDriverAuth();
 
+  // ↓ Use VITE_API_URL from .env, or default to localhost
+  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
   const [pickupLocation, setPickupLocation] = useState(null);
   const [destinationLocation, setDestinationLocation] = useState(null);
   const [route, setRoute] = useState([]);
@@ -50,7 +53,7 @@ const DrivePage = () => {
   const chatContainerRef = useRef(null);
   const recognitionRef = useRef(null);
 
-  // Window size for responsive checks
+  // Window size for responsiveness
   const [windowSize, setWindowSize] = useState({
     width: window.innerWidth,
     height: window.innerHeight,
@@ -72,9 +75,9 @@ const DrivePage = () => {
     (async () => {
       try {
         const { data } = await axios.get(
-          `http://localhost:3000/api/driver/driver/${bookingId}`
+          `${API_BASE}/api/driver/driver/${bookingId}`,
+          { withCredentials: true } // if you need cookies/session
         );
-        // Normalize status to lowercase
         setRideStatus(data.booking.status.toLowerCase());
         setPickupLocation(data.booking.pickupLocation);
         setDestinationLocation(data.booking.destinationLocation);
@@ -87,9 +90,9 @@ const DrivePage = () => {
     })();
   }, [bookingId]);
 
-  // Haversine formula
+  // Haversine formula for distance
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371;
+    const R = 6371; // Earth radius in km
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
     const dLon = ((lon2 - lon1) * Math.PI) / 180;
     const a =
@@ -100,6 +103,7 @@ const DrivePage = () => {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   };
 
+  // Calculate ETA & speed
   const calculateETAAndSpeed = (prevLoc, currLoc, prevTime, currTime) => {
     const dist = calculateDistance(
       prevLoc.lat,
@@ -107,9 +111,10 @@ const DrivePage = () => {
       currLoc.lat,
       currLoc.lng
     );
-    const hours = (currTime - prevTime) / 3600000; // ms to hours
-    const currSpeed = dist / hours;
+    const hours = (currTime - prevTime) / 3600000; // ms → hours
+    const currSpeed = dist / hours; // km/h
     setSpeed(currSpeed.toFixed(2));
+
     if (destinationLocation) {
       const rem = calculateDistance(
         currLoc.lat,
@@ -117,13 +122,12 @@ const DrivePage = () => {
         destinationLocation.lat,
         destinationLocation.lng
       );
-      setEta((rem / currSpeed).toFixed(2));
-      // Determine if near destination (<0.5 km)
-      setIsNearDestination(rem <= 0.5);
+      setEta((rem / currSpeed).toFixed(2)); // hours
+      setIsNearDestination(rem <= 0.5); // if < 0.5 km, near destination
     }
   };
 
-  // Ride progress %
+  // Track ride progress percentage
   useEffect(() => {
     if (driverLocation && pickupLocation && destinationLocation) {
       const total = calculateDistance(
@@ -142,7 +146,7 @@ const DrivePage = () => {
     }
   }, [driverLocation, pickupLocation, destinationLocation]);
 
-  // Speech recognition
+  // Speech recognition setup
   useEffect(() => {
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRec) {
@@ -173,11 +177,11 @@ const DrivePage = () => {
     });
   };
 
-  // Route fetching
+  // Fetch route from point A → B
   const fetchRoute = async (start, end, cb) => {
     setRouteLoading(true);
     try {
-      const res = await axios.get(`http://localhost:3000/directions`, {
+      const res = await axios.get(`${API_BASE}/directions`, {
         params: {
           start: `${start.lng},${start.lat}`,
           end: `${end.lng},${end.lat}`,
@@ -187,8 +191,8 @@ const DrivePage = () => {
       if (feat?.geometry?.coordinates) {
         cb(feat.geometry.coordinates);
         if (cb === setRoute) {
-          const dur = feat.properties.segments[0].duration;
-          setEta((dur / 60).toFixed(2));
+          const dur = feat.properties.segments[0].duration; // seconds
+          setEta((dur / 60).toFixed(2)); // convert to minutes
         }
       } else {
         throw new Error("Invalid route data");
@@ -201,6 +205,7 @@ const DrivePage = () => {
     }
   };
 
+  // Fetch ride route once pickup & destination are known
   useEffect(() => {
     if (pickupLocation && destinationLocation) {
       fetchRoute(
@@ -211,17 +216,18 @@ const DrivePage = () => {
     }
   }, [pickupLocation, destinationLocation]);
 
+  // Fetch route from driver → destination as driverLocation updates
   useEffect(() => {
     if (driverLocation && destinationLocation) {
       fetchRoute(driverLocation, destinationLocation, setDriverToDestinationRoute);
     }
   }, [driverLocation, destinationLocation]);
 
-  // Join socket & geolocation
+  // Socket + geolocation streaming
   useEffect(() => {
     if (!driver) return;
 
-    const socket = io("http://localhost:3000", {
+    const socket = io(API_BASE, {
       transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionAttempts: 5,
@@ -236,6 +242,7 @@ const DrivePage = () => {
       ({ coords }) => {
         const curr = { lat: coords.latitude, lng: coords.longitude };
         setDriverLocation(curr);
+
         if (prevLoc && prevTime) {
           calculateETAAndSpeed(prevLoc, curr, prevTime, Date.now());
         }
@@ -261,14 +268,14 @@ const DrivePage = () => {
     };
   }, [driver, bookingId]);
 
-  // Scroll chat to bottom when new messages arrive
+  // Auto-scroll chat
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // Chat send
+  // Send chat message
   const sendMessage = () => {
     if (!newMessage.trim()) return;
     socketRef.current.emit("sendMessage", {
@@ -293,8 +300,9 @@ const DrivePage = () => {
       const total = end - rideStartTime;
       setTotalRideTime(total);
       const res = await axios.patch(
-        `http://localhost:3000/api/driver/end/${bookingId}`,
-        { totalRideTime: total }
+        `${API_BASE}/api/driver/end/${bookingId}`,
+        { totalRideTime: total },
+        { withCredentials: true }
       );
       setRideStatus("completed");
       setShowRideInfo(true);
@@ -312,7 +320,9 @@ const DrivePage = () => {
   const handleEndRide = async () => {
     try {
       const res = await axios.patch(
-        `http://localhost:3000/api/driver/end/${bookingId}`
+        `${API_BASE}/api/driver/end/${bookingId}`,
+        {},
+        { withCredentials: true }
       );
       alert(res.data.message);
       setRideEnded(true);
@@ -343,7 +353,7 @@ const DrivePage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black to-gray-900 p-2 sm:p-4 md:p-6">
-      {/* Map */}
+      {/* Full-screen map */}
       <div className="fixed inset-0 z-0">
         <MapContainer
           center={
@@ -388,10 +398,7 @@ const DrivePage = () => {
           )}
           {driverToDestinationRoute.length > 0 && (
             <Polyline
-              positions={driverToDestinationRoute.map(([lng, lat]) => [
-                lat,
-                lng,
-              ])}
+              positions={driverToDestinationRoute.map(([lng, lat]) => [lat, lng])}
               color="green"
               weight={4}
             />
@@ -399,12 +406,10 @@ const DrivePage = () => {
         </MapContainer>
       </div>
 
-      {/* Progress Bar */}
+      {/* Progress bar + stats */}
       <div
         className={`fixed bg-white bg-opacity-90 rounded-lg shadow-lg z-50 ${
-          isMobile
-            ? "top-2 left-2 right-2 p-2"
-            : "top-4 left-4 right-4 p-3"
+          isMobile ? "top-2 left-2 right-2 p-2" : "top-4 left-4 right-4 p-3"
         }`}
       >
         <div className="w-full bg-gray-200 rounded-full h-2.5">
@@ -432,14 +437,11 @@ const DrivePage = () => {
         </div>
       </div>
 
-      {/* Recenter */}
+      {/* Recenter button */}
       <button
         onClick={() => {
           if (mapRef.current && driverLocation) {
-            mapRef.current.setView(
-              [driverLocation.lat, driverLocation.lng],
-              14
-            );
+            mapRef.current.setView([driverLocation.lat, driverLocation.lng], 14);
           }
         }}
         className={`fixed bg-white bg-opacity-90 rounded-full shadow-lg hover:bg-gray-100 transition-all z-50 ${
@@ -449,7 +451,7 @@ const DrivePage = () => {
         <Navigation size={isMobile ? 20 : 24} className="text-gray-800" />
       </button>
 
-      {/* Emergency */}
+      {/* Emergency button */}
       <button
         onClick={handleEmergency}
         className={`fixed bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-all z-50 ${
@@ -459,19 +461,15 @@ const DrivePage = () => {
         <AlertTriangle size={isMobile ? 20 : 24} />
       </button>
 
-      {/* Chat Window */}
+      {/* Chat window */}
       {isChatOpen && (
         <div
           className={`fixed bg-white rounded-lg shadow-xl flex flex-col z-50 ${
-            isMobile
-              ? "bottom-16 right-2 w-72 h-64"
-              : "bottom-20 right-4 w-80 h-96"
+            isMobile ? "bottom-16 right-2 w-72 h-64" : "bottom-20 right-4 w-80 h-96"
           }`}
         >
           <div className="bg-blue-500 text-white p-2 sm:p-3 rounded-t-lg">
-            <h2 className="text-sm sm:text-lg font-semibold">
-              Chat with Passenger
-            </h2>
+            <h2 className="text-sm sm:text-lg font-semibold">Chat with Passenger</h2>
           </div>
           <div
             ref={chatContainerRef}
@@ -510,11 +508,7 @@ const DrivePage = () => {
                 className="flex-1"
                 onKeyPress={(e) => e.key === "Enter" && sendMessage()}
               />
-              <Button
-                onClick={startListening}
-                disabled={isListening}
-                className="ml-1 sm:ml-2 min-w-0"
-              >
+              <Button onClick={startListening} disabled={isListening} className="ml-1 sm:ml-2 min-w-0">
                 <Mic size={isMobile ? 16 : 20} />
               </Button>
               <Button
@@ -530,7 +524,7 @@ const DrivePage = () => {
         </div>
       )}
 
-      {/* Chat Toggle */}
+      {/* Chat toggle button */}
       <button
         onClick={() => setIsChatOpen((o) => !o)}
         className={`fixed bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-lg hover:from-blue-700 hover:to-purple-700 transition-all z-50 ${
@@ -540,12 +534,10 @@ const DrivePage = () => {
         {isChatOpen ? <X size={isMobile ? 20 : 24} /> : <Send size={isMobile ? 20 : 24} />}
       </button>
 
-      {/* Action Buttons */}
+      {/* Ride action buttons */}
       <div
         className={`fixed flex justify-center z-50 ${
-          isMobile
-            ? "bottom-2 left-2 right-2 space-x-2"
-            : "bottom-4 left-4 right-4 space-x-4"
+          isMobile ? "bottom-2 left-2 right-2 space-x-2" : "bottom-4 left-4 right-4 space-x-4"
         }`}
       >
         {rideStatus === "accepted" && (

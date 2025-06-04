@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "../Context/userContext";
 import { motion } from "framer-motion";
 import { FiUser, FiMail, FiLock } from "react-icons/fi";
@@ -7,6 +7,9 @@ import { toast } from "react-hot-toast";
 import { CircularProgress } from "@mui/material";
 
 const EditUserProfilePage = () => {
+  // ─── Backend Base URL ───────────────────────────────────────────
+  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
   const [userName, setUserName] = useState("");
   const [email, setEmail] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
@@ -33,7 +36,7 @@ const EditUserProfilePage = () => {
         payload.newPassword = newPassword;
       }
       const response = await axios.put(
-        "http://localhost:3000/api/user/updateProfile",
+        `${API_BASE}/api/user/updateProfile`,
         payload,
         { withCredentials: true }
       );

@@ -4,9 +4,12 @@ import { Button } from "@mui/material";
 import { SiGoogle } from "react-icons/si";
 
 const GoogleSignInButton = () => {
+  // ─── Backend Base URL ───────────────────────────────────────────
+  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
   const handleGoogleSignIn = () => {
     // Redirect to Google OAuth authentication route
-    window.location.href = "http://localhost:3000/api/user/auth/google";
+    window.location.href = `${API_BASE}/api/user/auth/google`;
   };
 
   return (

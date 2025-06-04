@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 const Sendotp = () => {
+  // ─── Backend Base URL ───────────────────────────────────────────
+  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
   const [error, setError] = useState(null);
   const [email, setEmail] = useState("");
   const navigate = useNavigate();
@@ -12,7 +15,7 @@ const Sendotp = () => {
     setError(null);
 
     try {
-      const response = await fetch("http://localhost:3000/api/user/send-otp", {
+      const response = await fetch(`${API_BASE}/api/user/send-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),

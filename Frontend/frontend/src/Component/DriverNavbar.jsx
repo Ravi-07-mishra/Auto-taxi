@@ -13,7 +13,9 @@ const NavLink = ({ href, text, currentPath }) => {
   return (
     <a
       href={href}
-      className={`navbar-link ${isActive ? "text-blue-400 underline" : "text-white"} py-2 px-4 rounded hover:text-blue-400 transition`}
+      className={`navbar-link ${
+        isActive ? "text-blue-400 underline" : "text-white"
+      } py-2 px-4 rounded hover:text-blue-400 transition`}
     >
       {text}
     </a>
@@ -21,6 +23,9 @@ const NavLink = ({ href, text, currentPath }) => {
 };
 
 const DriverNavbar = () => {
+  // ─── Backend Base URL ───────────────────────────────────────────
+  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
   const auth = useDriverAuth();
   const { subscription } = useSubscription();
   const location = useLocation();
@@ -46,9 +51,10 @@ const DriverNavbar = () => {
   useEffect(() => {
     const handleScroll = () => {
       setNavbarStyle({
-        background: window.scrollY > 50
-          ? "linear-gradient(to bottom right, #262529, #363b3f, #383e42, #141920)"
-          : "transparent",
+        background:
+          window.scrollY > 50
+            ? "linear-gradient(to bottom right, #262529, #363b3f, #383e42, #141920)"
+            : "transparent",
         opacity: 0.95,
         transition: "background 0.5s ease",
       });
@@ -58,30 +64,49 @@ const DriverNavbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const isSubscribed = subscription.isSubscribed && new Date(subscription.expiryDate) > new Date();
+  const isSubscribed =
+    subscription.isSubscribed &&
+    new Date(subscription.expiryDate) > new Date();
 
   return (
     <>
-      <nav className="fixed w-full z-20 top-0 left-0 shadow-sm" style={{ ...navbarStyle }}>
+      <nav
+        className="fixed w-full z-20 top-0 left-0 shadow-sm"
+        style={{ ...navbarStyle }}
+      >
         <div className="flex items-center justify-between px-4 py-3 md:px-8">
           {/* Left: Logo & Links */}
           <div className="flex items-center gap-6">
             <h1 className="text-xl md:text-2xl font-extrabold tracking-wider shadow-md flex space-x-1">
-              {["a", "u", "t", "o", " ", "d", "r", "i", "v", "e"].map((letter, index) => (
-                <span
-                  key={index}
-                  style={{ color: index % 2 === 0 ? "#cbe557" : "white" }}
-                >
-                  {letter}
-                </span>
-              ))}
+              {["a", "u", "t", "o", " ", "d", "r", "i", "v", "e"].map(
+                (letter, index) => (
+                  <span
+                    key={index}
+                    style={{ color: index % 2 === 0 ? "#cbe557" : "white" }}
+                  >
+                    {letter}
+                  </span>
+                )
+              )}
             </h1>
 
             {/* Desktop Links */}
             <div className="hidden md:flex gap-6">
-              <NavLink href="/driverDashboard" text="Driver Dashboard" currentPath={location.pathname} />
-              <NavLink href="/driverpage" text="Home" currentPath={location.pathname} />
-              <NavLink href="/Aboutus" text="About us" currentPath={location.pathname} />
+              <NavLink
+                href="/driverDashboard"
+                text="Driver Dashboard"
+                currentPath={location.pathname}
+              />
+              <NavLink
+                href="/driverpage"
+                text="Home"
+                currentPath={location.pathname}
+              />
+              <NavLink
+                href="/Aboutus"
+                text="About us"
+                currentPath={location.pathname}
+              />
             </div>
           </div>
 
@@ -106,7 +131,11 @@ const DriverNavbar = () => {
                     "&:hover": { transform: "scale(1.1)" },
                   }}
                   onClick={handleAvatarClick}
-                  src={`http://localhost:3000/${auth.driver.profileImage}` || ""}
+                  src={
+                    auth.driver.profileImage
+                      ? `${API_BASE}/${auth.driver.profileImage}`
+                      : ""
+                  }
                 >
                   {!auth.driver.profileImage && driverInitial}
                 </Avatar>
@@ -147,8 +176,8 @@ const DriverNavbar = () => {
 
           {/* Mobile Hamburger */}
           <div className="md:hidden">
-            <button 
-              onClick={toggleMobileMenu} 
+            <button
+              onClick={toggleMobileMenu}
               className="text-white text-2xl focus:outline-none"
               aria-label="Toggle menu"
             >
@@ -161,20 +190,20 @@ const DriverNavbar = () => {
         {isMobileMenuOpen && (
           <div className="md:hidden bg-[#1f1f1f] px-6 pb-4 pt-2 z-50">
             <div className="flex flex-col space-y-3">
-              <NavLink 
-                href="/driverDashboard" 
-                text="Driver Dashboard" 
-                currentPath={location.pathname} 
+              <NavLink
+                href="/driverDashboard"
+                text="Driver Dashboard"
+                currentPath={location.pathname}
               />
-              <NavLink 
-                href="/driverpage" 
-                text="Home" 
-                currentPath={location.pathname} 
+              <NavLink
+                href="/driverpage"
+                text="Home"
+                currentPath={location.pathname}
               />
-              <NavLink 
-                href="/Aboutus" 
-                text="About us" 
-                currentPath={location.pathname} 
+              <NavLink
+                href="/Aboutus"
+                text="About us"
+                currentPath={location.pathname}
               />
 
               {auth.driver ? (
@@ -240,8 +269,8 @@ const DriverNavbar = () => {
       {isLoginOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
           <div className="bg-gray-900 p-8 rounded-2xl relative w-11/12 max-w-md">
-            <button 
-              onClick={toggleLogin} 
+            <button
+              onClick={toggleLogin}
               className="absolute top-3 right-3 text-white hover:text-red-500"
               aria-label="Close login modal"
             >
@@ -255,8 +284,8 @@ const DriverNavbar = () => {
       {isRegisterOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
           <div className="bg-gray-900 p-8 rounded-2xl relative w-11/12 max-w-md">
-            <button 
-              onClick={toggleRegister} 
+            <button
+              onClick={toggleRegister}
               className="absolute top-3 right-3 text-white hover:text-red-500"
               aria-label="Close registration modal"
             >
@@ -270,8 +299,8 @@ const DriverNavbar = () => {
       {isSubscriptionOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
           <div className="bg-gray-900 p-8 rounded-2xl relative w-11/12 max-w-4xl">
-            <button 
-              onClick={toggleSubscription} 
+            <button
+              onClick={toggleSubscription}
               className="absolute top-3 right-3 text-white hover:text-red-500"
               aria-label="Close subscription modal"
             >

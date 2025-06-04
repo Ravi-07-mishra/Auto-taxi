@@ -17,6 +17,9 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
 const UserHome = () => {
+  // ─── Backend Base URL ───────────────────────────────────────────
+  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
   const auth = useAuth();
   const navigate = useNavigate();
   const sliderRef = useRef(null);
@@ -37,7 +40,7 @@ const UserHome = () => {
     if (!auth.user?._id) return;
     (async () => {
       try {
-        const res = await fetch(`/api/user/${auth.user._id}`);
+        const res = await fetch(`${API_BASE}/api/user/${auth.user._id}`);
         if (!res.ok) throw new Error(res.statusText);
         const json = await res.json();
         setBookings(json.bookings || []);
@@ -55,7 +58,7 @@ const UserHome = () => {
     }
     try {
       const res = await fetch(
-        `http://localhost:3000/api/reverse-geocode?lat=${lat}&lon=${lon}`
+        `${API_BASE}/api/reverse-geocode?lat=${lat}&lon=${lon}`
       );
       if (!res.ok) throw new Error(res.statusText);
       const data = await res.json();
@@ -145,10 +148,10 @@ const UserHome = () => {
     ),
   };
 
-  // Cancel & review handlers (unchanged)
+  // Cancel & review handlers
   const handleCancelBooking = async (bookingId) => {
     try {
-      const res = await fetch(`/api/booking/cancel/${bookingId}`, {
+      const res = await fetch(`${API_BASE}/api/booking/cancel/${bookingId}`, {
         method: "PUT",
       });
       if (!res.ok) throw new Error(res.statusText);
@@ -164,9 +167,10 @@ const UserHome = () => {
       console.error("Cancel booking error:", err);
     }
   };
+
   const handleSubmitReview = async (bookingId) => {
     try {
-      const res = await fetch(`/api/booking/review/${bookingId}`, {
+      const res = await fetch(`${API_BASE}/api/booking/review/${bookingId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rating, comment }),
@@ -181,6 +185,7 @@ const UserHome = () => {
       console.error("Submit review error:", err);
     }
   };
+
   const handleShowRideDetails = (booking) => setRideDetails(booking);
 
   const backgroundImages = ["/bg1.jpg", "/bg2.jpg", "/bg3.jpg"];
@@ -233,7 +238,7 @@ const UserHome = () => {
                               <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-indigo-400/50 shadow-md">
                                 <img
                                   src={
-                                    `http://localhost:3000/${bk.profileImage}` ||
+                                    `${API_BASE}/${bk.profileImage}` ||
                                     "/placeholder.svg"
                                   }
                                   alt="Driver"

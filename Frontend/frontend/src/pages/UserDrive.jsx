@@ -31,6 +31,9 @@ const MapUpdater = ({ center, zoom }) => {
 };
 
 const UserRidePage = () => {
+  // ─── Backend Base URL ───────────────────────────────────────────
+  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -62,10 +65,15 @@ const UserRidePage = () => {
   useEffect(() => {
     const fetchBookingDetails = async () => {
       try {
-        const { data } = await axios.get(`http://localhost:3000/api/driver/driver/${bookingId}`);
+        const { data } = await axios.get(
+          `${API_BASE}/api/driver/driver/${bookingId}`
+        );
         setPickupLocation(data.booking.pickupLocation);
         setDestinationLocation(data.booking.destinationLocation);
-        setMapCenter([data.booking.pickupLocation.lat, data.booking.pickupLocation.lng]);
+        setMapCenter([
+          data.booking.pickupLocation.lat,
+          data.booking.pickupLocation.lng,
+        ]);
       } catch (err) {
         console.error("Error fetching booking details:", err);
         setError("Failed to load booking details.");
@@ -82,27 +90,41 @@ const UserRidePage = () => {
     const dLon = ((lon2 - lon1) * Math.PI) / 180;
     const a =
       Math.sin(dLat / 2) ** 2 +
-      Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) ** 2;
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) ** 2;
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   };
 
   const calculateETAAndSpeed = (prevLoc, currLoc, prevTime, currTime) => {
-    const dist = calculateDistance(prevLoc.lat, prevLoc.lng, currLoc.lat, currLoc.lng);
+    const dist = calculateDistance(
+      prevLoc.lat,
+      prevLoc.lng,
+      currLoc.lat,
+      currLoc.lng
+    );
     const hours = (currTime - prevTime) / 3600;
     const currSpeed = dist / hours;
     setSpeed(currSpeed.toFixed(2));
     if (destinationLocation) {
-      const remDist = calculateDistance(currLoc.lat, currLoc.lng, destinationLocation.lat, destinationLocation.lng);
+      const remDist = calculateDistance(
+        currLoc.lat,
+        currLoc.lng,
+        destinationLocation.lat,
+        destinationLocation.lng
+      );
       setEta((remDist / currSpeed).toFixed(2));
     }
   };
 
   const fetchRoute = async (start, end, setter) => {
     try {
-      const res = await axios.get(`http://localhost:3000/directions`, {
-        params: { start: `${start.lng},${start.lat}`, end: `${end.lng},${end.lat}` },
+      const res = await axios.get(`${API_BASE}/directions`, {
+        params: {
+          start: `${start.lng},${start.lat}`,
+          end: `${end.lng},${end.lat}`,
+        },
       });
       const feat = res.data.features?.[0];
       if (feat?.geometry?.coordinates) {
@@ -119,32 +141,44 @@ const UserRidePage = () => {
     }
   };
 
-  // Fetch routes
+  // Fetch route from pickup to destination
   useEffect(() => {
     if (pickupLocation && destinationLocation) {
       fetchRoute(pickupLocation, destinationLocation, setRoute);
     }
   }, [pickupLocation, destinationLocation]);
 
+  // Update route from driver to destination
   useEffect(() => {
     if (driverLocation && destinationLocation) {
       fetchRoute(driverLocation, destinationLocation, setRoute);
     }
   }, [driverLocation, destinationLocation]);
 
-  // Progress
+  // Update progress percentage
   useEffect(() => {
     if (driverLocation && pickupLocation && destinationLocation) {
-      const total = calculateDistance(pickupLocation.lat, pickupLocation.lng, destinationLocation.lat, destinationLocation.lng);
-      const covered = calculateDistance(pickupLocation.lat, pickupLocation.lng, driverLocation.lat, driverLocation.lng);
+      const total = calculateDistance(
+        pickupLocation.lat,
+        pickupLocation.lng,
+        destinationLocation.lat,
+        destinationLocation.lng
+      );
+      const covered = calculateDistance(
+        pickupLocation.lat,
+        pickupLocation.lng,
+        driverLocation.lat,
+        driverLocation.lng
+      );
       setProgress(Math.min((covered / total) * 100, 100));
     }
   }, [driverLocation, pickupLocation, destinationLocation]);
 
-  // Socket & geolocation
+  // Setup socket and geolocation watching
   useEffect(() => {
     if (!user) return;
-    const socket = io("http://localhost:3000", {
+
+    const socket = io(API_BASE, {
       transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionAttempts: 5,
@@ -158,8 +192,8 @@ const UserRidePage = () => {
     socket.on("connect", () => socket.emit("joinRoom", bookingId));
 
     socket.on("updateLocations", (data) => {
-      const [driverId] = Object.keys(data);
-      const loc = data[driverId];
+      const [driverIdKey] = Object.keys(data);
+      const loc = data[driverIdKey];
       if (loc?.lat && loc?.lng) {
         setDriverLocation(loc);
         setMapCenter([loc.lat, loc.lng]);
@@ -177,7 +211,12 @@ const UserRidePage = () => {
     });
 
     const watchId = navigator.geolocation.watchPosition(
-      ({ coords }) => setUserLocation({ lat: coords.latitude, lng: coords.longitude, timestamp: Date.now() }),
+      ({ coords }) =>
+        setUserLocation({
+          lat: coords.latitude,
+          lng: coords.longitude,
+          timestamp: Date.now(),
+        }),
       console.error,
       { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
     );
@@ -207,7 +246,7 @@ const UserRidePage = () => {
     setNewMessage("");
   };
 
-  // Speech recognition
+  // Speech recognition setup
   useEffect(() => {
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRec) {
@@ -242,7 +281,11 @@ const UserRidePage = () => {
   }
 
   return (
-    <div className={`min-h-screen ${isNightMode ? "bg-gray-900" : "bg-gradient-to-br from-black to-gray-900"} p-2 sm:p-4 md:p-6`}>
+    <div
+      className={`min-h-screen ${
+        isNightMode ? "bg-gray-900" : "bg-gradient-to-br from-black to-gray-900"
+      } p-2 sm:p-4 md:p-6`}
+    >
       {/* Map */}
       <div className="fixed inset-0 z-0">
         <MapContainer
@@ -280,7 +323,11 @@ const UserRidePage = () => {
             </Marker>
           )}
           {route.length > 0 && (
-            <Polyline positions={route} color={isNightMode ? "#FFA500" : "blue"} weight={6} />
+            <Polyline
+              positions={route}
+              color={isNightMode ? "#FFA500" : "blue"}
+              weight={6}
+            />
           )}
         </MapContainer>
       </div>
@@ -288,7 +335,10 @@ const UserRidePage = () => {
       {/* Top Bar */}
       <div className="fixed top-2 sm:top-4 left-2 sm:left-4 right-2 sm:right-4 bg-white bg-opacity-95 p-2 sm:p-3 rounded-lg shadow-lg z-50">
         <div className="w-full bg-gray-200 rounded-full h-2.5">
-          <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${progress}%` }} />
+          <div
+            className="bg-blue-600 h-2.5 rounded-full"
+            style={{ width: `${progress}%` }}
+          />
         </div>
         <div className="flex justify-between items-center mt-2 text-sm text-gray-800">
           <span>ETA: {eta} hrs</span>
@@ -323,10 +373,17 @@ const UserRidePage = () => {
             className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-4 max-h-[60vh]"
           >
             {messages.map((msg, i) => (
-              <div key={i} className={`max-w-[70%] ${msg.senderModel === "User" ? "ml-auto" : "mr-auto"}`}>
+              <div
+                key={i}
+                className={`max-w-[70%] ${
+                  msg.senderModel === "User" ? "ml-auto" : "mr-auto"
+                }`}
+              >
                 <div
                   className={`p-3 rounded-lg ${
-                    msg.senderModel === "User" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-800"
+                    msg.senderModel === "User"
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-200 text-gray-800"
                   }`}
                 >
                   {msg.text}

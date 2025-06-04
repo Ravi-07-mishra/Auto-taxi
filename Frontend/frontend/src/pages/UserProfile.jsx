@@ -13,10 +13,11 @@ import {
 } from "react-icons/fi";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { toast } from "react-hot-toast";
-import { CircularProgress } from "@mui/material";
 
 const UserProfilePage = () => {
+  // ─── Backend Base URL ───────────────────────────────────────────
+  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
   const [profileImage, setProfileImage] = useState(null);
   const [userName, setUserName] = useState("Jane Doe");
   const [userId, setUserId] = useState(null);
@@ -43,13 +44,21 @@ const UserProfilePage = () => {
   const fetchUserData = async () => {
     if (!userId) return;
     try {
-      const response = await axios.get(`http://localhost:3000/api/user/profile/${userId}`, { withCredentials: true });
+      const response = await axios.get(
+        `${API_BASE}/api/user/profile/${userId}`,
+        { withCredentials: true }
+      );
       const updatedUser = response.data.data.user;
-      setDriverName(updatedUser.name);
-      setDriverId(updatedUser._id);
+      setUserName(updatedUser.name);
+      setUserId(updatedUser._id);
       setEmail(updatedUser.email);
-    
-      setProfileImage(updatedUser.profileImage ? `http://localhost:3000/${user.profileImage}` : 'null');
+      setAvgRating(updatedUser.avgRating);
+
+      setProfileImage(
+        updatedUser.profileImage
+          ? `${API_BASE}/${updatedUser.profileImage}`
+          : null
+      );
     } catch (error) {
       console.error("Error fetching user data:", error);
     }
@@ -68,8 +77,13 @@ const UserProfilePage = () => {
        setUserName(user.name);
        setUserId(user._id);
        setEmail(user.email);
-     
-       setProfileImage(user.profileImage ? `http://localhost:3000/${user.profileImage}` : 'http://localhost:3000/uploads/users/profile/image-1738174511665-171767109.png');
+       setAvgRating(user.avgRating);
+
+       setProfileImage(
+         user.profileImage
+           ? `${API_BASE}/${user.profileImage}`
+           : `${API_BASE}/uploads/users/profile/image-1738174511665-171767109.png`
+       );
      }
    }, [user]);
 
@@ -78,20 +92,24 @@ const UserProfilePage = () => {
     const file = event.target.files[0];
     if (!file) return;
 
-    setIsUploading(true);  // Show loading state
+    setIsUploading(true);
     const formData = new FormData();
-    formData.append('image', event.target.files[0]);
-    formData.append('type', 'profile');
+    formData.append("image", file);
+    formData.append("type", "profile");
 
     try {
-      const response = await axios.post(`http://localhost:3000/api/user/uploadProfileImage/${userId}`, formData, { withCredentials: true });
+      const response = await axios.post(
+        `${API_BASE}/api/user/uploadProfileImage/${userId}`,
+        formData,
+        { withCredentials: true }
+      );
       if (response.data.profileImage) {
         await fetchUserData();
       }
     } catch (error) {
       console.error("Error uploading profile image:", error);
     } finally {
-      setIsUploading(false);  // Hide loading state after upload
+      setIsUploading(false);
     }
   };
 
@@ -134,7 +152,10 @@ const UserProfilePage = () => {
             <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start">
               <div className="relative">
                 <img
-                  src={profileImage || "http://localhost:3000/uploads/users/profile/default.png"}
+                  src={
+                    profileImage ||
+                    `${API_BASE}/uploads/users/profile/default.png`
+                  }
                   alt={userName}
                   className="w-40 h-40 rounded-full border-4 border-cyan-500 shadow-lg -mt-20 z-10 object-cover"
                 />
@@ -193,7 +214,9 @@ const UserProfilePage = () => {
             <div className="mt-10">
               <h2 className="text-3xl font-bold text-white mb-6">About Me</h2>
               <p className="text-gray-400 leading-relaxed text-lg">
-                A dedicated and satisfied customer who loves online shopping. Always looking for the best deals and products with a high standard of quality and customer service. Enjoys exploring new brands and creating memorable shopping experiences.
+                A dedicated and satisfied customer who loves online shopping. Always looking for the best deals and
+                products with a high standard of quality and customer service. Enjoys exploring new brands and creating
+                memorable shopping experiences.
               </p>
             </div>
 
