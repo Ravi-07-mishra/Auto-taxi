@@ -1,77 +1,106 @@
-import React, { useState, useEffect } from "react";
+// src/pages/SubscriptionPage.jsx
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import dropin from "braintree-web-drop-in";
-import React from "react";
 import { useDriverAuth } from "../Context/driverContext";
 
 const SubscriptionPage = () => {
   // ─── Backend Base URL ───────────────────────────────────────────
-  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+  const API_BASE =
+    import.meta.env.VITE_API_URL ||
+    (process.env.NODE_ENV === "production"
+      ? "https://api.yourdomain.com"
+      : "http://localhost:3000");
 
-  const [plans, setPlans] = useState([]);
   const { driver } = useDriverAuth();
+  const [plans, setPlans] = useState([]);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [clientToken, setClientToken] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [instance, setInstance] = useState(null);
+  const dropinInstanceRef = useRef(null);
   const [errors, setErrors] = useState("");
   const [success, setSuccess] = useState("");
 
+  // Fetch available plans & Braintree client token on mount
   useEffect(() => {
     const fetchPlans = async () => {
       try {
         const { data } = await axios.get(`${API_BASE}/api/payment/plans`);
         setPlans(data.plans);
-      } catch (error) {
+      } catch (err) {
+        console.error("Failed to fetch subscription plans:", err);
         setErrors("Failed to fetch subscription plans.");
       }
     };
 
     const fetchClientToken = async () => {
       try {
-        const { data } = await axios.get(`${API_BASE}/api/payment/braintree/token`);
+        const { data } = await axios.get(
+          `${API_BASE}/api/payment/braintree/token`
+        );
         setClientToken(data.clientToken);
-      } catch (error) {
+      } catch (err) {
+        console.error("Failed to fetch client token:", err);
         setErrors("Failed to fetch client token.");
       }
     };
 
     fetchPlans();
     fetchClientToken();
-  }, []);
+  }, [API_BASE]);
 
+  // When clientToken is ready, dynamically import & initialize Drop‑in
   useEffect(() => {
-    const initializeDropin = async () => {
-      if (clientToken) {
+    if (!clientToken) return;
+
+    let canceled = false;
+    let dropinCreated = false;
+
+    (async () => {
+      try {
+        // Dynamically import so that esbuild/Vercel doesn't try bundling this at build time
+        const dropinModule = await import("braintree-web-drop-in");
+        if (canceled) return;
+
         const container = document.getElementById("dropin-container");
         if (!container) {
-          setErrors("Drop-in container is missing.");
+          setErrors("Drop‑in container is missing.");
           return;
         }
         container.innerHTML = "";
-        try {
-          const dropInstance = await dropin.create({
-            authorization: clientToken,
-            container: "#dropin-container",
-          });
-          setInstance(dropInstance);
-        } catch (error) {
-          setErrors("Failed to initialize Braintree Drop-in.");
-        }
+
+        const dropinInstance = await dropinModule.create({
+          authorization: clientToken,
+          container: "#dropin-container",
+        });
+        dropinInstanceRef.current = dropinInstance;
+        dropinCreated = true;
+      } catch (err) {
+        console.error("Failed to initialize Braintree Drop‑in:", err);
+        setErrors("Failed to initialize payment gateway.");
+      }
+    })();
+
+    return () => {
+      canceled = true;
+      if (dropinCreated && dropinInstanceRef.current) {
+        dropinInstanceRef.current.teardown(() => {
+          dropinInstanceRef.current = null;
+        });
       }
     };
-
-    initializeDropin();
   }, [clientToken]);
 
   const handlePayment = async () => {
-    if (!instance || !selectedPlan) {
-      setErrors("Please select a plan and then try again");
+    if (!dropinInstanceRef.current || !selectedPlan) {
+      setErrors("Please select a plan and try again.");
       return;
     }
     setLoading(true);
+    setErrors("");
+    setSuccess("");
+
     try {
-      const { nonce } = await instance.requestPaymentMethod();
+      const { nonce } = await dropinInstanceRef.current.requestPaymentMethod();
       const { data } = await axios.post(
         `${API_BASE}/api/payment/braintree/subscribe`,
         {
@@ -80,12 +109,14 @@ const SubscriptionPage = () => {
           driverId: driver._id,
         }
       );
+
       if (data.success) {
         setSuccess("Subscription successful.");
       } else {
         setErrors(data.error || "Subscription failed. Please try again.");
       }
-    } catch (error) {
+    } catch (err) {
+      console.error("Payment failed:", err);
       setErrors("Payment failed. Please try again.");
     } finally {
       setLoading(false);
@@ -94,17 +125,27 @@ const SubscriptionPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center p-6">
-      {errors && <div className="text-red-600 bg-red-100 p-4 rounded mb-4">{errors}</div>}
-      {success && <div className="text-green-600 bg-green-100 p-4 rounded mb-4">{success}</div>}
+      {errors && (
+        <div className="text-red-600 bg-red-100 p-4 rounded mb-4">{errors}</div>
+      )}
+      {success && (
+        <div className="text-green-600 bg-green-100 p-4 rounded mb-4">
+          {success}
+        </div>
+      )}
 
-      <h2 className="text-3xl font-semibold text-center mb-6">Select a Subscription Plan</h2>
+      <h2 className="text-3xl font-semibold text-center mb-6">
+        Select a Subscription Plan
+      </h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-4xl">
         {plans.map((plan) => (
           <div
             key={plan.plan_id}
             className={`p-6 border rounded-lg cursor-pointer transition-all hover:bg-blue-50 ${
-              selectedPlan?.plan_id === plan.plan_id ? "bg-blue-100 border-blue-500" : "bg-white border-gray-300"
+              selectedPlan?.plan_id === plan.plan_id
+                ? "bg-blue-100 border-blue-500"
+                : "bg-white border-gray-300"
             }`}
             onClick={() => setSelectedPlan(plan)}
           >
