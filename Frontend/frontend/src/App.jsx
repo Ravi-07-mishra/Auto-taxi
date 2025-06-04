@@ -64,7 +64,7 @@ const App = () => {
 
   return (
     <SocketProvider>
-      <Router>
+   
         {/* Conditionally render the appropriate navbar */}
         <Navbar />
         <Routes>
@@ -97,7 +97,7 @@ const App = () => {
         <Route path="/admin" element={<AdminDashboard/>} />
 
         </Routes>
-      </Router>
+ 
     </SocketProvider>
   );
 };
