@@ -31,8 +31,11 @@ const server = http.createServer(app);
 const allowedOrigins = [
   "http://localhost:5173",
   "https://auto-taxi-ha1i.vercel.app",
-  "https://auto-taxi-hcr5.vercel.app", // <-- Add this
+  "https://auto-taxi-hcr5.vercel.app",
+  "https://auto-taxi-1.onrender.com",   // ← add this
+  /\.vercel\.app$/,                     // (you already allow all vercel.app subdomains)
 ];
+
 
 const corsOptions = {
   origin: (origin, callback) => {
