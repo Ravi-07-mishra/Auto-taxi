@@ -72,7 +72,7 @@ const UserProfilePage = () => {
     if (!userId) return;
     try {
       const response = await axios.get(
-        `${API_BASE}/user/profile/${userId}`,
+        `${API_BASE}/api/user/profile/${userId}`,
         { withCredentials: true }
       );
       const updatedUser = response.data.data.user;
