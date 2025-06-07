@@ -107,10 +107,13 @@ const DriverNavbar = () => {
         >
           {/* Logo & Desktop Links */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 6 }}>
-               <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2">
               <h1 className="text-xl sm:text-2xl md:text-4xl font-extrabold lowercase tracking-wider shadow-md flex space-x-1 sm:space-x-2">
                 {Array.from("auto-drive").map((letter, index) => (
-                  <span key={index} style={{ color: index % 2 === 0 ? "#cbe557" : "white" }}>
+                  <span
+                    key={index}
+                    style={{ color: index % 2 === 0 ? "#cbe557" : "white" }}
+                  >
                     {letter}
                   </span>
                 ))}
@@ -149,12 +152,7 @@ const DriverNavbar = () => {
                       variant="contained"
                       color="success"
                       onClick={toggleSubscription}
-                      sx={{
-                        px: 4,
-                        py: 1,
-                        textTransform: "none",
-                        borderRadius: 4,
-                      }}
+                      sx={{ px: 4, py: 1, textTransform: "none", borderRadius: 4 }}
                     >
                       Subscribe
                     </Button>
@@ -211,26 +209,14 @@ const DriverNavbar = () => {
                   <Button
                     variant="contained"
                     onClick={toggleLogin}
-                    sx={{
-                      px: 4,
-                      py: 1,
-                      textTransform: "none",
-                      backgroundColor: "#2563EB",
-                      borderRadius: 4,
-                    }}
+                    sx={{ px: 4, py: 1, textTransform: "none", backgroundColor: "#2563EB", borderRadius: 4 }}
                   >
                     Login
                   </Button>
                   <Button
                     variant="outlined"
                     onClick={toggleRegister}
-                    sx={{
-                      px: 4,
-                      py: 1,
-                      textTransform: "none",
-                      borderRadius: 4,
-                      borderColor: "#9CA3AF",
-                    }}
+                    sx={{ px: 4, py: 1, textTransform: "none", borderRadius: 4, borderColor: "#9CA3AF" }}
                   >
                     Register
                   </Button>
@@ -314,12 +300,7 @@ const DriverNavbar = () => {
                     toggleLogin();
                     setIsMobileMenuOpen(false);
                   }}
-                  sx={{
-                    py: 1,
-                    textTransform: "none",
-                    borderRadius: 4,
-                    backgroundColor: "#2563EB",
-                  }}
+                  sx={{ py: 1, textTransform: "none", borderRadius: 4, backgroundColor: "#2563EB" }}
                 >
                   Login
                 </Button>
@@ -371,6 +352,7 @@ const DriverNavbar = () => {
               right: 8,
               color: "#fff",
               backgroundColor: "rgba(0,0,0,0.4)",
+              zIndex: 10,  // ensure it's on top of the form
               "&:hover": { backgroundColor: "rgba(0,0,0,0.6)" },
             }}
           >
