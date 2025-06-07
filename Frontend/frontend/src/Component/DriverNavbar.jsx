@@ -1,6 +1,6 @@
 // src/components/DriverNavbar.jsx
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Avatar,
   Button,
@@ -8,12 +8,10 @@ import {
   IconButton,
   Menu,
   MenuItem,
-  Snackbar,
-  Alert as MuiAlert,
   Box,
   Typography,
 } from "@mui/material";
-import { AccountCircle, Logout, Person } from "@mui/icons-material";
+import { Close, Logout, Person } from "@mui/icons-material";
 import { useLocation, useNavigate, NavLink as RouterNavLink } from "react-router-dom";
 import { useDriverAuth } from "../Context/driverContext";
 import { useSubscription } from "../Context/SubscriptionContext";
@@ -23,7 +21,6 @@ import SubscriptionPage from "../pages/SubscriptionPage";
 
 // ─── Logging Helper ─────────────────────────────────────────────────
 const logError = (message, error) => {
-  // Replace with Sentry/LogRocket/etc. in production
   console.error(message, error);
 };
 
@@ -48,16 +45,14 @@ const DriverNavbar = () => {
   const [navbarStyle, setNavbarStyle] = useState({ background: "transparent" });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // ─── Derived Values ────────────────────────────────────────────────
+  // ─── Derived Data ─────────────────────────────────────────────────
   const driverName = auth.driver?.name || "Driver";
   const driverInitial = driverName.charAt(0).toUpperCase();
-
   const isSubscribed =
-    subscription.isSubscribed &&
-    new Date(subscription.expiryDate) > new Date();
+    subscription.isSubscribed && new Date(subscription.expiryDate) > new Date();
 
   // ─── Handlers ──────────────────────────────────────────────────────
-  const handleAvatarClick = (event) => setAnchorEl(event.currentTarget);
+  const handleAvatarClick = (e) => setAnchorEl(e.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
   const toggleLogin = () => setIsLoginOpen((prev) => !prev);
   const toggleRegister = () => setIsRegisterOpen((prev) => !prev);
@@ -66,11 +61,11 @@ const DriverNavbar = () => {
 
   // ─── Scroll Listener ───────────────────────────────────────────────
   useEffect(() => {
-    const handleScroll = () => {
+    const onScroll = () => {
       if (window.scrollY > 50) {
         setNavbarStyle({
           background:
-            "linear-gradient(to bottom right, #262529, #363b3f, #383e42, #141920)",
+            "linear-gradient(to bottom right, #262529, #363e3f, #383e42, #141920)",
           opacity: 0.95,
           transition: "background 0.5s ease",
         });
@@ -81,15 +76,14 @@ const DriverNavbar = () => {
         });
       }
     };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // ─── JSX ────────────────────────────────────────────────────────────
+  // ─── Render ─────────────────────────────────────────────────────────
   return (
     <>
-      {/* ─── Navbar ──────────────────────────────────────────────── */}
+      {/* Navbar Container */}
       <Box
         component="nav"
         sx={{
@@ -111,34 +105,19 @@ const DriverNavbar = () => {
             py: 2,
           }}
         >
-          {/* ─── Left: Logo & Desktop Links ────────────────────── */}
+          {/* Logo & Desktop Links */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 6 }}>
-            {/* Logo */}
-            <Typography
-              component="h1"
-              sx={{
-                typography: { xs: "h6", md: "h5" },
-                fontWeight: "bold",
-                letterSpacing: 1.5,
-                display: "flex",
-                alignItems: "center",
-                userSelect: "none",
-              }}
-            >
-              {["a", "u", "t", "o", " ", "d", "r", "i", "v", "e"].map(
-                (letter, idx) => (
-                  <Box
-                    key={idx}
-                    component="span"
-                    sx={{ color: idx % 2 === 0 ? "#cbe557" : "#fff" }}
-                  >
+               <div className="flex items-center space-x-2">
+              <h1 className="text-xl sm:text-2xl md:text-4xl font-extrabold lowercase tracking-wider shadow-md flex space-x-1 sm:space-x-2">
+                {Array.from("auto-drive").map((letter, index) => (
+                  <span key={index} style={{ color: index % 2 === 0 ? "#cbe557" : "white" }}>
                     {letter}
-                  </Box>
-                )
-              )}
-            </Typography>
+                  </span>
+                ))}
+              </h1>
+            </div>
 
-            {/* Desktop Links (hidden on mobile) */}
+            {/* Desktop Nav Links (hidden on mobile) */}
             <Box sx={{ display: { xs: "none", md: "flex" }, gap: 6 }}>
               <RouterNavLink
                 to="/driverDashboard"
@@ -149,27 +128,19 @@ const DriverNavbar = () => {
                 Driver Dashboard
               </RouterNavLink>
               <RouterNavLink
-                to="/driverpage"
-                className={({ isActive }) =>
-                  `navbar-link ${isActive ? "text-blue-400 underline" : "text-white"}`
-                }
-              >
-                Home
-              </RouterNavLink>
-              <RouterNavLink
                 to="/Aboutus"
                 className={({ isActive }) =>
                   `navbar-link ${isActive ? "text-blue-400 underline" : "text-white"}`
                 }
               >
-                About Us
+                About Us
               </RouterNavLink>
             </Box>
           </Box>
 
-          {/* ─── Right: Auth Buttons / Avatar ────────────────────── */}
+          {/* Auth Buttons / Avatar */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 4 }}>
-            {/* Desktop: hidden on mobile */}
+            {/* Desktop Auth (hidden on mobile) */}
             <Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", gap: 2 }}>
               {auth.driver ? (
                 <>
@@ -181,33 +152,29 @@ const DriverNavbar = () => {
                       sx={{
                         px: 4,
                         py: 1,
-                        borderRadius: 4,
                         textTransform: "none",
-                        boxShadow: 2,
-                        "&:hover": { backgroundColor: "success.dark" },
+                        borderRadius: 4,
                       }}
                     >
                       Subscribe
                     </Button>
                   )}
-
                   <Avatar
                     src={
                       auth.driver.profileImage
                         ? `${API_BASE}/${auth.driver.profileImage}`
                         : ""
                     }
+                    alt={driverName}
+                    onClick={handleAvatarClick}
                     sx={{
                       bgcolor: "#2563EB",
                       cursor: "pointer",
                       border: "2px solid #fff",
-                      transition: "transform 0.2s",
-                      "&:hover": { transform: "scale(1.1)" },
                       width: 40,
                       height: 40,
+                      "&:hover": { transform: "scale(1.1)" },
                     }}
-                    alt={driverName}
-                    onClick={handleAvatarClick}
                   >
                     {!auth.driver.profileImage && driverInitial}
                   </Avatar>
@@ -220,11 +187,20 @@ const DriverNavbar = () => {
                   >
                     <MenuItem onClick={handleMenuClose} sx={{ gap: 1 }}>
                       <Person fontSize="small" />
-                      <RouterNavLink to="/driverprofile" style={{ textDecoration: "none", color: "inherit" }}>
+                      <RouterNavLink
+                        to="/driverprofile"
+                        style={{ textDecoration: "none", color: "inherit" }}
+                      >
                         Profile
                       </RouterNavLink>
                     </MenuItem>
-                    <MenuItem onClick={() => { auth.logout(); handleMenuClose(); }} sx={{ gap: 1 }}>
+                    <MenuItem
+                      onClick={() => {
+                        auth.logout();
+                        handleMenuClose();
+                      }}
+                      sx={{ gap: 1 }}
+                    >
                       <Logout fontSize="small" />
                       Logout
                     </MenuItem>
@@ -234,31 +210,26 @@ const DriverNavbar = () => {
                 <>
                   <Button
                     variant="contained"
-                    color="primary"
                     onClick={toggleLogin}
                     sx={{
                       px: 4,
                       py: 1,
-                      borderRadius: 4,
                       textTransform: "none",
-                      boxShadow: 2,
                       backgroundColor: "#2563EB",
-                      "&:hover": { backgroundColor: "#1E40AF" },
+                      borderRadius: 4,
                     }}
                   >
                     Login
                   </Button>
                   <Button
                     variant="outlined"
-                    color="inherit"
                     onClick={toggleRegister}
                     sx={{
                       px: 4,
                       py: 1,
-                      borderRadius: 4,
                       textTransform: "none",
+                      borderRadius: 4,
                       borderColor: "#9CA3AF",
-                      "&:hover": { backgroundColor: "rgba(255,255,255,0.08)" },
                     }}
                   >
                     Register
@@ -267,19 +238,17 @@ const DriverNavbar = () => {
               )}
             </Box>
 
-            {/* Mobile Hamburger (visible only on xs/md) */}
+            {/* Mobile Menu Toggle */}
             <IconButton
-              edge="end"
-              aria-label="toggle mobile menu"
               onClick={toggleMobileMenu}
               sx={{ display: { xs: "flex", md: "none" }, color: "#fff" }}
             >
-              {isMobileMenuOpen ? <Typography>✕</Typography> : <Typography>☰</Typography>}
+              {isMobileMenuOpen ? <Close /> : <Typography>☰</Typography>}
             </IconButton>
           </Box>
         </Box>
 
-        {/* ─── Mobile Links (only when open) ────────────────────── */}
+        {/* Mobile Links Panel */}
         {isMobileMenuOpen && (
           <Box
             sx={{
@@ -293,24 +262,12 @@ const DriverNavbar = () => {
           >
             <RouterNavLink
               to="/driverDashboard"
-              className={({ isActive }) => `navbar-link ${isActive ? "text-blue-400 underline" : "text-white"}`}
+              className={({ isActive }) =>
+                `navbar-link ${isActive ? "text-blue-400 underline" : "text-white"}`
+              }
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Driver Dashboard
-            </RouterNavLink>
-            <RouterNavLink
-              to="/driverpage"
-              className={({ isActive }) => `navbar-link ${isActive ? "text-blue-400 underline" : "text-white"}`}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Home
-            </RouterNavLink>
-            <RouterNavLink
-              to="/Aboutus"
-              className={({ isActive }) => `navbar-link ${isActive ? "text-blue-400 underline" : "text-white"}`}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              About Us
             </RouterNavLink>
 
             {auth.driver ? (
@@ -318,18 +275,10 @@ const DriverNavbar = () => {
                 {!isSubscribed && (
                   <Button
                     variant="contained"
-                    color="success"
                     fullWidth
                     onClick={() => {
                       toggleSubscription();
                       setIsMobileMenuOpen(false);
-                    }}
-                    sx={{
-                      mt: 1,
-                      px: 3,
-                      py: 1,
-                      borderRadius: 4,
-                      textTransform: "none",
                     }}
                   >
                     Subscribe
@@ -341,15 +290,7 @@ const DriverNavbar = () => {
                     navigate("/driverprofile");
                     setIsMobileMenuOpen(false);
                   }}
-                  sx={{
-                    color: "#fff",
-                    textAlign: "left",
-                    px: 3,
-                    py: 1,
-                    borderRadius: 2,
-                    "&:hover": { backgroundColor: "rgba(255,255,255,0.08)" },
-                    mt: 1,
-                  }}
+                  sx={{ textAlign: "left", py: 1, borderRadius: 2 }}
                 >
                   Profile
                 </Button>
@@ -359,15 +300,7 @@ const DriverNavbar = () => {
                     auth.logout();
                     setIsMobileMenuOpen(false);
                   }}
-                  sx={{
-                    color: "#fff",
-                    textAlign: "left",
-                    px: 3,
-                    py: 1,
-                    borderRadius: 2,
-                    "&:hover": { backgroundColor: "rgba(255,255,255,0.08)" },
-                    mt: 1,
-                  }}
+                  sx={{ textAlign: "left", py: 1, borderRadius: 2 }}
                 >
                   Logout
                 </Button>
@@ -376,42 +309,28 @@ const DriverNavbar = () => {
               <>
                 <Button
                   variant="contained"
-                  color="primary"
                   fullWidth
                   onClick={() => {
                     toggleLogin();
                     setIsMobileMenuOpen(false);
                   }}
                   sx={{
-                    px: 3,
                     py: 1,
-                    borderRadius: 4,
                     textTransform: "none",
-                    boxShadow: 2,
+                    borderRadius: 4,
                     backgroundColor: "#2563EB",
-                    "&:hover": { backgroundColor: "#1E40AF" },
-                    mt: 1,
                   }}
                 >
                   Login
                 </Button>
                 <Button
                   variant="outlined"
-                  color="inherit"
                   fullWidth
                   onClick={() => {
                     toggleRegister();
                     setIsMobileMenuOpen(false);
                   }}
-                  sx={{
-                    px: 3,
-                    py: 1,
-                    borderRadius: 4,
-                    textTransform: "none",
-                    borderColor: "#9CA3AF",
-                    "&:hover": { backgroundColor: "rgba(255,255,255,0.08)" },
-                    mt: 1,
-                  }}
+                  sx={{ py: 1, borderRadius: 4 }}
                 >
                   Register
                 </Button>
@@ -421,18 +340,11 @@ const DriverNavbar = () => {
         )}
       </Box>
 
-      {/* ─── Login Dialog ─────────────────────────────────────────── */}
-      <Dialog
-        open={isLoginOpen}
-        onClose={toggleLogin}
-        aria-labelledby="driver-login-dialog"
-        fullWidth
-        maxWidth="xs"
-      >
+      {/* Login Dialog */}
+      <Dialog open={isLoginOpen} onClose={toggleLogin} fullWidth maxWidth="xs">
         <Box sx={{ position: "relative", p: 2 }}>
           <IconButton
             onClick={toggleLogin}
-            aria-label="Close login modal"
             sx={{
               position: "absolute",
               top: 8,
@@ -442,24 +354,17 @@ const DriverNavbar = () => {
               "&:hover": { backgroundColor: "rgba(0,0,0,0.6)" },
             }}
           >
-            <Typography>✕</Typography>
+            <Close />
           </IconButton>
           <DriverLogin />
         </Box>
       </Dialog>
 
-      {/* ─── Registration Dialog ────────────────────────────────── */}
-      <Dialog
-        open={isRegisterOpen}
-        onClose={toggleRegister}
-        aria-labelledby="driver-register-dialog"
-        fullWidth
-        maxWidth="xs"
-      >
+      {/* Registration Dialog */}
+      <Dialog open={isRegisterOpen} onClose={toggleRegister} fullWidth maxWidth="xs">
         <Box sx={{ position: "relative", p: 2 }}>
           <IconButton
             onClick={toggleRegister}
-            aria-label="Close registration modal"
             sx={{
               position: "absolute",
               top: 8,
@@ -469,24 +374,17 @@ const DriverNavbar = () => {
               "&:hover": { backgroundColor: "rgba(0,0,0,0.6)" },
             }}
           >
-            <Typography>✕</Typography>
+            <Close />
           </IconButton>
           <DriverRegistrationForm />
         </Box>
       </Dialog>
 
-      {/* ─── Subscription Dialog ───────────────────────────────── */}
-      <Dialog
-        open={isSubscriptionOpen}
-        onClose={toggleSubscription}
-        aria-labelledby="subscription-dialog"
-        fullWidth
-        maxWidth="lg"
-      >
+      {/* Subscription Dialog */}
+      <Dialog open={isSubscriptionOpen} onClose={toggleSubscription} fullWidth maxWidth="lg">
         <Box sx={{ position: "relative", p: 2 }}>
           <IconButton
             onClick={toggleSubscription}
-            aria-label="Close subscription modal"
             sx={{
               position: "absolute",
               top: 8,
@@ -496,7 +394,7 @@ const DriverNavbar = () => {
               "&:hover": { backgroundColor: "rgba(0,0,0,0.6)" },
             }}
           >
-            <Typography>✕</Typography>
+            <Close />
           </IconButton>
           <SubscriptionPage />
         </Box>

@@ -24,6 +24,7 @@ import { Logout, Person } from "@mui/icons-material";
 
 // ─── Logging Helper ─────────────────────────────────────────────────
 const logError = (message, error) => {
+  // Swap with Sentry/LogRocket etc. in production
   console.error(message, error);
 };
 
@@ -41,9 +42,7 @@ const Navbar2 = () => {
   // ─── State ─────────────────────────────────────────────────────────
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [completedBookings, setCompletedBookings] = useState([]);
-  const [navbarStyle, setNavbarStyle] = useState({
-    background: "transparent",
-  });
+  const [navbarStyle, setNavbarStyle] = useState({ background: "transparent" });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [loadingBookings, setLoadingBookings] = useState(false);
@@ -148,18 +147,15 @@ const Navbar2 = () => {
             </IconButton>
 
             {/* Logo */}
-            <Typography
-              component="h1"
-              sx={{
-                typography: { xs: "h6", sm: "h5" },
-                fontFamily: "'Concert One', sans-serif",
-                fontWeight: 400,
-                color: "#fff",
-                userSelect: "none",
-              }}
-            >
-              Auto Drive
-            </Typography>
+        <div className="flex items-center space-x-2">
+              <h1 className="text-xl sm:text-2xl md:text-4xl font-extrabold lowercase tracking-wider shadow-md flex space-x-1 sm:space-x-2">
+                {Array.from("auto-drive").map((letter, index) => (
+                  <span key={index} style={{ color: index % 2 === 0 ? "#cbe557" : "white" }}>
+                    {letter}
+                  </span>
+                ))}
+              </h1>
+            </div>
 
             {/* Desktop Links (hidden on xs) */}
             <Box sx={{ display: { xs: "none", md: "flex" }, gap: 6 }}>
@@ -209,14 +205,8 @@ const Navbar2 = () => {
 
           {/* ─── Right: Avatar / Auth Menu ────────────────────── */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            {/* Desktop (hidden on xs) */}
-            <Box
-              sx={{
-                display: { xs: "none", md: "flex" },
-                alignItems: "center",
-                gap: 2,
-              }}
-            >
+            {/* Desktop Avatar Trigger (hidden on xs) */}
+            <Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center" }}>
               <Avatar
                 src={
                   auth.user?.profileImage
@@ -269,7 +259,8 @@ const Navbar2 = () => {
                   </>
                 ) : (
                   <>
-                    <MenuItem onClick={handleMenuClose}>
+                    <MenuItem onClick={handleMenuClose} sx={{ gap: 1 }}>
+                      <Person fontSize="small" />
                       <RouterNavLink
                         to="/userlogin"
                         style={{ textDecoration: "none", color: "inherit" }}
@@ -277,7 +268,8 @@ const Navbar2 = () => {
                         Login
                       </RouterNavLink>
                     </MenuItem>
-                    <MenuItem onClick={handleMenuClose}>
+                    <MenuItem onClick={handleMenuClose} sx={{ gap: 1 }}>
+                      <Logout fontSize="small" />
                       <RouterNavLink
                         to="/usersignup"
                         style={{ textDecoration: "none", color: "inherit" }}
@@ -289,14 +281,12 @@ const Navbar2 = () => {
                 )}
               </Menu>
             </Box>
-            {/* end desktop auth */}
 
-            {/* NOTE: On xs, we do NOT show any separate login/avatar here.
-                Instead, those options live inside the mobile menu below. */}
+            {/* Mobile Auth Button removed; handled in mobile menu */}
           </Box>
         </Box>
 
-        {/* ─── Mobile Links Panel ────────────────────────────── */}
+        {/* ─── Mobile Links Panel (with auth) ────────────────────────────── */}
         {isMobileMenuOpen && (
           <Box
             sx={{
@@ -355,65 +345,44 @@ const Navbar2 = () => {
               </Button>
             )}
 
-            {/* ─── Mobile Auth Section ─────────────────────────── */}
             {auth.user ? (
               <>
-                <MenuItem
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                  }}
-                  sx={{ gap: 1, color: "#fff" }}
+                <RouterNavLink
+                  to="/userprofile"
+                  className="navbar-link"
+                  onClick={closeAllMenus}
                 >
-                  <Person fontSize="small" />
-                  <RouterNavLink
-                    to="/userprofile"
-                    style={{ textDecoration: "none", color: "inherit" }}
-                  >
-                    Profile
-                  </RouterNavLink>
-                </MenuItem>
-                <MenuItem
+                  Profile
+                </RouterNavLink>
+                <Button
+                  variant="contained"
                   onClick={() => {
                     auth.logout();
-                    setIsMobileMenuOpen(false);
+                    closeAllMenus();
                   }}
-                  sx={{ gap: 1, color: "#fff" }}
+                  sx={{ textTransform: "none" }}
                 >
-                  <Logout fontSize="small" />
                   Logout
-                </MenuItem>
+                </Button>
               </>
             ) : (
               <>
-                <MenuItem
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                  }}
-                  sx={{ gap: 1, color: "#fff" }}
+                <RouterNavLink
+                  to="/userlogin"
+                  className="navbar-link"
+                  onClick={closeAllMenus}
                 >
-                  <RouterNavLink
-                    to="/userlogin"
-                    style={{ textDecoration: "none", color: "inherit" }}
-                  >
-                    Login
-                  </RouterNavLink>
-                </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                  }}
-                  sx={{ gap: 1, color: "#fff" }}
+                  Login
+                </RouterNavLink>
+                <RouterNavLink
+                  to="/usersignup"
+                  className="navbar-link"
+                  onClick={closeAllMenus}
                 >
-                  <RouterNavLink
-                    to="/usersignup"
-                    style={{ textDecoration: "none", color: "inherit" }}
-                  >
-                    Signup
-                  </RouterNavLink>
-                </MenuItem>
+                  Signup
+                </RouterNavLink>
               </>
             )}
-            {/* ─── End Mobile Auth ──────────────────────────────── */}
           </Box>
         )}
       </Box>
@@ -426,9 +395,7 @@ const Navbar2 = () => {
         fullWidth
         maxWidth="sm"
       >
-        <Box
-          sx={{ position: "relative", p: 2, bgcolor: "#1f2937", color: "#fff" }}
-        >
+        <Box sx={{ position: "relative", p: 2, bgcolor: "#1f2937", color: "#fff" }}>
           <IconButton
             onClick={toggleCalendar}
             aria-label="Close calendar"
@@ -452,7 +419,9 @@ const Navbar2 = () => {
             <Calendar
               onClickDay={(date) => {
                 const booking = completedBookings.find(
-                  (b) => new Date(b.createdAt).toDateString() === date.toDateString()
+                  (b) =>
+                    new Date(b.createdAt).toDateString() ===
+                    date.toDateString()
                 );
                 if (booking) {
                   alert(
@@ -462,7 +431,9 @@ const Navbar2 = () => {
               }}
               tileClassName={({ date }) =>
                 completedBookings.some(
-                  (b) => new Date(b.createdAt).toDateString() === date.toDateString()
+                  (b) =>
+                    new Date(b.createdAt).toDateString() ===
+                    date.toDateString()
                 )
                   ? "react-calendar__tile--has-booking"
                   : ""

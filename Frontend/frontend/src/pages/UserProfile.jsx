@@ -35,7 +35,7 @@ const logError = (message, error) => {
 const UserProfilePage = () => {
   // ─── Backend Base URL ───────────────────────────────────────────
   const API_BASE =
-    import.meta.env.VITE_API_URL ||
+    import.meta.env.VITE_API_URL2 ||
     (process.env.NODE_ENV === "production"
       ? "https://api.yourdomain.com"
       : "http://localhost:3000");
