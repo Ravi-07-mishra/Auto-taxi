@@ -20,12 +20,10 @@ import {
   Typography,
   CircularProgress,
 } from "@mui/material";
-
 import { Logout, Person } from "@mui/icons-material";
 
 // ─── Logging Helper ─────────────────────────────────────────────────
 const logError = (message, error) => {
-  // Swap with Sentry/LogRocket etc. in production
   console.error(message, error);
 };
 
@@ -43,7 +41,9 @@ const Navbar2 = () => {
   // ─── State ─────────────────────────────────────────────────────────
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [completedBookings, setCompletedBookings] = useState([]);
-  const [navbarStyle, setNavbarStyle] = useState({ background: "transparent" });
+  const [navbarStyle, setNavbarStyle] = useState({
+    background: "transparent",
+  });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [loadingBookings, setLoadingBookings] = useState(false);
@@ -158,31 +158,37 @@ const Navbar2 = () => {
                 userSelect: "none",
               }}
             >
-              Auto Drive
+              Auto Drive
             </Typography>
 
             {/* Desktop Links (hidden on xs) */}
             <Box sx={{ display: { xs: "none", md: "flex" }, gap: 6 }}>
               <RouterNavLink
                 to="/userhome"
-                className={({ isActive }) => `navbar-link ${isActive ? "active" : ""}`}
+                className={({ isActive }) =>
+                  `navbar-link ${isActive ? "active" : ""}`
+                }
                 onClick={closeAllMenus}
               >
                 Home
               </RouterNavLink>
               <RouterNavLink
                 to="/userbookdrive"
-                className={({ isActive }) => `navbar-link ${isActive ? "active" : ""}`}
+                className={({ isActive }) =>
+                  `navbar-link ${isActive ? "active" : ""}`
+                }
                 onClick={closeAllMenus}
               >
-                Book Drive
+                Book Drive
               </RouterNavLink>
               <RouterNavLink
                 to="/Aboutus"
-                className={({ isActive }) => `navbar-link ${isActive ? "active" : ""}`}
+                className={({ isActive }) =>
+                  `navbar-link ${isActive ? "active" : ""}`
+                }
                 onClick={closeAllMenus}
               >
-                About Us
+                About Us
               </RouterNavLink>
               {location.pathname === "/userhome" && (
                 <Button
@@ -195,7 +201,7 @@ const Navbar2 = () => {
                     "&:hover": { backgroundColor: "rgba(255,255,255,0.08)" },
                   }}
                 >
-                  Previous Bookings
+                  Previous Bookings
                 </Button>
               )}
             </Box>
@@ -204,7 +210,13 @@ const Navbar2 = () => {
           {/* ─── Right: Avatar / Auth Menu ────────────────────── */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             {/* Desktop (hidden on xs) */}
-            <Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", gap: 2 }}>
+            <Box
+              sx={{
+                display: { xs: "none", md: "flex" },
+                alignItems: "center",
+                gap: 2,
+              }}
+            >
               <Avatar
                 src={
                   auth.user?.profileImage
@@ -258,12 +270,18 @@ const Navbar2 = () => {
                 ) : (
                   <>
                     <MenuItem onClick={handleMenuClose}>
-                      <RouterNavLink to="/userlogin" style={{ textDecoration: "none", color: "inherit" }}>
+                      <RouterNavLink
+                        to="/userlogin"
+                        style={{ textDecoration: "none", color: "inherit" }}
+                      >
                         Login
                       </RouterNavLink>
                     </MenuItem>
                     <MenuItem onClick={handleMenuClose}>
-                      <RouterNavLink to="/usersignup" style={{ textDecoration: "none", color: "inherit" }}>
+                      <RouterNavLink
+                        to="/usersignup"
+                        style={{ textDecoration: "none", color: "inherit" }}
+                      >
                         Signup
                       </RouterNavLink>
                     </MenuItem>
@@ -271,44 +289,10 @@ const Navbar2 = () => {
                 )}
               </Menu>
             </Box>
+            {/* end desktop auth */}
 
-            {/* Mobile Auth Button (only on xs) */}
-            {auth.user ? (
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={auth.logout}
-                sx={{
-                  display: { xs: "flex", md: "none" },
-                  px: 3,
-                  py: 1,
-                  borderRadius: 2,
-                  textTransform: "none",
-                  backgroundColor: "#2563EB",
-                  "&:hover": { backgroundColor: "#1E40AF" },
-                }}
-              >
-                Logout
-              </Button>
-            ) : (
-              <Button
-                component="a"
-                href="/userlogin"
-                variant="contained"
-                color="primary"
-                sx={{
-                  display: { xs: "flex", md: "none" },
-                  px: 3,
-                  py: 1,
-                  borderRadius: 2,
-                  textTransform: "none",
-                  backgroundColor: "#2563EB",
-                  "&:hover": { backgroundColor: "#1E40AF" },
-                }}
-              >
-                Login
-              </Button>
-            )}
+            {/* NOTE: On xs, we do NOT show any separate login/avatar here.
+                Instead, those options live inside the mobile menu below. */}
           </Box>
         </Box>
 
@@ -326,24 +310,30 @@ const Navbar2 = () => {
           >
             <RouterNavLink
               to="/userhome"
-              className={({ isActive }) => `navbar-link ${isActive ? "active" : ""}`}
+              className={({ isActive }) =>
+                `navbar-link ${isActive ? "active" : ""}`
+              }
               onClick={closeAllMenus}
             >
               Home
             </RouterNavLink>
             <RouterNavLink
               to="/userbookdrive"
-              className={({ isActive }) => `navbar-link ${isActive ? "active" : ""}`}
+              className={({ isActive }) =>
+                `navbar-link ${isActive ? "active" : ""}`
+              }
               onClick={closeAllMenus}
             >
-              Book Drive
+              Book Drive
             </RouterNavLink>
             <RouterNavLink
               to="/Aboutus"
-              className={({ isActive }) => `navbar-link ${isActive ? "active" : ""}`}
+              className={({ isActive }) =>
+                `navbar-link ${isActive ? "active" : ""}`
+              }
               onClick={closeAllMenus}
             >
-              About Us
+              About Us
             </RouterNavLink>
 
             {location.pathname === "/userhome" && (
@@ -361,29 +351,69 @@ const Navbar2 = () => {
                   "&:hover": { backgroundColor: "rgba(255,255,255,0.08)" },
                 }}
               >
-                Previous Bookings
+                Previous Bookings
               </Button>
             )}
 
-            {!auth.user && (
-              <Button
-                component="a"
-                href="/usersignup"
-                variant="contained"
-                color="inherit"
-                fullWidth
-                sx={{
-                  backgroundColor: "#374151",
-                  "&:hover": { backgroundColor: "#4B5563" },
-                  color: "#fff",
-                  py: 1,
-                  borderRadius: 2,
-                }}
-                onClick={closeAllMenus}
-              >
-                Signup
-              </Button>
+            {/* ─── Mobile Auth Section ─────────────────────────── */}
+            {auth.user ? (
+              <>
+                <MenuItem
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                  }}
+                  sx={{ gap: 1, color: "#fff" }}
+                >
+                  <Person fontSize="small" />
+                  <RouterNavLink
+                    to="/userprofile"
+                    style={{ textDecoration: "none", color: "inherit" }}
+                  >
+                    Profile
+                  </RouterNavLink>
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    auth.logout();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  sx={{ gap: 1, color: "#fff" }}
+                >
+                  <Logout fontSize="small" />
+                  Logout
+                </MenuItem>
+              </>
+            ) : (
+              <>
+                <MenuItem
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                  }}
+                  sx={{ gap: 1, color: "#fff" }}
+                >
+                  <RouterNavLink
+                    to="/userlogin"
+                    style={{ textDecoration: "none", color: "inherit" }}
+                  >
+                    Login
+                  </RouterNavLink>
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                  }}
+                  sx={{ gap: 1, color: "#fff" }}
+                >
+                  <RouterNavLink
+                    to="/usersignup"
+                    style={{ textDecoration: "none", color: "inherit" }}
+                  >
+                    Signup
+                  </RouterNavLink>
+                </MenuItem>
+              </>
             )}
+            {/* ─── End Mobile Auth ──────────────────────────────── */}
           </Box>
         )}
       </Box>
@@ -396,7 +426,9 @@ const Navbar2 = () => {
         fullWidth
         maxWidth="sm"
       >
-        <Box sx={{ position: "relative", p: 2, bgcolor: "#1f2937", color: "#fff" }}>
+        <Box
+          sx={{ position: "relative", p: 2, bgcolor: "#1f2937", color: "#fff" }}
+        >
           <IconButton
             onClick={toggleCalendar}
             aria-label="Close calendar"
@@ -420,9 +452,7 @@ const Navbar2 = () => {
             <Calendar
               onClickDay={(date) => {
                 const booking = completedBookings.find(
-                  (b) =>
-                    new Date(b.createdAt).toDateString() ===
-                    date.toDateString()
+                  (b) => new Date(b.createdAt).toDateString() === date.toDateString()
                 );
                 if (booking) {
                   alert(
@@ -432,9 +462,7 @@ const Navbar2 = () => {
               }}
               tileClassName={({ date }) =>
                 completedBookings.some(
-                  (b) =>
-                    new Date(b.createdAt).toDateString() ===
-                    date.toDateString()
+                  (b) => new Date(b.createdAt).toDateString() === date.toDateString()
                 )
                   ? "react-calendar__tile--has-booking"
                   : ""
