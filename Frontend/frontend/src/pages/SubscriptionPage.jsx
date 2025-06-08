@@ -14,7 +14,7 @@ const SubscriptionPage = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const API_BASE = import.meta.env.VITE_API_BASE_URL2 || "http://localhost:3000";
+ const API_BASE = import.meta.env.VITE_API_URL2 || "http://localhost:3000";
 
   // Fetch Plans and Token
   useEffect(() => {
