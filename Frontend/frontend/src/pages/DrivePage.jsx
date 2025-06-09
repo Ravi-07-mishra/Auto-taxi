@@ -217,7 +217,7 @@ const DrivePage = () => {
   const fetchRoute = useCallback(async (start, end, cb) => {
     setRouteLoading(true);
     try {
-      const res = await axios.get(`${API_BASE}/directions`, {
+      const res = await axios.get(`${API_BASE2}/directions`, {
         params: {
           start: `${start.lng},${start.lat}`,
           end: `${end.lng},${end.lat}`,
