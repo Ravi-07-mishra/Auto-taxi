@@ -1,4 +1,5 @@
 // src/pages/UserRidePage.jsx
+
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -9,7 +10,6 @@ import {
   Tooltip,
   useMap,
 } from "react-leaflet";
-import L from "leaflet";
 import io from "socket.io-client";
 import axios from "axios";
 import { Send, X, Navigation, AlertTriangle, Mic } from "lucide-react";
@@ -25,23 +25,20 @@ import {
 import { useAuth } from "../Context/userContext";
 import "leaflet/dist/leaflet.css";
 
-// ----------------------------------------
-// Helper Functions (no logic changes)
-// ----------------------------------------
-const createIcon = (iconUrl) =>
-  L.icon({
-    iconUrl,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41],
-  });
+// Helper: re-center map when props change
+const MapUpdater = ({ center, zoom }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (Array.isArray(center) && center.length === 2) {
+      map.setView(center, zoom);
+    }
+  }, [center, zoom, map]);
+  return null;
+};
 
-const userIcon = createIcon("/user-icon.png");
-const driverIcon = createIcon("/driver-icon.png");
-
+// Distance & ETA/Speed calcs
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371; // Earth radius in km
+  const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
@@ -49,8 +46,7 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
     Math.cos((lat1 * Math.PI) / 180) *
       Math.cos((lat2 * Math.PI) / 180) *
       Math.sin(dLon / 2) ** 2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c; // distance in km
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
 const calculateETAAndSpeed = (
@@ -68,8 +64,8 @@ const calculateETAAndSpeed = (
     currLoc.lat,
     currLoc.lng
   );
-  const hours = (currTime - prevTime) / 3600; // timestamp diff is in ms, so /3600 converts to hours
-  const currSpeed = dist / hours; // km/h
+  const hours = (currTime - prevTime) / 3_600_000;
+  const currSpeed = dist / hours;
   setSpeed(currSpeed.toFixed(2));
 
   if (destinationLocation) {
@@ -82,49 +78,20 @@ const calculateETAAndSpeed = (
     setEta((remDist / currSpeed).toFixed(2));
   }
 };
-  const API_BASE2 = import.meta.env.VITE_API_URL2 || "http://localhost:3000";
-
-// ----------------------------------------
-// Logging Wrapper (swap out in prod)
-// ----------------------------------------
-const logError = (message, error) => {
-  // In production, you might send this to a remote logging service instead.
-  // Here we just print to console.
-  console.error(message, error);
-};
-
-// ----------------------------------------
-// MapUpdater Component
-// ----------------------------------------
-const MapUpdater = ({ center, zoom }) => {
-  const map = useMap();
-  useEffect(() => {
-    // Only update view if center changes meaningfully
-    if (Array.isArray(center) && center.length === 2) {
-      map.setView(center, zoom);
-    }
-  }, [center, zoom, map]);
-  return null;
-};
-
-// ----------------------------------------
-// Main Page Component
-// ----------------------------------------
 
 const UserRidePage = () => {
-  // ─── Backend Base URL ───────────────────────────────────────────
-  // In production, set REACT_APP_API_URL in your .env file.
   const API_BASE =
     import.meta.env.VITE_API_URL ||
     (process.env.NODE_ENV === "production"
       ? "https://api.yourdomain.com"
       : "http://localhost:3000");
+  const API_BASE2 = import.meta.env.VITE_API_URL2 || "http://localhost:3000";
 
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // ─── State Variables ─────────────────────────────────────────────
+  // State
   const [pickupLocation, setPickupLocation] = useState(null);
   const [destinationLocation, setDestinationLocation] = useState(null);
   const [route, setRoute] = useState([]);
@@ -151,223 +118,161 @@ const UserRidePage = () => {
   const mapRef = useRef(null);
   const chatContainerRef = useRef(null);
   const recognitionRef = useRef(null);
-  const geolocationWatchId = useRef(null);
+  const geoWatchId = useRef(null);
 
-  // ─── Fetch Booking Details ───────────────────────────────────────
+  // Fetch booking
   useEffect(() => {
-    const fetchBookingDetails = async () => {
+    const fetchBooking = async () => {
       try {
         const { data } = await axios.get(
           `${API_BASE}/driver/driver/${bookingId}`
         );
-        const booking = data.booking;
-        if (booking?.pickupLocation && booking?.destinationLocation) {
-          setPickupLocation(booking.pickupLocation);
-          setDestinationLocation(booking.destinationLocation);
-          setMapCenter([
-            booking.pickupLocation.lat,
-            booking.pickupLocation.lng,
-          ]);
-        } else {
-          throw new Error("Invalid booking data");
-        }
-      } catch (err) {
-        logError("Error fetching booking details:", err);
-        setError("Failed to load booking details.");
+        const b = data.booking;
+        setPickupLocation(b.pickupLocation);
+        setDestinationLocation(b.destinationLocation);
+        setMapCenter([b.pickupLocation.lat, b.pickupLocation.lng]);
+      } catch (e) {
+        console.error(e);
+        setError("Failed to load booking.");
         setSnackbarOpen(true);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchBookingDetails();
+    fetchBooking();
   }, [API_BASE, bookingId]);
 
-  // ─── Fetch Route Utility ─────────────────────────────────────────
+  // Fetch route
   const fetchRoute = useCallback(
     async (start, end, setter) => {
       try {
-        const response = await axios.get(`${API_BASE}/directions`, {
+        const res = await axios.get(`${API_BASE2}/directions`, {
           params: {
             start: `${start.lng},${start.lat}`,
             end: `${end.lng},${end.lat}`,
           },
         });
-        const feat = response.data.features?.[0];
-        if (feat?.geometry?.coordinates) {
-          const coords = feat.geometry.coordinates.map(([lng, lat]) => [
-            lat,
-            lng,
-          ]);
-          setter(coords);
-
-          // If setting the main route, also extract ETA from OpenRouteService / whatever API you’re using.
-          if (setter === setRoute) {
-            const durationInSeconds = feat.properties.segments[0].duration;
-            setEta((durationInSeconds / 60).toFixed(2)); // in minutes
-          }
-        } else {
-          throw new Error("Invalid route data");
+        const feat = res.data.features?.[0];
+        if (!feat) throw new Error("No route");
+        const coords = feat.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+        setter(coords);
+        if (setter === setRoute) {
+          const duration = feat.properties.segments[0].duration;
+          setEta((duration / 60).toFixed(2));
         }
-      } catch (err) {
-        logError("Route fetch error:", err);
-        setError("Failed to fetch route. Please try again.");
+      } catch (e) {
+        console.error(e);
+        setError("Route fetch failed.");
         setSnackbarOpen(true);
       }
     },
-    [API_BASE]
+    [API_BASE2]
   );
 
-  // ─── Fetch route from pickup → destination on initial load ───────
   useEffect(() => {
     if (pickupLocation && destinationLocation) {
       fetchRoute(pickupLocation, destinationLocation, setRoute);
     }
   }, [pickupLocation, destinationLocation, fetchRoute]);
 
-  // ─── Recalculate route from driver → destination whenever driver moves ─
   useEffect(() => {
     if (driverLocation && destinationLocation) {
       fetchRoute(driverLocation, destinationLocation, setRoute);
     }
   }, [driverLocation, destinationLocation, fetchRoute]);
 
-  // ─── Update Progress (%) ──────────────────────────────────────────
+  // Progress %
   useEffect(() => {
     if (driverLocation && pickupLocation && destinationLocation) {
-      const totalDistance = calculateDistance(
+      const total = calculateDistance(
         pickupLocation.lat,
         pickupLocation.lng,
         destinationLocation.lat,
         destinationLocation.lng
       );
-      const distanceCovered = calculateDistance(
+      const done = calculateDistance(
         pickupLocation.lat,
         pickupLocation.lng,
         driverLocation.lat,
         driverLocation.lng
       );
-      setProgress(Math.min((distanceCovered / totalDistance) * 100, 100));
+      setProgress(Math.min((done / total) * 100, 100));
     }
   }, [driverLocation, pickupLocation, destinationLocation]);
 
-  // ─── Initialize Socket.IO, Geolocation & Speech Recognition ───────
+  // Socket, geo, speech
   useEffect(() => {
     if (!user) return;
-
-    // ─── 1. Initialize Socket.IO ───────────────────────────────────
-    const socket = io(API_BASE2, {
-      transports: ["websocket", "polling"],
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-    });
+    const socket = io(API_BASE2);
     socketRef.current = socket;
 
     let prevLoc = null;
     let prevTime = null;
 
-    socket.on("connect", () => {
-      socket.emit("joinRoom", bookingId);
-    });
-
+    socket.on("connect", () => socket.emit("joinRoom", bookingId));
     socket.on("updateLocations", (data) => {
-      const [driverIdKey] = Object.keys(data);
-      const loc = data[driverIdKey];
-
-      if (loc?.lat && loc?.lng) {
-        setDriverLocation(loc);
-        setMapCenter([loc.lat, loc.lng]);
-
-        const now = Date.now();
-        if (prevLoc && prevTime) {
-          calculateETAAndSpeed(
-            prevLoc,
-            loc,
-            prevTime,
-            now,
-            destinationLocation,
-            setSpeed,
-            setEta
-          );
-        }
-        prevLoc = loc;
-        prevTime = now;
+      const loc = Object.values(data)[0];
+      setDriverLocation(loc);
+      setMapCenter([loc.lat, loc.lng]);
+      const now = Date.now();
+      if (prevLoc && prevTime) {
+        calculateETAAndSpeed(
+          prevLoc,
+          loc,
+          prevTime,
+          now,
+          destinationLocation,
+          setSpeed,
+          setEta
+        );
       }
+      prevLoc = loc;
+      prevTime = now;
     });
-
     socket.on("newMessage", (msg) => {
-      setMessages((prev) => [...prev, msg]);
-      // Auto‐scroll chat container
+      setMessages((m) => [...m, msg]);
       setTimeout(() => {
-        if (chatContainerRef.current) {
-          chatContainerRef.current.scrollTop =
-            chatContainerRef.current.scrollHeight;
-        }
+        chatContainerRef.current.scrollTop =
+          chatContainerRef.current.scrollHeight;
       }, 50);
     });
-
     socket.on("RideCompletednowpay", (d) => {
-      if (d.paymentPageUrl) {
-        navigate(d.paymentPageUrl);
-      }
+      if (d.paymentPageUrl) navigate(d.paymentPageUrl);
     });
 
-    // ─── 2. Initialize Geolocation Watch ────────────────────────────
     if (navigator.geolocation) {
-      geolocationWatchId.current = navigator.geolocation.watchPosition(
+      geoWatchId.current = navigator.geolocation.watchPosition(
         ({ coords }) =>
-          setUserLocation({
-            lat: coords.latitude,
-            lng: coords.longitude,
-            timestamp: Date.now(),
-          }),
-        (geoErr) => {
-          logError("Geolocation watch error:", geoErr);
-        },
-        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+          setUserLocation({ lat: coords.latitude, lng: coords.longitude }),
+        console.error,
+        { enableHighAccuracy: true }
       );
     }
 
-    // ─── 3. Initialize Speech Recognition ───────────────────────────
-    const SpeechRec =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRec) {
-      const recog = new SpeechRec();
-      recog.continuous = false;
-      recog.interimResults = false;
-      recog.lang = "en-US";
-      recog.onresult = (e) => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SR) {
+      const r = new SR();
+      r.continuous = false;
+      r.interimResults = false;
+      r.lang = "en-US";
+      r.onresult = (e) => {
         setNewMessage(e.results[0][0].transcript);
         setIsListening(false);
       };
-      recog.onerror = () => {
-        setIsListening(false);
-      };
-      recognitionRef.current = recog;
+      r.onerror = () => setIsListening(false);
+      recognitionRef.current = r;
     }
 
-    // ─── Cleanup on Unmount ────────────────────────────────────────
     return () => {
-      // Disconnect socket
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-      }
-      // Clear geolocation watch
-      if (geolocationWatchId.current !== null) {
-        navigator.geolocation.clearWatch(geolocationWatchId.current);
-      }
+      socket.disconnect();
+      if (geoWatchId.current != null)
+        navigator.geolocation.clearWatch(geoWatchId.current);
     };
-  }, [API_BASE2, bookingId, user, navigate, destinationLocation]);
+  }, [API_BASE2, bookingId, user, destinationLocation, navigate]);
 
-  // ─── Handlers ─────────────────────────────────────────────────────
-  const handleRecenter = () => {
-    if (driverLocation) {
-      setMapCenter([driverLocation.lat, driverLocation.lng]);
-      setMapZoom(14);
-    }
-  };
-
+  // Handlers
+  const recenter = () =>
+    driverLocation && setMapCenter([driverLocation.lat, driverLocation.lng]);
   const sendMessage = () => {
     if (!newMessage.trim() || !socketRef.current) return;
     socketRef.current.emit("sendMessage", {
@@ -379,23 +284,14 @@ const UserRidePage = () => {
     });
     setNewMessage("");
   };
-
-  const startListening = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.start();
-      setIsListening(true);
-    }
+  const startListen = () => {
+    recognitionRef.current?.start();
+    setIsListening(true);
   };
+  const toggleNight = () => setIsNightMode((v) => !v);
+  const closeSnack = () => setSnackbarOpen(false);
 
-  const toggleNightMode = () => {
-    setIsNightMode((prev) => !prev);
-  };
-
-  const handleCloseSnackbar = () => {
-    setSnackbarOpen(false);
-  };
-
-  // ─── Loading State ───────────────────────────────────────────────
+  // Loading
   if (loading) {
     return (
       <Box
@@ -407,9 +303,7 @@ const UserRidePage = () => {
           bgcolor: isNightMode ? "grey.900" : "grey.100",
         }}
       >
-        <MuiAlert severity="info" variant="outlined">
-          Loading ride details…
-        </MuiAlert>
+        <MuiAlert severity="info">Loading ride details…</MuiAlert>
       </Box>
     );
   }
@@ -420,40 +314,26 @@ const UserRidePage = () => {
         minHeight: "100vh",
         position: "relative",
         bgcolor: isNightMode ? "grey.900" : "grey.50",
-        p: 0,
-        m: 0,
       }}
     >
-      {/* Error Snackbar */}
+      {/* Snackbar */}
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={8000}
-        onClose={handleCloseSnackbar}
+        onClose={closeSnack}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <MuiAlert
-          onClose={handleCloseSnackbar}
-          severity="error"
-          sx={{ width: "100%" }}
-        >
+        <MuiAlert onClose={closeSnack} severity="error">
           {error}
         </MuiAlert>
       </Snackbar>
 
-      {/* Map Fullscreen */}
-      <Box
-        sx={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 0,
-        }}
-      >
+      {/* Map */}
+      <Box sx={{ position: "fixed", inset: 0, zIndex: 0 }}>
         <MapContainer
           center={mapCenter}
           zoom={mapZoom}
-          whenCreated={(mapInstance) => {
-            mapRef.current = mapInstance;
-          }}
+          whenCreated={(m) => (mapRef.current = m)}
           style={{ width: "100vw", height: "100vh" }}
         >
           <TileLayer
@@ -466,10 +346,7 @@ const UserRidePage = () => {
           <MapUpdater center={mapCenter} zoom={mapZoom} />
 
           {pickupLocation && (
-            <Marker
-              position={[pickupLocation.lat, pickupLocation.lng]}
-              icon={userIcon}
-            >
+            <Marker position={[pickupLocation.lat, pickupLocation.lng]}>
               <Tooltip>Pickup Location</Tooltip>
             </Marker>
           )}
@@ -479,12 +356,12 @@ const UserRidePage = () => {
             </Marker>
           )}
           {driverLocation && (
-            <Marker position={[driverLocation.lat, driverLocation.lng]} icon={driverIcon}>
+            <Marker position={[driverLocation.lat, driverLocation.lng]}>
               <Tooltip>Driver’s Location</Tooltip>
             </Marker>
           )}
           {userLocation && (
-            <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon}>
+            <Marker position={[userLocation.lat, userLocation.lng]}>
               <Tooltip>Your Location</Tooltip>
             </Marker>
           )}
@@ -500,7 +377,7 @@ const UserRidePage = () => {
         </MapContainer>
       </Box>
 
-      {/* Top Bar (Progress, ETA, Speed) */}
+      {/* Top Bar */}
       <Box
         sx={{
           position: "fixed",
@@ -509,209 +386,121 @@ const UserRidePage = () => {
           right: 16,
           bgcolor: "rgba(255,255,255,0.95)",
           borderRadius: 2,
-          boxShadow: 3,
           p: 1,
           zIndex: 50,
         }}
       >
-        <LinearProgress
-          variant="determinate"
-          value={progress}
-          sx={{ height: 8, borderRadius: 4 }}
-        />
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            mt: 1,
-            typography: "body2",
-            color: "text.secondary",
-          }}
-        >
+        <LinearProgress variant="determinate" value={progress} />
+        <Box sx={{ display: "flex", justifyContent: "space-between", mt: 1 }}>
           <span>ETA: {eta} hrs</span>
           <span>Speed: {speed} km/h</span>
         </Box>
       </Box>
 
-      {/* Recenter Button */}
+      {/* Controls */}
       <IconButton
-        onClick={handleRecenter}
-        aria-label="Recenter map"
-        sx={{
-          position: "fixed",
-          bottom: 140,
-          right: 16,
-          bgcolor: "rgba(255,255,255,0.9)",
-          boxShadow: 3,
-          "&:hover": { bgcolor: "grey.100" },
-          zIndex: 50,
-        }}
+        onClick={recenter}
+        sx={{ position: "fixed", bottom: 140, right: 16, zIndex: 50 }}
       >
-        <Navigation size={24} />
+        <Navigation />
       </IconButton>
-
-      {/* Emergency Button */}
       <IconButton
-        onClick={() => setSnackbarOpen(true) /* show error banner as “emergency alert” */}
-        aria-label="Emergency alert"
+        onClick={() => setSnackbarOpen(true)}
         sx={{
           position: "fixed",
           bottom: 88,
           right: 16,
-          bgcolor: "error.main",
-          color: "#fff",
-          boxShadow: 3,
-          "&:hover": { bgcolor: "error.dark" },
+          color: "error.main",
           zIndex: 50,
         }}
       >
-        <AlertTriangle size={24} />
+        <AlertTriangle />
       </IconButton>
 
-      {/* Chat Window */}
-      {isChatOpen && (
-        <Box
-          sx={{
-            position: "fixed",
-            bottom: 88,
-            right: 16,
-            width: { xs: "90%", sm: 320, md: 400 },
-            height: { xs: 240, sm: 400 },
-            maxHeight: "80vh",
-            bgcolor: "#fff",
-            borderRadius: 2,
-            boxShadow: 4,
-            display: "flex",
-            flexDirection: "column",
-            zIndex: 50,
-          }}
-        >
-          <Box
-            sx={{
-              bgcolor: "primary.main",
-              color: "#fff",
-              p: 1.5,
-              borderTopLeftRadius: 8,
-              borderTopRightRadius: 8,
-            }}
-          >
-            <Box component="h2" sx={{ m: 0, typography: "h6" }}>
-              Chat with Driver
-            </Box>
-          </Box>
-          <Box
-            ref={chatContainerRef}
-            sx={{
-              flexGrow: 1,
-              overflowY: "auto",
-              p: 1,
-              "&::-webkit-scrollbar": { width: 8 },
-              "&::-webkit-scrollbar-thumb": { bgcolor: "grey.400", borderRadius: 1 },
-            }}
-          >
-            {messages.map((msg, i) => (
-              <Box
-                key={i}
-                sx={{
-                  maxWidth: "70%",
-                  alignSelf: msg.senderModel === "User" ? "flex-end" : "flex-start",
-                  mb: 1.5,
-                }}
-              >
-                <Box
-                  sx={{
-                    p: 1,
-                    borderRadius: 2,
-                    bgcolor:
-                      msg.senderModel === "User" ? "primary.main" : "grey.200",
-                    color:
-                      msg.senderModel === "User" ? "#fff" : "text.primary",
-                  }}
-                >
-                  {msg.text}
-                </Box>
-                <Box
-                  component="p"
-                  sx={{ typography: "caption", color: "text.secondary", mt: 0.5 }}
-                >
-                  {new Date(msg.timestamp).toLocaleTimeString()}
-                </Box>
-              </Box>
-            ))}
-          </Box>
-          <Box
-            sx={{
-              borderTop: "1px solid",
-              borderColor: "grey.300",
-              display: "flex",
-              alignItems: "center",
-              p: 1,
-            }}
-          >
-            <TextField
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type a message…"
-              variant="outlined"
-              size="small"
-              fullWidth
-              onKeyPress={(e) => {
-                if (e.key === "Enter") sendMessage();
-              }}
-            />
-            <IconButton
-              onClick={startListening}
-              disabled={isListening}
-              aria-label="Start voice input"
-              sx={{ ml: 1 }}
-            >
-              <Mic size={20} />
-            </IconButton>
-            <IconButton
-              onClick={sendMessage}
-              aria-label="Send message"
-              color="primary"
-              sx={{ ml: 1 }}
-            >
-              <Send size={20} />
-            </IconButton>
-          </Box>
-        </Box>
-      )}
-
-      {/* Chat Toggle Button */}
+      {/* Chat */}
       <IconButton
-        onClick={() => setIsChatOpen((prev) => !prev)}
-        aria-label={isChatOpen ? "Close chat" : "Open chat"}
+        onClick={() => setIsChatOpen((v) => !v)}
         sx={{
           position: "fixed",
           bottom: 16,
           right: 16,
           bgcolor: "primary.main",
           color: "#fff",
-          boxShadow: 4,
-          "&:hover": { bgcolor: "primary.dark" },
           zIndex: 50,
         }}
       >
-        {isChatOpen ? <X size={24} /> : <Send size={24} />}
+        {isChatOpen ? <X /> : <Send />}
       </IconButton>
 
-      {/* Night Mode Toggle Button */}
+      {isChatOpen && (
+        <Box
+          sx={{
+            position: "fixed",
+            bottom: 88,
+            right: 16,
+            width: 320,
+            height: 400,
+            bgcolor: "#fff",
+            borderRadius: 2,
+            zIndex: 50,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <Box sx={{ bgcolor: "primary.main", color: "#fff", p: 1 }}>
+            Chat with Driver
+          </Box>
+          <Box
+            ref={chatContainerRef}
+            sx={{ flexGrow: 1, overflowY: "auto", p: 1 }}
+          >
+            {messages.map((msg, i) => (
+              <Box
+                key={i}
+                sx={{
+                  mb: 1,
+                  alignSelf: msg.senderModel === "User" ? "flex-end" : "flex-start",
+                }}
+              >
+                <Box
+                  sx={{
+                    p: 1,
+                    borderRadius: 1,
+                    bgcolor: msg.senderModel === "User" ? "primary.main" : "grey.200",
+                    color: msg.senderModel === "User" ? "#fff" : "text.primary",
+                  }}
+                >
+                  {msg.text}
+                </Box>
+                <Box sx={{ typography: "caption", color: "text.secondary" }}>
+                  {new Date(msg.timestamp).toLocaleTimeString()}
+                </Box>
+              </Box>
+            ))}
+          </Box>
+          <Box sx={{ display: "flex", p: 1, borderTop: "1px solid grey" }}>
+            <TextField
+              fullWidth
+              size="small"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+            />
+            <IconButton onClick={startListen} disabled={isListening}>
+              <Mic />
+            </IconButton>
+            <IconButton color="primary" onClick={sendMessage}>
+              <Send />
+            </IconButton>
+          </Box>
+        </Box>
+      )}
+
+      {/* Night Mode Toggle */}
       <Button
-        onClick={toggleNightMode}
-        aria-label="Toggle night mode"
+        onClick={toggleNight}
         variant="contained"
-        sx={{
-          position: "fixed",
-          bottom: 16,
-          left: 16,
-          bgcolor: isNightMode ? "grey.700" : "grey.800",
-          color: "#fff",
-          boxShadow: 4,
-          "&:hover": { bgcolor: isNightMode ? "grey.600" : "grey.700" },
-          zIndex: 50,
-        }}
+        sx={{ position: "fixed", bottom: 16, left: 16, zIndex: 50 }}
       >
         {isNightMode ? "🌙" : "☀️"}
       </Button>

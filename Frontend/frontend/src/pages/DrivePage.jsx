@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Polyline, Tooltip } from "react-leaflet";
 import { Button, TextField, LinearProgress, Snackbar, Alert } from "@mui/material";
-import L from "leaflet";
 import io from "socket.io-client";
 import axios from "axios";
 import { useDriverAuth } from "../Context/driverContext";
@@ -19,7 +18,6 @@ import {
 // Constants
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
 const API_BASE2 = import.meta.env.VITE_API_URL2 || "http://localhost:3000";
-
 const NEAR_DESTINATION_THRESHOLD = 0.5; // km
 const MAP_ZOOM_LEVEL = 14;
 const EARTH_RADIUS_KM = 6371;
@@ -60,21 +58,21 @@ const DrivePage = () => {
   const prevLocationRef = useRef(null);
   const prevTimeRef = useRef(null);
 
-  // Window size for responsiveness
+  // Window size
   const [windowSize, setWindowSize] = useState({
     width: window.innerWidth,
     height: window.innerHeight,
   });
 
-  // Memoized distance calculation
+  // Distance calculation
   const calculateDistance = useCallback((lat1, lon1, lat2, lon2) => {
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
     const dLon = ((lon2 - lon1) * Math.PI) / 180;
     const a =
       Math.sin(dLat / 2) ** 2 +
       Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) ** 2;
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2;
     return EARTH_RADIUS_KM * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }, []);
 
@@ -96,7 +94,6 @@ const DrivePage = () => {
         setLoading(false);
       }
     };
-
     fetchBookingDetails();
   }, [bookingId]);
 
@@ -108,37 +105,37 @@ const DrivePage = () => {
         height: window.innerHeight,
       });
     };
-
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-
   const isMobile = windowSize.width < 768;
-  const isTablet = windowSize.width >= 768 && windowSize.width < 1024;
 
-  // Calculate ETA & speed
-  const calculateETAAndSpeed = useCallback((prevLoc, currLoc, prevTime, currTime) => {
-    const dist = calculateDistance(
-      prevLoc.lat,
-      prevLoc.lng,
-      currLoc.lat,
-      currLoc.lng
-    );
-    const hours = (currTime - prevTime) / 3600000;
-    const currSpeed = dist / hours;
-    setSpeed(currSpeed.toFixed(2));
-
-    if (destinationLocation) {
-      const remainingDistance = calculateDistance(
+  // Calculate ETA and speed
+  const calculateETAAndSpeed = useCallback(
+    (prevLoc, currLoc, prevTime, currTime) => {
+      const dist = calculateDistance(
+        prevLoc.lat,
+        prevLoc.lng,
         currLoc.lat,
-        currLoc.lng,
-        destinationLocation.lat,
-        destinationLocation.lng
+        currLoc.lng
       );
-      setEta((remainingDistance / currSpeed).toFixed(2));
-      setIsNearDestination(remainingDistance <= NEAR_DESTINATION_THRESHOLD);
-    }
-  }, [destinationLocation, calculateDistance]);
+      const hours = (currTime - prevTime) / 3600000;
+      const currSpeed = dist / hours;
+      setSpeed(currSpeed.toFixed(2));
+
+      if (destinationLocation) {
+        const remainingDistance = calculateDistance(
+          currLoc.lat,
+          currLoc.lng,
+          destinationLocation.lat,
+          destinationLocation.lng
+        );
+        setEta((remainingDistance / currSpeed).toFixed(2));
+        setIsNearDestination(remainingDistance <= NEAR_DESTINATION_THRESHOLD);
+      }
+    },
+    [destinationLocation, calculateDistance]
+  );
 
   // Track ride progress percentage
   useEffect(() => {
@@ -161,23 +158,24 @@ const DrivePage = () => {
 
   // Speech recognition setup
   useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
       const recognition = new SpeechRecognition();
       recognition.continuous = false;
       recognition.interimResults = false;
       recognition.lang = "en-US";
-      
+
       recognition.onresult = (e) => {
         setNewMessage(e.results[0][0].transcript);
         setIsListening(false);
       };
-      
+
       recognition.onerror = () => {
         setIsListening(false);
         setError("Speech recognition failed. Please try typing your message.");
       };
-      
+
       recognitionRef.current = recognition;
     } else {
       console.warn("Speech Recognition API not supported in this browser");
@@ -217,20 +215,20 @@ const DrivePage = () => {
   const fetchRoute = useCallback(async (start, end, cb) => {
     setRouteLoading(true);
     try {
-      const res = await axios.get(`${API_BASE}/directions`, {
+      const res = await axios.get(`${API_BASE2}/directions`, {
         params: {
           start: `${start.lng},${start.lat}`,
           end: `${end.lng},${end.lat}`,
         },
-        timeout: 10000 // 10 second timeout
+        timeout: 10000,
       });
-      
+
       const feature = res.data.features?.[0];
       if (feature?.geometry?.coordinates) {
         cb(feature.geometry.coordinates);
         if (cb === setRoute) {
           const duration = feature.properties.segments[0].duration; // seconds
-          setEta((duration / 60).toFixed(2)); // convert to minutes
+          setEta((duration / 60).toFixed(2)); // minutes
         }
       } else {
         throw new Error("Invalid route data");
@@ -243,7 +241,7 @@ const DrivePage = () => {
     }
   }, []);
 
-  // Fetch ride route once pickup & destination are known
+  // Fetch ride routes
   useEffect(() => {
     if (pickupLocation && destinationLocation) {
       fetchRoute(
@@ -254,14 +252,13 @@ const DrivePage = () => {
     }
   }, [pickupLocation, destinationLocation, fetchRoute]);
 
-  // Fetch route from driver → destination as driverLocation updates
   useEffect(() => {
     if (driverLocation && destinationLocation) {
       fetchRoute(driverLocation, destinationLocation, setDriverToDestinationRoute);
     }
   }, [driverLocation, destinationLocation, fetchRoute]);
 
-  // Socket + geolocation streaming
+  // Socket & geolocation streaming
   useEffect(() => {
     if (!driver) return;
 
@@ -274,7 +271,7 @@ const DrivePage = () => {
     });
     socketRef.current = socket;
 
-    const handleGeolocationSuccess = ({ coords }) => {
+    const handleSuccess = ({ coords }) => {
       const currentLocation = { lat: coords.latitude, lng: coords.longitude };
       setDriverLocation(currentLocation);
 
@@ -286,7 +283,7 @@ const DrivePage = () => {
           Date.now()
         );
       }
-      
+
       prevLocationRef.current = currentLocation;
       prevTimeRef.current = Date.now();
 
@@ -297,35 +294,20 @@ const DrivePage = () => {
       });
     };
 
-    const handleGeolocationError = (err) => {
+    const handleError = (err) => {
       console.error("Geolocation error:", err);
       setError("Unable to get your location. Please enable location services.");
     };
 
-    const geolocationOptions = {
-      enableHighAccuracy: true,
-      maximumAge: 10000,
-      timeout: 15000,
-    };
-
     const watchId = navigator.geolocation.watchPosition(
-      handleGeolocationSuccess,
-      handleGeolocationError,
-      geolocationOptions
+      handleSuccess,
+      handleError,
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
     );
 
-    socket.on("connect", () => {
-      socket.emit("joinRoom", bookingId);
-    });
-
-    socket.on("newMessage", (msg) => {
-      setMessages((prev) => [...prev, msg]);
-    });
-
-    socket.on("connect_error", (err) => {
-      console.error("Socket connection error:", err);
-      setError("Connection issues. Trying to reconnect...");
-    });
+    socket.on("connect", () => socket.emit("joinRoom", bookingId));
+    socket.on("newMessage", (msg) => setMessages((prev) => [...prev, msg]));
+    socket.on("connect_error", () => setError("Connection issues. Trying to reconnect..."));
 
     return () => {
       navigator.geolocation.clearWatch(watchId);
@@ -340,10 +322,10 @@ const DrivePage = () => {
     }
   }, [messages]);
 
-  // Send chat message
+  // Send message
   const sendMessage = useCallback(() => {
     if (!newMessage.trim() || !socketRef.current || !driver?._id) return;
-    
+
     const messageData = {
       bookingId,
       message: newMessage.trim(),
@@ -369,13 +351,13 @@ const DrivePage = () => {
       const endTime = Date.now();
       const totalTime = endTime - rideStartTime;
       setTotalRideTime(totalTime);
-      
+
       const res = await axios.patch(
         `${API_BASE}/driver/end/${bookingId}`,
         { totalRideTime: totalTime },
         { withCredentials: true, timeout: 10000 }
       );
-      
+
       setRideStatus("completed");
       socketRef.current.emit("rideCompleted", {
         bookingId,
@@ -395,7 +377,6 @@ const DrivePage = () => {
         {},
         { withCredentials: true, timeout: 10000 }
       );
-      
       setRideEnded(true);
       setSuccess(res.data.message || "Ride has ended successfully!");
     } catch (err) {
@@ -411,18 +392,22 @@ const DrivePage = () => {
     }
   }, [driverLocation]);
 
-  // Handle message input key press
-  const handleMessageKeyPress = useCallback((e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  }, [sendMessage]);
+  // Key press for chat
+  const handleMessageKeyPress = useCallback(
+    (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    },
+    [sendMessage]
+  );
 
   // Close alerts
   const handleCloseError = useCallback(() => setError(null), []);
   const handleCloseSuccess = useCallback(() => setSuccess(null), []);
 
+  // Loading screens
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
@@ -431,7 +416,6 @@ const DrivePage = () => {
       </div>
     );
   }
-
   if (routeLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
@@ -440,20 +424,13 @@ const DrivePage = () => {
       </div>
     );
   }
-
   if (rideEnded) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
         <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
-        <h1 className="text-2xl font-bold text-green-600 mb-2">
-          Ride Completed
-        </h1>
-        <p className="text-gray-700 mb-6">{success || "Ride has ended successfully!"}</p>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => navigate("/driver/dashboard")}
-        >
+        <h1 className="text-2xl font-bold text-green-600 mb-2">Ride Completed</h1>
+        <p className="text-gray-700 mb-6">{success}</p>
+        <Button variant="contained" onClick={() => navigate("/driver/dashboard")}>
           Return to Dashboard
         </Button>
       </div>
@@ -488,9 +465,7 @@ const DrivePage = () => {
       {/* Full-screen map */}
       <div className="fixed inset-0 z-0">
         <MapContainer
-          center={
-            driverLocation || pickupLocation || [0, 0]
-          }
+          center={driverLocation || pickupLocation || [0, 0]}
           zoom={MAP_ZOOM_LEVEL}
           whenCreated={(map) => (mapRef.current = map)}
           className="w-full h-full"
@@ -498,82 +473,63 @@ const DrivePage = () => {
         >
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            attribution='© OpenStreetMap contributors'
           />
-          
+
           {pickupLocation && (
-            <Marker
-              position={pickupLocation}
-              icon={L.icon({
-                iconUrl: '/pickup-icon.png',
-                iconSize: [32, 32],
-                iconAnchor: [16, 32],
-              })}
-            >
+            <Marker position={pickupLocation}>
               <Tooltip permanent>Pickup Location</Tooltip>
             </Marker>
           )}
-          
+
           {destinationLocation && (
-            <Marker
-              position={destinationLocation}
-              icon={L.icon({
-                iconUrl: '/destination-icon.png',
-                iconSize: [32, 32],
-                iconAnchor: [16, 32],
-              })}
-            >
+            <Marker position={destinationLocation}>
               <Tooltip permanent>Destination</Tooltip>
             </Marker>
           )}
-          
+
           {driverLocation && (
-            <Marker
-              position={driverLocation}
-              icon={L.icon({
-                iconUrl: '/driver-icon.png',
-                iconSize: [32, 32],
-                iconAnchor: [16, 32],
-              })}
-            >
+            <Marker position={driverLocation}>
               <Tooltip permanent>Your Location</Tooltip>
             </Marker>
           )}
-          
+
           {route.length > 0 && (
             <Polyline
               positions={route.map(([lng, lat]) => [lat, lng])}
-              color="blue"
               weight={5}
               opacity={0.7}
             />
           )}
-          
+
           {driverToDestinationRoute.length > 0 && (
             <Polyline
               positions={driverToDestinationRoute.map(([lng, lat]) => [lat, lng])}
-              color="green"
               weight={5}
               opacity={0.7}
-              dashArray="10, 10"
+              dashArray="10,10"
             />
           )}
         </MapContainer>
       </div>
 
       {/* Progress bar + stats */}
-      <div className={`fixed bg-white bg-opacity-90 rounded-lg shadow-lg z-50 ${
-        isMobile ? "top-2 left-2 right-2 p-2" : "top-4 left-4 right-4 p-3"
-      }`}>
+      <div
+        className={`fixed bg-white bg-opacity-90 rounded-lg shadow-lg z-50 ${
+          isMobile ? "top-2 left-2 right-2 p-2" : "top-4 left-4 right-4 p-3"
+        }`}
+      >
         <div className="w-full bg-gray-200 rounded-full h-2.5">
           <div
             className="bg-blue-600 h-2.5 rounded-full transition-all duration-500"
             style={{ width: `${progress}%` }}
           />
         </div>
-        <div className={`mt-2 grid gap-1 ${
-          isMobile ? "grid-cols-2" : "grid-cols-3"
-        }`}>
+        <div
+          className={`mt-2 grid gap-1 ${
+            isMobile ? "grid-cols-2" : "grid-cols-3"
+          }`}
+        >
           <div className="text-xs sm:text-sm text-gray-800 truncate">
             <span className="font-semibold">ETA:</span> {eta ? `${eta} hrs` : "--"}
           </div>
@@ -582,7 +538,8 @@ const DrivePage = () => {
           </div>
           {!isMobile && (
             <div className="text-xs sm:text-sm text-gray-800">
-              <span className="font-semibold">Speed:</span> {speed ? `${speed} km/h` : "--"}
+              <span className="font-semibold">Speed:</span>{" "}
+              {speed ? `${speed} km/h` : "--"}
             </div>
           )}
         </div>
@@ -590,7 +547,6 @@ const DrivePage = () => {
 
       {/* Control Buttons */}
       <div className="fixed right-2 sm:right-4 bottom-20 sm:bottom-24 flex flex-col space-y-2 z-50">
-        {/* Recenter button */}
         <button
           onClick={handleRecenter}
           className="bg-white bg-opacity-90 rounded-full shadow-lg hover:bg-gray-100 transition-all p-3"
@@ -598,8 +554,6 @@ const DrivePage = () => {
         >
           <Navigation size={isMobile ? 20 : 24} className="text-gray-800" />
         </button>
-
-        {/* Emergency button */}
         <button
           onClick={handleEmergency}
           className="bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-all p-3"
@@ -607,40 +561,39 @@ const DrivePage = () => {
         >
           <AlertTriangle size={isMobile ? 20 : 24} />
         </button>
-
-        {/* Chat toggle button */}
         <button
           onClick={() => setIsChatOpen((o) => !o)}
           className={`rounded-full shadow-lg transition-all p-3 ${
-            isChatOpen 
+            isChatOpen
               ? "bg-gray-500 text-white hover:bg-gray-600"
               : "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700"
           }`}
           aria-label={isChatOpen ? "Close chat" : "Open chat"}
         >
-          {isChatOpen ? <X size={isMobile ? 20 : 24} /> : <Send size={isMobile ? 20 : 24} />}
+          {isChatOpen ? (
+            <X size={isMobile ? 20 : 24} />
+          ) : (
+            <Send size={isMobile ? 20 : 24} />
+          )}
         </button>
       </div>
 
       {/* Chat window */}
       {isChatOpen && (
-        <div className={`fixed bg-white rounded-lg shadow-xl flex flex-col z-50 ${
-          isMobile ? "bottom-16 right-2 w-72 h-64" : "bottom-20 right-4 w-80 h-96"
-        }`}>
-          <div className="bg-blue-500 text-white p-2 sm:p-3 rounded-t-lg flex justify-between items-center">
-            <h2 className="text-sm sm:text-base font-semibold">Chat with Passenger</h2>
-            <button 
-              onClick={() => setIsChatOpen(false)}
-              className="text-white hover:text-gray-200"
-              aria-label="Close chat"
-            >
+        <div
+          className={`fixed bg-white rounded-lg shadow-xl flex flex-col z-50 ${
+            isMobile ? "bottom-16 right-2 w-72 h-64" : "bottom-20 right-4 w-80 h-96"
+          }`}
+        >
+          <div className="bg-blue-500 text-white p-2 flex justify-between items-center rounded-t-lg">
+            <h2 className="font-semibold">Chat with Passenger</h2>
+            <button onClick={() => setIsChatOpen(false)} aria-label="Close chat">
               <X size={18} />
             </button>
           </div>
-          
           <div
             ref={chatContainerRef}
-            className="flex-1 overflow-y-auto p-2 sm:p-3 space-y-2"
+            className="flex-1 overflow-y-auto p-2 space-y-2"
           >
             {messages.length === 0 ? (
               <div className="flex items-center justify-center h-full text-gray-500">
@@ -649,7 +602,7 @@ const DrivePage = () => {
             ) : (
               messages.map((msg, idx) => (
                 <div
-                  key={`msg-${idx}`}
+                  key={idx}
                   className={`max-w-[80%] ${
                     msg.senderModel === "Driver" ? "ml-auto" : "mr-auto"
                   }`}
@@ -664,13 +617,15 @@ const DrivePage = () => {
                     {msg.text}
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(msg.timestamp).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </p>
                 </div>
               ))
             )}
           </div>
-          
           <div className="p-2 border-t">
             <div className="flex items-center space-x-1">
               <TextField
@@ -685,22 +640,17 @@ const DrivePage = () => {
                 onKeyPress={handleMessageKeyPress}
                 inputProps={{ "aria-label": "Message input" }}
               />
-              
-              <Button 
-                onClick={startListening} 
-                disabled={isListening}
-                className="min-w-0"
-                aria-label="Voice input"
-              >
-                <Mic size={20} className={isListening ? "text-red-500 animate-pulse" : "text-gray-600"} />
+              <Button onClick={startListening} disabled={isListening} aria-label="Voice input">
+                <Mic
+                  size={20}
+                  className={isListening ? "text-red-500 animate-pulse" : "text-gray-600"}
+                />
               </Button>
-              
               <Button
                 variant="contained"
                 color="primary"
                 onClick={sendMessage}
                 disabled={!newMessage.trim()}
-                className="min-w-0"
                 aria-label="Send message"
               >
                 <Send size={20} />
@@ -711,22 +661,22 @@ const DrivePage = () => {
       )}
 
       {/* Ride action buttons */}
-      <div className={`fixed left-0 right-0 flex justify-center z-50 ${
-        isMobile ? "bottom-2 px-2" : "bottom-4 px-4"
-      }`}>
-        <div className="bg-white bg-opacity-90 rounded-lg shadow-lg p-1">
+      <div
+        className={`fixed left-0 right-0 flex justify-center z-50 ${
+          isMobile ? "bottom-2 px-2" : "bottom-4 px-4"
+        }`}
+      >
+        <div className="bg-white bg-opacity-90 rounded-lg shadow-lg p-1 flex space-x-2">
           {rideStatus === "accepted" && (
             <Button
               onClick={handleStartRide}
               variant="contained"
               color="success"
               startIcon={<Play size={18} />}
-              className="whitespace-nowrap"
             >
               {isMobile ? "Start" : "Start Ride"}
             </Button>
           )}
-          
           {rideStatus === "started" && (
             <Button
               onClick={handleCompleteRide}
@@ -734,19 +684,12 @@ const DrivePage = () => {
               variant="contained"
               color="primary"
               startIcon={<CheckCircle size={18} />}
-              className="whitespace-nowrap"
             >
               {isMobile ? "Complete" : "Complete Ride"}
             </Button>
           )}
-          
           {rideStatus === "completed" && (
-            <Button
-              onClick={handleEndRide}
-              variant="contained"
-              color="error"
-              className="whitespace-nowrap"
-            >
+            <Button onClick={handleEndRide} variant="contained" color="error">
               {isMobile ? "End" : "End Ride"}
             </Button>
           )}
