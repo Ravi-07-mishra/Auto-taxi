@@ -236,6 +236,9 @@ io.on("connection", (socket) => {
       console.error("Error accepting booking:", error);
     }
   });
+app.get('/health', (req, res) => {
+  res.send('OK');
+});
 
   // Decline booking → no direct user notification
   socket.on("declineBooking", async (data) => {
