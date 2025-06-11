@@ -35,7 +35,7 @@ const braintreePaymentController = async (req, res) => {
         }
 
         gateway.transaction.sale({
-            amount: 100,
+            amount: req.body.amount,
             paymentMethodNonce: nonce,
             options: {
                 submitForSettlement: true,

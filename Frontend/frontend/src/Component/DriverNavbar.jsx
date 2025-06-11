@@ -1,5 +1,3 @@
-// src/components/DriverNavbar.jsx
-
 import React, { useEffect, useState } from "react";
 import {
   Avatar,
@@ -182,6 +180,7 @@ const DriverNavbar = () => {
                     onClose={handleMenuClose}
                     anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
                     transformOrigin={{ vertical: "top", horizontal: "right" }}
+                    sx={{ zIndex: 2000 }}
                   >
                     <MenuItem onClick={handleMenuClose} sx={{ gap: 1 }}>
                       <Person fontSize="small" />

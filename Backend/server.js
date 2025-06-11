@@ -197,6 +197,7 @@ io.on("connection", (socket) => {
   // Ride completed → notify user
   socket.on("rideCompleted", async (data) => {
     try {
+      console.log('emitting to user');
       const { bookingId, paymentAmount } = data;
       const booking = await Booking.findById(bookingId).populate("user");
       if (!booking) {

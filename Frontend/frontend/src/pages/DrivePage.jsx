@@ -370,20 +370,20 @@ const DrivePage = () => {
     }
   }, [bookingId, rideStartTime]);
 
-  const handleEndRide = useCallback(async () => {
-    try {
-      const res = await axios.patch(
-        `${API_BASE}/driver/end/${bookingId}`,
-        {},
-        { withCredentials: true, timeout: 10000 }
-      );
-      setRideEnded(true);
-      setSuccess(res.data.message || "Ride has ended successfully!");
-    } catch (err) {
-      console.error("End ride error:", err);
-      setError("Failed to end ride. Please try again.");
-    }
-  }, [bookingId]);
+  // const handleEndRide = useCallback(async () => {
+  //   try {
+  //     const res = await axios.patch(
+  //       `${API_BASE}/driver/end/${bookingId}`,
+  //       {},
+  //       { withCredentials: true, timeout: 10000 }
+  //     );
+  //     setRideEnded(true);
+  //     setSuccess(res.data.message || "Ride has ended successfully!");
+  //   } catch (err) {
+  //     console.error("End ride error:", err);
+  //     setError("Failed to end ride. Please try again.");
+  //   }
+  // }, [bookingId]);
 
   // Recenter map
   const handleRecenter = useCallback(() => {
@@ -680,7 +680,7 @@ const DrivePage = () => {
           {rideStatus === "started" && (
             <Button
               onClick={handleCompleteRide}
-              disabled={!isNearDestination}
+              // disabled={!isNearDestination}
               variant="contained"
               color="primary"
               startIcon={<CheckCircle size={18} />}
@@ -688,11 +688,11 @@ const DrivePage = () => {
               {isMobile ? "Complete" : "Complete Ride"}
             </Button>
           )}
-          {rideStatus === "completed" && (
+          {/* {rideStatus === "completed" && (
             <Button onClick={handleEndRide} variant="contained" color="error">
               {isMobile ? "End" : "End Ride"}
             </Button>
-          )}
+          )} */}
         </div>
       </div>
     </div>

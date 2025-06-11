@@ -1,5 +1,3 @@
-// src/pages/Bookdrive.jsx
-
 import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import MapSelector from "../Component/mapselector";
@@ -14,6 +12,8 @@ import {
 } from "@mui/material";
 import { useAuth } from "../Context/userContext";
 import { MapPin, Navigation as NavIcon, ArrowRight } from "lucide-react";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // OpenCage Geocoder API Key
 const OPEN_CAGE_API_KEY = import.meta.env.VITE_OPEN_CAGE_API_KEY;
@@ -55,7 +55,15 @@ const Bookdrive = () => {
         }));
       },
       () => {
-        alert("Unable to fetch your location. Please set it manually on the map.");
+        toast.error("Unable to fetch your location. Please set it manually on the map.", {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
       }
     );
   }, []);
@@ -72,8 +80,16 @@ const Bookdrive = () => {
       if (formData.userId) socket.emit("setUserSocketId", formData.userId);
     });
     socket.on("bookingAccepted", (data) => {
-      alert("Booking successful!");
-      if (data?.paymentPageUrl) navigate(data.paymentPageUrl);
+      toast.success("Booking successful! Redirecting to your ride page...", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
+      if (data?.bookingId) navigate(`/user/${data.bookingId}`);
     });
     return () => {
       socket.disconnect();
@@ -85,9 +101,25 @@ const Bookdrive = () => {
     setLoading(true);
     try {
       await axios.post(`${API_BASE}/user/booking`, formData);
-      alert("Booking successful!");
+      toast.success("Booking request sent! Waiting for driver confirmation...", {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
     } catch (err) {
-      alert(err.response?.data?.msg || "Booking failed. Please try again.");
+      toast.error(err.response?.data?.msg || "Booking failed. Please try again.", {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
     } finally {
       setLoading(false);
     }
@@ -99,7 +131,17 @@ const Bookdrive = () => {
       const results = resp.data.results || [];
       if (type === "pickup") setPickupSuggestions(results);
       else setDestinationSuggestions(results);
-    } catch {}
+    } catch (err) {
+      toast.error("Failed to fetch location suggestions", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
+    }
   };
 
   const handleLocationChange = (e, type) => {
@@ -121,10 +163,28 @@ const Bookdrive = () => {
       setFormData((prev) => ({ ...prev, pickupLocation: coords }));
       setPickupQuery(loc.formatted);
       setPickupSuggestions([]);
+      toast.success("Pickup location set!", {
+        position: "top-right",
+        autoClose: 2000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
     } else {
       setFormData((prev) => ({ ...prev, destinationLocation: coords }));
       setDestinationQuery(loc.formatted);
       setDestinationSuggestions([]);
+      toast.success("Destination location set!", {
+        position: "top-right",
+        autoClose: 2000,
+        hideProgressBar: true,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
     }
   };
 

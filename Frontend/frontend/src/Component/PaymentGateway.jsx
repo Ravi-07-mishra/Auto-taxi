@@ -1,180 +1,127 @@
-import { useState, useEffect, useRef } from "react";
+// src/Component/PaymentGateway.jsx
+
+import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
-import React from "react";
+import dropin from "braintree-web-drop-in";
 import { useParams, useNavigate } from "react-router-dom";
+import { io } from "socket.io-client";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import io from "socket.io-client";
 
-// Define base URL from environment
 const API_BASE =
   import.meta.env.VITE_API_URL2 ||
   (process.env.NODE_ENV === "production"
     ? "https://api.yourdomain.com"
     : "http://localhost:3000");
 
-const Payment = () => {
-  const [values, setValues] = useState({
-    clientToken: null,
-    success: "",
-    errors: "",
-    instance: null,
-    ridePrice: null,
-  });
-
-  const socketRef = useRef(null);
+const PaymentGateway = () => {
   const { bookingId } = useParams();
-  const [loading, setLoading] = useState(false);
-  const { clientToken, success, errors, instance, ridePrice } = values;
   const navigate = useNavigate();
+  const socketRef = useRef(null);
 
-  // Establish socket connection
+  const [ridePrice, setRidePrice] = useState(null);
+  const [clientToken, setClientToken] = useState(null);
+  const [instance, setInstance] = useState(null);
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  // Inject Drop‑in CSS
   useEffect(() => {
-    socketRef.current = io(API_BASE, {
-      transports: ["websocket", "polling"],
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-    });
-
-    const socket = socketRef.current;
-
-    socket.on("connect", () => {
-      console.log("Socket connected:", socket.id);
-    });
-
-    return () => {
-      socket.disconnect();
-      console.log("Socket disconnected on cleanup.");
-    };
+    const href =
+      "https://js.braintreegateway.com/web/dropin/1.29.0/css/dropin.min.css";
+    if (!document.querySelector(`link[href="${href}"]`)) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = href;
+      document.head.appendChild(link);
+    }
   }, []);
 
-  // Fetch ride price
+  // Socket.IO setup
+  useEffect(() => {
+    const socket = io(API_BASE, { transports: ["websocket", "polling"] });
+    socketRef.current = socket;
+    socket.on("connect", () => console.log("Socket connected:", socket.id));
+    return () => socket.disconnect();
+  }, []);
+
+  // Load ride price
   useEffect(() => {
     axios
       .get(`${API_BASE}/api/user/driver/${bookingId}`)
-      .then(({ data }) => {
-        setValues((prev) => ({
-          ...prev,
-          ridePrice: data.booking.price,
-        }));
-      })
-      .catch(() => {
-        setValues((prev) => ({
-          ...prev,
-          errors: "Failed to load booking info.",
-        }));
-      });
+      .then(({ data }) => setRidePrice(data.booking.price))
+      .catch(() => setError("Failed to load booking info."));
   }, [bookingId]);
 
-  // Handle payment
+  // Fetch client token
+  useEffect(() => {
+    axios
+      .get(`${API_BASE}/api/payment/braintree/token`)
+      .then(({ data }) => setClientToken(data.clientToken))
+      .catch(() => setError("Failed to get payment token."));
+  }, []);
+
+  // Initialize Drop‑in
+  useEffect(() => {
+    if (!clientToken) return;
+
+    const container = document.getElementById("dropin-container");
+    if (!container) {
+      setError("Drop‑in container not found.");
+      return;
+    }
+    container.innerHTML = "";
+
+    dropin
+      .create({
+        authorization: clientToken,
+        container: "#dropin-container",
+      })
+      .then((dropinInstance) => setInstance(dropinInstance))
+      .catch((err) => {
+        console.error("Drop‑in init failed:", err);
+        setError(`Drop‑in init failed: ${err.message}`);
+      });
+  }, [clientToken]);
+
+  // Handle the payment flow
   const handlePayment = async () => {
+    setError("");
     if (!instance || ridePrice == null) {
-      setValues((prev) => ({
-        ...prev,
-        errors: "Payment not ready. Check ride price or drop-in setup.",
-      }));
+      setError("Payment not ready—check drop‑in or ride price.");
       return;
     }
 
     setLoading(true);
-
     try {
       const { nonce } = await instance.requestPaymentMethod();
-
-      const { data } = await axios.post(`${API_BASE}/api/payment/braintree/pay`, {
-        nonce,
-        bookingId,
-        amount: ridePrice,
-      });
+      const { data } = await axios.post(
+        `${API_BASE}/api/payment/braintree/pay`,
+        { nonce, bookingId, amount: ridePrice }
+      );
 
       if (data.success) {
-        setValues((prev) => ({
-          ...prev,
-          success: "Payment completed successfully.",
-          errors: "",
-        }));
-
+        setSuccess("Payment completed successfully!");
         toast.success("Booking successful!");
-        socketRef.current?.emit("Paymentcompleted", { bookingId });
+        socketRef.current.emit("Paymentcompleted", { bookingId });
         navigate("/userhome");
       } else {
-        setValues((prev) => ({
-          ...prev,
-          errors: "Payment failed. Please try again.",
-        }));
+        setError("Payment failed. Please try again.");
       }
-    } catch (error) {
-      setValues((prev) => ({
-        ...prev,
-        errors: "Payment error. Try again later.",
-      }));
+    } catch (err) {
+      console.error("Payment error:", err);
+      setError("Payment error. Try again later.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch client token
-  useEffect(() => {
-    const fetchToken = async () => {
-      try {
-        const { data } = await axios.get(`${API_BASE}/api/payment/braintree/token`);
-        setValues((prev) => ({ ...prev, clientToken: data.clientToken }));
-      } catch {
-        setValues((prev) => ({ ...prev, errors: "Failed to get payment token." }));
-      }
-    };
-
-    fetchToken();
-  }, []);
-
-  // Load Braintree drop-in
-  useEffect(() => {
-    const loadScriptAndInitialize = () => {
-      if (document.getElementById("braintree-dropin-script")) {
-        initializeDropin(); // Already loaded
-        return;
-      }
-
-      const script = document.createElement("script");
-      script.id = "braintree-dropin-script";
-      script.src = "https://js.braintreegateway.com/web/dropin/1.29.0/js/dropin.min.js";
-      script.async = true;
-      script.onload = initializeDropin;
-      document.body.appendChild(script);
-    };
-
-    const initializeDropin = () => {
-      if (!clientToken) return;
-
-      const container = document.getElementById("dropin-container");
-      if (!container) {
-        setValues((prev) => ({ ...prev, errors: "Drop-in container not found." }));
-        return;
-      }
-
-      container.innerHTML = "";
-
-      window.braintree?.dropin
-        .create({
-          authorization: clientToken,
-          container: "#dropin-container",
-        })
-        .then((dropinInstance) => {
-          setValues((prev) => ({ ...prev, instance: dropinInstance }));
-        })
-        .catch((err) => {
-          setValues((prev) => ({ ...prev, errors: `Drop-in init failed: ${err.message}` }));
-        });
-    };
-
-    loadScriptAndInitialize();
-  }, [clientToken]);
-
   return (
     <div className="payment-container p-6 min-h-screen bg-gray-50">
       <ToastContainer />
-      {errors && <div className="text-red-600 mb-4">{errors}</div>}
+      {error && <div className="text-red-600 mb-4">{error}</div>}
       {success && <div className="text-green-600 mb-4">{success}</div>}
 
       {ridePrice != null && (
@@ -195,10 +142,10 @@ const Payment = () => {
           </button>
         </>
       ) : (
-        <p>Initializing payment gateway...</p>
+        <p>Initializing payment gateway…</p>
       )}
     </div>
   );
 };
 
-export default Payment;
+export default PaymentGateway;

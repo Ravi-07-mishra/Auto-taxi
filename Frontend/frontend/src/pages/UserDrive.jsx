@@ -1,5 +1,3 @@
-// src/pages/UserRidePage.jsx
-
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -36,9 +34,9 @@ const MapUpdater = ({ center, zoom }) => {
   return null;
 };
 
-// Distance & ETA/Speed calcs
+// Distance & ETA/Speed calculations
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371;
+  const R = 6371; // km
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
@@ -64,7 +62,7 @@ const calculateETAAndSpeed = (
     currLoc.lat,
     currLoc.lng
   );
-  const hours = (currTime - prevTime) / 3_600_000;
+  const hours = (currTime - prevTime) / 3600000; // ms to hours
   const currSpeed = dist / hours;
   setSpeed(currSpeed.toFixed(2));
 
@@ -99,15 +97,16 @@ const UserRidePage = () => {
   const [userLocation, setUserLocation] = useState(null);
   const [eta, setEta] = useState(null);
   const [speed, setSpeed] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [progress, setProgress] = useState(0);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [progress, setProgress] = useState(0);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isNightMode, setIsNightMode] = useState(false);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // Map view
   const [mapCenter, setMapCenter] = useState([0, 0]);
@@ -115,22 +114,21 @@ const UserRidePage = () => {
 
   // Refs
   const socketRef = useRef(null);
-  const mapRef = useRef(null);
   const chatContainerRef = useRef(null);
   const recognitionRef = useRef(null);
   const geoWatchId = useRef(null);
 
-  // Fetch booking
+  // Fetch booking details
   useEffect(() => {
     const fetchBooking = async () => {
       try {
         const { data } = await axios.get(
           `${API_BASE}/driver/driver/${bookingId}`
         );
-        const b = data.booking;
-        setPickupLocation(b.pickupLocation);
-        setDestinationLocation(b.destinationLocation);
-        setMapCenter([b.pickupLocation.lat, b.pickupLocation.lng]);
+        const { pickupLocation, destinationLocation } = data.booking;
+        setPickupLocation(pickupLocation);
+        setDestinationLocation(destinationLocation);
+        setMapCenter([pickupLocation.lat, pickupLocation.lng]);
       } catch (e) {
         console.error(e);
         setError("Failed to load booking.");
@@ -142,7 +140,7 @@ const UserRidePage = () => {
     fetchBooking();
   }, [API_BASE, bookingId]);
 
-  // Fetch route
+  // Fetch route polyline
   const fetchRoute = useCallback(
     async (start, end, setter) => {
       try {
@@ -153,12 +151,11 @@ const UserRidePage = () => {
           },
         });
         const feat = res.data.features?.[0];
-        if (!feat) throw new Error("No route");
         const coords = feat.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
         setter(coords);
         if (setter === setRoute) {
-          const duration = feat.properties.segments[0].duration;
-          setEta((duration / 60).toFixed(2));
+          const durationSec = feat.properties.segments[0].duration;
+          setEta((durationSec / 60).toFixed(2));
         }
       } catch (e) {
         console.error(e);
@@ -181,26 +178,26 @@ const UserRidePage = () => {
     }
   }, [driverLocation, destinationLocation, fetchRoute]);
 
-  // Progress %
+  // Update progress bar
   useEffect(() => {
     if (driverLocation && pickupLocation && destinationLocation) {
-      const total = calculateDistance(
+      const totalDist = calculateDistance(
         pickupLocation.lat,
         pickupLocation.lng,
         destinationLocation.lat,
         destinationLocation.lng
       );
-      const done = calculateDistance(
+      const doneDist = calculateDistance(
         pickupLocation.lat,
         pickupLocation.lng,
         driverLocation.lat,
         driverLocation.lng
       );
-      setProgress(Math.min((done / total) * 100, 100));
+      setProgress(Math.min((doneDist / totalDist) * 100, 100));
     }
   }, [driverLocation, pickupLocation, destinationLocation]);
 
-  // Socket, geo, speech
+  // Socket, geolocation, speech setup
   useEffect(() => {
     if (!user) return;
     const socket = io(API_BASE2);
@@ -209,41 +206,51 @@ const UserRidePage = () => {
     let prevLoc = null;
     let prevTime = null;
 
-    socket.on("connect", () => socket.emit("joinRoom", bookingId));
-    socket.on("updateLocations", (data) => {
-      const loc = Object.values(data)[0];
+    socket.on("connect", () => {
+      socket.emit("joinRoom", bookingId);
+      console.log("[client] connected as", socket.id);
+      socket.emit("setUserSocketId", user._id);
+      console.log("[client] sent setUserSocketId:", user._id);
+    });
+
+    socket.on("updateLocations", (locations) => {
+      const loc = Object.values(locations)[0];
       setDriverLocation(loc);
       setMapCenter([loc.lat, loc.lng]);
       const now = Date.now();
       if (prevLoc && prevTime) {
-        calculateETAAndSpeed(
-          prevLoc,
-          loc,
-          prevTime,
-          now,
-          destinationLocation,
-          setSpeed,
-          setEta
-        );
+        calculateETAAndSpeed(prevLoc, loc, prevTime, now, destinationLocation, setSpeed, setEta);
       }
       prevLoc = loc;
       prevTime = now;
     });
+
     socket.on("newMessage", (msg) => {
       setMessages((m) => [...m, msg]);
       setTimeout(() => {
-        chatContainerRef.current.scrollTop =
-          chatContainerRef.current.scrollHeight;
+        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
       }, 50);
     });
+
+    socket.on("bookingAccepted", ({ paymentPageUrl }) => {
+      console.log("Received bookingAccepted event:", paymentPageUrl);
+      if (paymentPageUrl && !isNavigating) {
+        setIsNavigating(true);
+        navigate(paymentPageUrl);
+      }
+    });
+
     socket.on("RideCompletednowpay", (d) => {
-      if (d.paymentPageUrl) navigate(d.paymentPageUrl);
+      console.log("Received RideCompletednowpay event:", d);
+      if (d.paymentPageUrl && !isNavigating) {
+        setIsNavigating(true);
+        navigate(d.paymentPageUrl);
+      }
     });
 
     if (navigator.geolocation) {
       geoWatchId.current = navigator.geolocation.watchPosition(
-        ({ coords }) =>
-          setUserLocation({ lat: coords.latitude, lng: coords.longitude }),
+        ({ coords }) => setUserLocation({ lat: coords.latitude, lng: coords.longitude }),
         console.error,
         { enableHighAccuracy: true }
       );
@@ -251,24 +258,23 @@ const UserRidePage = () => {
 
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SR) {
-      const r = new SR();
-      r.continuous = false;
-      r.interimResults = false;
-      r.lang = "en-US";
-      r.onresult = (e) => {
+      const recognition = new SR();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = "en-US";
+      recognition.onresult = (e) => {
         setNewMessage(e.results[0][0].transcript);
         setIsListening(false);
       };
-      r.onerror = () => setIsListening(false);
-      recognitionRef.current = r;
+      recognition.onerror = () => setIsListening(false);
+      recognitionRef.current = recognition;
     }
 
     return () => {
       socket.disconnect();
-      if (geoWatchId.current != null)
-        navigator.geolocation.clearWatch(geoWatchId.current);
+      if (geoWatchId.current != null) navigator.geolocation.clearWatch(geoWatchId.current);
     };
-  }, [API_BASE2, bookingId, user, destinationLocation, navigate]);
+  }, [API_BASE2, bookingId, user, destinationLocation, navigate, isNavigating]);
 
   // Handlers
   const recenter = () =>
