@@ -114,30 +114,26 @@ const DoBooking = async (req, res) => {
   }
 };
 const getallUserBookings = async (req, res) => {
+  console.log("→ getallUserBookings called for userId:", req.params.userId);
   try {
-    const { userId } = req.params;
-    const userObjectId = new mongoose.Types.ObjectId(userId);
+    const userObjectId = new mongoose.Types.ObjectId(req.params.userId);
 
-    // 1️⃣ Fetch *all* bookings for this user, regardless of status
+    // Log the raw DB result
     const all = await Booking.find({ user: userObjectId });
-    console.log("🔍 all statuses in DB:", all.map(b => b.status));
+    console.log("🔍 [DB] all statuses:", all.map(b => b.status));
 
-    // 2️⃣ Now filter in JS for Accepted or Completed, case‐insensitive
-    const filtered = all.filter(b =>
+    // Filter for accepted or completed
+    const bookings = all.filter(b =>
       ['accepted','completed'].includes(b.status.toLowerCase())
     );
-    console.log("✅ filtered statuses:", filtered.map(b => b.status));
+    console.log("✅ [filtered] statuses:", bookings.map(b => b.status));
 
-    // 3️⃣ Return them
-    return res.status(200).json({ bookings: filtered });
+    return res.status(200).json({ bookings });
   } catch (error) {
     console.error("Error in getallUserBookings:", error);
-    return res
-      .status(500)
-      .json({ msg: "An error occurred while retrieving bookings" });
+    return res.status(500).json({ msg: "Server error" });
   }
 };
-
 
 const getallDriverBookings = async (req, res) => {
   try {
