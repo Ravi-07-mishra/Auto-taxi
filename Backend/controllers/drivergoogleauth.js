@@ -10,7 +10,7 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: '/api/driver/auth/google/callback',
+callbackURL: 'https://auto-taxi-1.onrender.com/api/driver/auth/google/callback',
     },
     async (accessToken, refreshToken, profile, done) => {
       try {

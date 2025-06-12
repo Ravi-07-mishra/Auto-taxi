@@ -9,7 +9,11 @@ const GoogleSignInButton = () => {
 
   const handleGoogleSignIn = () => {
     // Redirect to Google OAuth authentication route
-    window.location.href = `${API_BASE}/user/auth/google`;
+        console.log("Google OAuth Redirect to:", `${API_BASE}/driver/auth/google`);
+  window.location.href = "https://auto-taxi-1.onrender.com/api/driver/auth/google";
+
+
+
   };
 
   return (

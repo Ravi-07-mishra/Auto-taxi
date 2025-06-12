@@ -1,3 +1,5 @@
+// src/pages/DrivePage.jsx
+
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Polyline, Tooltip } from "react-leaflet";
@@ -32,6 +34,7 @@ const DrivePage = () => {
   const [destinationLocation, setDestinationLocation] = useState(null);
   const [route, setRoute] = useState([]);
   const [driverToDestinationRoute, setDriverToDestinationRoute] = useState([]);
+  const [instructions, setInstructions] = useState([]);               // ← new
   const [driverLocation, setDriverLocation] = useState(null);
   const [eta, setEta] = useState(null);
   const [speed, setSpeed] = useState(null);
@@ -156,7 +159,7 @@ const DrivePage = () => {
     }
   }, [driverLocation, pickupLocation, destinationLocation, calculateDistance]);
 
-  // Speech recognition setup
+  // Speech recognition setup (chat)
   useEffect(() => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -170,21 +173,15 @@ const DrivePage = () => {
         setNewMessage(e.results[0][0].transcript);
         setIsListening(false);
       };
-
       recognition.onerror = () => {
         setIsListening(false);
         setError("Speech recognition failed. Please try typing your message.");
       };
 
       recognitionRef.current = recognition;
-    } else {
-      console.warn("Speech Recognition API not supported in this browser");
     }
-
     return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.abort();
-      }
+      if (recognitionRef.current) recognitionRef.current.abort();
     };
   }, []);
 
@@ -193,8 +190,7 @@ const DrivePage = () => {
       try {
         recognitionRef.current.start();
         setIsListening(true);
-      } catch (err) {
-        console.error("Speech recognition error:", err);
+      } catch {
         setError("Failed to start speech recognition.");
       }
     }
@@ -226,13 +222,15 @@ const DrivePage = () => {
       const feature = res.data.features?.[0];
       if (feature?.geometry?.coordinates) {
         cb(feature.geometry.coordinates);
+
+        // Extract and store instructions on the main pickup→destination route
         if (cb === setRoute) {
-          const duration = feature.properties.segments[0].duration; // seconds
-          setEta((duration / 60).toFixed(2)); // minutes
+          const steps = feature.properties.segments[0].steps || [];
+          setInstructions(steps.map((s) => s.instruction));
+          const duration = feature.properties.segments[0].duration;
+          setEta((duration / 60).toFixed(2));
         }
-      } else {
-        throw new Error("Invalid route data");
-      }
+      } else throw new Error("Invalid route data");
     } catch (err) {
       console.error("Route fetch error:", err);
       setError("Failed to fetch route. Please check your connection.");
@@ -241,7 +239,7 @@ const DrivePage = () => {
     }
   }, []);
 
-  // Fetch ride routes
+  // Fetch primary and live‐driver routes
   useEffect(() => {
     if (pickupLocation && destinationLocation) {
       fetchRoute(
@@ -261,7 +259,6 @@ const DrivePage = () => {
   // Socket & geolocation streaming
   useEffect(() => {
     if (!driver) return;
-
     const socket = io(API_BASE2, {
       transports: ["websocket"],
       reconnection: true,
@@ -283,7 +280,6 @@ const DrivePage = () => {
           Date.now()
         );
       }
-
       prevLocationRef.current = currentLocation;
       prevTimeRef.current = Date.now();
 
@@ -294,20 +290,15 @@ const DrivePage = () => {
       });
     };
 
-    const handleError = (err) => {
-      console.error("Geolocation error:", err);
-      setError("Unable to get your location. Please enable location services.");
-    };
-
     const watchId = navigator.geolocation.watchPosition(
       handleSuccess,
-      handleError,
+      () => setError("Enable location services."),
       { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
     );
 
     socket.on("connect", () => socket.emit("joinRoom", bookingId));
     socket.on("newMessage", (msg) => setMessages((prev) => [...prev, msg]));
-    socket.on("connect_error", () => setError("Connection issues. Trying to reconnect..."));
+    socket.on("connect_error", () => setError("Connection issues."));
 
     return () => {
       navigator.geolocation.clearWatch(watchId);
@@ -325,7 +316,6 @@ const DrivePage = () => {
   // Send message
   const sendMessage = useCallback(() => {
     if (!newMessage.trim() || !socketRef.current || !driver?._id) return;
-
     const messageData = {
       bookingId,
       message: newMessage.trim(),
@@ -334,7 +324,6 @@ const DrivePage = () => {
       senderName: "Driver",
       timestamp: new Date().toISOString(),
     };
-
     socketRef.current.emit("sendMessage", messageData);
     setNewMessage("");
   }, [newMessage, bookingId, driver]);
@@ -344,7 +333,14 @@ const DrivePage = () => {
     setRideStatus("started");
     setRideStartTime(Date.now());
     setSuccess("Ride started successfully!");
-  }, []);
+
+    // Speak out each instruction
+    instructions.forEach((inst) => {
+      const utter = new SpeechSynthesisUtterance(inst);
+      utter.lang = "en-US";
+      speechSynthesis.speak(utter);
+    });
+  }, [instructions]);
 
   const handleCompleteRide = useCallback(async () => {
     try {
@@ -370,21 +366,6 @@ const DrivePage = () => {
     }
   }, [bookingId, rideStartTime]);
 
-  // const handleEndRide = useCallback(async () => {
-  //   try {
-  //     const res = await axios.patch(
-  //       `${API_BASE}/driver/end/${bookingId}`,
-  //       {},
-  //       { withCredentials: true, timeout: 10000 }
-  //     );
-  //     setRideEnded(true);
-  //     setSuccess(res.data.message || "Ride has ended successfully!");
-  //   } catch (err) {
-  //     console.error("End ride error:", err);
-  //     setError("Failed to end ride. Please try again.");
-  //   }
-  // }, [bookingId]);
-
   // Recenter map
   const handleRecenter = useCallback(() => {
     if (mapRef.current && driverLocation) {
@@ -392,7 +373,7 @@ const DrivePage = () => {
     }
   }, [driverLocation]);
 
-  // Key press for chat
+  // Chat keypress
   const handleMessageKeyPress = useCallback(
     (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
@@ -403,7 +384,6 @@ const DrivePage = () => {
     [sendMessage]
   );
 
-  // Close alerts
   const handleCloseError = useCallback(() => setError(null), []);
   const handleCloseSuccess = useCallback(() => setSuccess(null), []);
 
@@ -450,7 +430,6 @@ const DrivePage = () => {
           {error}
         </Alert>
       </Snackbar>
-
       <Snackbar
         open={!!success}
         autoHideDuration={4000}
@@ -475,25 +454,21 @@ const DrivePage = () => {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='© OpenStreetMap contributors'
           />
-
           {pickupLocation && (
             <Marker position={pickupLocation}>
               <Tooltip permanent>Pickup Location</Tooltip>
             </Marker>
           )}
-
           {destinationLocation && (
             <Marker position={destinationLocation}>
               <Tooltip permanent>Destination</Tooltip>
             </Marker>
           )}
-
           {driverLocation && (
             <Marker position={driverLocation}>
               <Tooltip permanent>Your Location</Tooltip>
             </Marker>
           )}
-
           {route.length > 0 && (
             <Polyline
               positions={route.map(([lng, lat]) => [lat, lng])}
@@ -501,7 +476,6 @@ const DrivePage = () => {
               opacity={0.7}
             />
           )}
-
           {driverToDestinationRoute.length > 0 && (
             <Polyline
               positions={driverToDestinationRoute.map(([lng, lat]) => [lat, lng])}
@@ -570,11 +544,7 @@ const DrivePage = () => {
           }`}
           aria-label={isChatOpen ? "Close chat" : "Open chat"}
         >
-          {isChatOpen ? (
-            <X size={isMobile ? 20 : 24} />
-          ) : (
-            <Send size={isMobile ? 20 : 24} />
-          )}
+          {isChatOpen ? <X size={isMobile ? 20 : 24} /> : <Send size={isMobile ? 20 : 24} />}
         </button>
       </div>
 
@@ -591,10 +561,7 @@ const DrivePage = () => {
               <X size={18} />
             </button>
           </div>
-          <div
-            ref={chatContainerRef}
-            className="flex-1 overflow-y-auto p-2 space-y-2"
-          >
+          <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-2 space-y-2">
             {messages.length === 0 ? (
               <div className="flex items-center justify-center h-full text-gray-500">
                 No messages yet. Start the conversation!
@@ -680,7 +647,6 @@ const DrivePage = () => {
           {rideStatus === "started" && (
             <Button
               onClick={handleCompleteRide}
-              // disabled={!isNearDestination}
               variant="contained"
               color="primary"
               startIcon={<CheckCircle size={18} />}
@@ -688,11 +654,6 @@ const DrivePage = () => {
               {isMobile ? "Complete" : "Complete Ride"}
             </Button>
           )}
-          {/* {rideStatus === "completed" && (
-            <Button onClick={handleEndRide} variant="contained" color="error">
-              {isMobile ? "End" : "End Ride"}
-            </Button>
-          )} */}
         </div>
       </div>
     </div>

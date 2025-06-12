@@ -1,6 +1,6 @@
 // src/pages/UserHome.jsx
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../Context/userContext";
 import { useNavigate } from "react-router-dom";
 import {
@@ -19,7 +19,6 @@ import {
   Box,
   Typography,
   Button,
-  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -28,28 +27,19 @@ import {
   CircularProgress,
   Snackbar,
   Alert as MuiAlert,
+  MenuItem,
+  Stack,
 } from "@mui/material";
 
-// ----------------------------------------
-// Logging Helper
-// ----------------------------------------
 const logError = (message, error) => {
-  // Swap this out for Sentry, LogRocket, etc., in production
   console.error(message, error);
 };
 
-// ----------------------------------------
-// Reverse‐Geocode Helper (with in‐memory cache)
-// ----------------------------------------
 const fetchAddressFromCoordinates = async (lat, lon, API_BASE, addressCache) => {
   const key = `${lat},${lon}`;
-  if (addressCache.current[key]) {
-    return addressCache.current[key];
-  }
+  if (addressCache.current[key]) return addressCache.current[key];
   try {
-    const res = await fetch(
-      `${API_BASE}/reverse-geocode?lat=${lat}&lon=${lon}`
-    );
+    const res = await fetch(`${API_BASE}/reverse-geocode?lat=${lat}&lon=${lon}`);
     if (!res.ok) throw new Error(res.statusText);
     const data = await res.json();
     const addr =
@@ -65,11 +55,7 @@ const fetchAddressFromCoordinates = async (lat, lon, API_BASE, addressCache) => 
   }
 };
 
-// ----------------------------------------
-// Main Component
-// ----------------------------------------
 const UserHome = () => {
-  // ─── Backend Base URL ───────────────────────────────────────────
   const API_BASE =
     import.meta.env.VITE_API_URL ||
     (process.env.NODE_ENV === "production"
@@ -80,31 +66,26 @@ const UserHome = () => {
   const navigate = useNavigate();
   const sliderRef = useRef(null);
 
-  // ─── State Variables ─────────────────────────────────────────────
   const [bookings, setBookings] = useState([]);
-  const [addresses, setAddresses] = useState({}); // { [bookingId]: { pickupAddress, destinationAddress } }
+  const [addresses, setAddresses] = useState({});
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [reviewVisible, setReviewVisible] = useState(null); // bookingId for review modal
+  const [filter, setFilter] = useState("all");
+  const [reviewVisible, setReviewVisible] = useState(null);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
-  const [rideDetails, setRideDetails] = useState(null); // booking object for details modal
+  const [rideDetails, setRideDetails] = useState(null);
 
   const [loadingBookings, setLoadingBookings] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
 
-  // In‐memory cache for reverse‐geocoding
   const addressCache = useRef({});
 
-  // ----------------------------------------
-  // Fetch user's bookings on mount (or when auth.user changes)
-  // ----------------------------------------
   useEffect(() => {
     if (!auth.user?._id) {
       setLoadingBookings(false);
       return;
     }
-
     (async () => {
       setLoadingBookings(true);
       try {
@@ -122,20 +103,20 @@ const UserHome = () => {
     })();
   }, [auth.user?._id, API_BASE]);
 
-  // ----------------------------------------
-  // Whenever the active slide (currentIndex) changes, fetch that booking’s addresses if needed
-  // ----------------------------------------
+  const filteredBookings = bookings.filter((bk) => {
+    if (filter === "all") return true;
+    return bk.status?.toLowerCase() === filter;
+  });
+
   useEffect(() => {
-    const booking = bookings[currentIndex];
+    const booking = filteredBookings[currentIndex];
     if (!booking) return;
     const id = booking._id.toString();
-    if (addresses[id]) return; // already have addresses
-
+    if (addresses[id]) return;
     const { pickupLocation, destinationLocation } = booking;
     (async () => {
       let pickupAddress = "Address not available";
       let destinationAddress = "Address not available";
-
       if (pickupLocation?.lat && pickupLocation?.lng) {
         pickupAddress = await fetchAddressFromCoordinates(
           pickupLocation.lat,
@@ -152,17 +133,13 @@ const UserHome = () => {
           addressCache
         );
       }
-
       setAddresses((prev) => ({
         ...prev,
         [id]: { pickupAddress, destinationAddress },
       }));
     })();
-  }, [currentIndex, bookings, addresses, API_BASE]);
+  }, [currentIndex, bookings, addresses, API_BASE, filter]);
 
-  // ----------------------------------------
-  // Cancel Booking Handler
-  // ----------------------------------------
   const handleCancelBooking = async (bookingId) => {
     try {
       const res = await fetch(`${API_BASE}/booking/cancel/${bookingId}`, {
@@ -172,7 +149,9 @@ const UserHome = () => {
       await res.json();
       setBookings((prev) =>
         prev.map((bk) =>
-          bk._id.toString() === bookingId ? { ...bk, status: "Cancelled" } : bk
+          bk._id.toString() === bookingId
+            ? { ...bk, status: "Cancelled" }
+            : bk
         )
       );
     } catch (err) {
@@ -182,9 +161,6 @@ const UserHome = () => {
     }
   };
 
-  // ----------------------------------------
-  // Submit Review Handler
-  // ----------------------------------------
   const handleSubmitReview = async (bookingId) => {
     try {
       const res = await fetch(`${API_BASE}/booking/review/${bookingId}`, {
@@ -194,12 +170,9 @@ const UserHome = () => {
       });
       if (!res.ok) throw new Error(res.statusText);
       await res.json();
-
-      // Reset review form & close modal
       setReviewVisible(null);
       setRating(0);
       setComment("");
-
       setErrorMsg("Review submitted!");
       setSnackbarOpen(true);
     } catch (err) {
@@ -209,19 +182,11 @@ const UserHome = () => {
     }
   };
 
-  // ----------------------------------------
-  // Show Ride Details Modal
-  // ----------------------------------------
-  const handleShowRideDetails = (booking) => {
-    setRideDetails(booking);
-  };
+  const handleShowRideDetails = (booking) => setRideDetails(booking);
+  const handleCloseSnackbar = () => setSnackbarOpen(false);
 
-  // ----------------------------------------
-  // Carousel Arrow Components
-  // ----------------------------------------
   const CustomPrevArrow = () => (
     <Box
-      component="div"
       onClick={() => sliderRef.current.slickPrev()}
       sx={{
         position: "absolute",
@@ -239,9 +204,9 @@ const UserHome = () => {
       <ChevronLeft size={24} color="#fff" />
     </Box>
   );
+
   const CustomNextArrow = () => (
     <Box
-      component="div"
       onClick={() => sliderRef.current.slickNext()}
       sx={{
         position: "absolute",
@@ -260,9 +225,6 @@ const UserHome = () => {
     </Box>
   );
 
-  // ----------------------------------------
-  // Slider Settings
-  // ----------------------------------------
   const carouselSettings = {
     dots: true,
     infinite: true,
@@ -271,7 +233,7 @@ const UserHome = () => {
     slidesToScroll: 1,
     autoplay: true,
     autoplaySpeed: 5000,
-    arrows: false, // We'll render our custom arrows
+    arrows: false,
     afterChange: (idx) => setCurrentIndex(idx),
     appendDots: (dots) => (
       <Box sx={{ mt: 2, display: "flex", justifyContent: "center", gap: 1 }}>
@@ -291,16 +253,6 @@ const UserHome = () => {
     ),
   };
 
-  // ----------------------------------------
-  // Snackbar Close Handler
-  // ----------------------------------------
-  const handleCloseSnackbar = () => {
-    setSnackbarOpen(false);
-  };
-
-  // ----------------------------------------
-  // Loading State for Bookings
-  // ----------------------------------------
   if (loadingBookings) {
     return (
       <Box
@@ -327,14 +279,12 @@ const UserHome = () => {
         position: "relative",
       }}
     >
-      {/* Background Slider */}
       <BackgroundSlider
         images={["/bg1.jpg", "/bg2.jpg", "/bg3.jpg"]}
         interval={7000}
         className="absolute inset-0 z-0"
       />
 
-      {/* Snackbar for Errors / Success */}
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={6000}
@@ -350,58 +300,50 @@ const UserHome = () => {
         </MuiAlert>
       </Snackbar>
 
-      {/* Welcome Section */}
-      <Box
-        component="section"
-        sx={{
-          pt: 24,
-          pb: 12,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          position: "relative",
-          zIndex: 10,
-          px: 2,
-        }}
-      >
-        <Box sx={{ textAlign: "center", maxWidth: 800, mx: "auto" }}>
-          <Typography variant="h3" component="h1" sx={{ fontWeight: "bold", mb: 2 }}>
-            Welcome, {auth.user ? auth.user.name || "User" : "Please Login"}!
-          </Typography>
-          <Typography variant="h6" sx={{ color: "rgba(255,255,255,0.8)" }}>
-            Manage your bookings and explore your dashboard.
-          </Typography>
-        </Box>
+      <Box component="section" sx={{ pt: 24, pb: 12, textAlign: "center", zIndex: 10, px: 2 }}>
+        <Typography variant="h3" component="h1" sx={{ fontWeight: "bold", mb: 2 }}>
+          Welcome, {auth.user ? auth.user.name || "User" : "Please Login"}!
+        </Typography>
+        <Typography variant="h6" sx={{ color: "rgba(255,255,255,0.8)" }}>
+          Manage your bookings and explore your dashboard.
+        </Typography>
       </Box>
 
-      {/* Bookings Carousel Section */}
-      <Box
-        component="section"
-        sx={{
-          py: 12,
-          position: "relative",
-          zIndex: 10,
-          px: 2,
-        }}
-      >
+      <Box component="section" sx={{ py: 12, position: "relative", zIndex: 10, px: 2 }}>
         <Box sx={{ maxWidth: 1000, mx: "auto" }}>
-          <Typography variant="h4" component="h2" sx={{ fontWeight: "bold", mb: 6, textAlign: "center" }}>
-            Your Bookings
-          </Typography>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
+            <Typography variant="h4" component="h2" sx={{ fontWeight: "bold" }}>
+              Your Bookings
+            </Typography>
+            <TextField
+              select
+              label="Filter"
+              value={filter}
+              size="small"
+              onChange={(e) => setFilter(e.target.value)}
+              sx={{ bgcolor: "#fff", borderRadius: 1 }}
+            >
+              <MenuItem value="all">All</MenuItem>
+              <MenuItem value="accepted">Accepted</MenuItem>
+              <MenuItem value="completed">Completed</MenuItem>
+            </TextField>
+          </Stack>
 
-          {bookings.length === 0 ? (
+          {filteredBookings.length === 0 ? (
             <Box sx={{ textAlign: "center", py: 12 }}>
               <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.6)" }}>
-                You don’t have any bookings yet.
+                No bookings found.
               </Typography>
             </Box>
           ) : (
             <Box sx={{ position: "relative" }}>
               <Slider ref={sliderRef} {...carouselSettings}>
-                {bookings.map((bk) => {
-                  const id = bk._id.toString();
+                {filteredBookings.map((bk) => {
+                 const id = bk._id.toString()
+                  const statusLower = bk.status?.toLowerCase();
                   return (
                     <Box key={id} sx={{ px: { xs: 1, sm: 2 } }}>
+                      {/* Booking Card */}
                       <Box
                         sx={{
                           bgcolor: "rgba(31,41,55,0.8)",
@@ -475,19 +417,19 @@ const UserHome = () => {
                                 py: 0.25,
                                 borderRadius: 1,
                                 bgcolor:
-                                  bk.status === "completed"
+                                  statusLower === "completed"
                                     ? "rgba(16,185,129,0.2)"
-                                    : bk.status === "in-progress"
+                                    : statusLower === "in-progress"
                                     ? "rgba(234,179,8,0.2)"
-                                    : bk.status === "Cancelled"
+                                    : statusLower === "cancelled"
                                     ? "rgba(239,68,68,0.2)"
                                     : "rgba(99,102,241,0.2)",
                                 color:
-                                  bk.status === "completed"
+                                  statusLower === "completed"
                                     ? "rgba(16,185,129,0.8)"
-                                    : bk.status === "in-progress"
+                                    : statusLower === "in-progress"
                                     ? "rgba(234,179,8,0.8)"
-                                    : bk.status === "Cancelled"
+                                    : statusLower === "cancelled"
                                     ? "rgba(239,68,68,0.8)"
                                     : "rgba(99,102,241,0.8)",
                               }}
@@ -497,66 +439,42 @@ const UserHome = () => {
                           </Box>
                         </Box>
 
-                        {/* Body (Pickup / Destination) */}
+                        {/* Body */}
                         <Box sx={{ p: 4, pt: 2 }}>
                           <Box sx={{ mb: 4 }}>
                             <Box sx={{ display: "flex", alignItems: "flex-start", mb: 1 }}>
-                              <Box
-                                sx={{
-                                  bgcolor: "rgba(99,102,241,0.2)",
-                                  p: 1,
-                                  borderRadius: 1,
-                                  mr: 2,
-                                }}
-                              >
+                              <Box sx={{ bgcolor: "rgba(99,102,241,0.2)", p: 1, borderRadius: 1, mr: 2 }}>
                                 <MapPin size={20} color="rgba(147,197,253,1)" />
                               </Box>
                               <Box>
-                                <Typography
-                                  variant="overline"
-                                  sx={{ color: "rgba(147,197,253,0.8)", mb: 0.5 }}
-                                >
+                                <Typography variant="overline" sx={{ color: "rgba(147,197,253,0.8)", mb: 0.5 }}>
                                   Pickup Location
                                 </Typography>
                                 <Typography variant="body1" sx={{ fontWeight: "medium" }}>
                                   {addresses[id]?.pickupAddress ||
-                                    (bookings.indexOf(bk) === currentIndex
-                                      ? "Loading address..."
-                                      : "–")}
+                                    (filteredBookings.indexOf(bk) === currentIndex ? "Loading address..." : "–")}
                                 </Typography>
                               </Box>
                             </Box>
                             <Box sx={{ display: "flex", alignItems: "flex-start" }}>
-                              <Box
-                                sx={{
-                                  bgcolor: "rgba(99,102,241,0.2)",
-                                  p: 1,
-                                  borderRadius: 1,
-                                  mr: 2,
-                                }}
-                              >
+                              <Box sx={{ bgcolor: "rgba(99,102,241,0.2)", p: 1, borderRadius: 1, mr: 2 }}>
                                 <MapPin size={20} color="rgba(147,197,253,1)" />
                               </Box>
                               <Box>
-                                <Typography
-                                  variant="overline"
-                                  sx={{ color: "rgba(147,197,253,0.8)", mb: 0.5 }}
-                                >
+                                <Typography variant="overline" sx={{ color: "rgba(147,197,253,0.8)", mb: 0.5 }}>
                                   Destination
                                 </Typography>
                                 <Typography variant="body1" sx={{ fontWeight: "medium" }}>
                                   {addresses[id]?.destinationAddress ||
-                                    (bookings.indexOf(bk) === currentIndex
-                                      ? "Loading address..."
-                                      : "–")}
+                                    (filteredBookings.indexOf(bk) === currentIndex ? "Loading address..." : "–")}
                                 </Typography>
                               </Box>
                             </Box>
                           </Box>
                         </Box>
 
-                        {/* Footer Actions */}
-                        {bk.status === "completed" ? (
+                        {/* Footer */}
+                        {statusLower === "completed" ? (
                           <Button
                             fullWidth
                             variant="contained"
@@ -589,7 +507,7 @@ const UserHome = () => {
                             >
                               Details
                             </Button>
-                            {bk.status !== "Cancelled" && (
+                                                       {statusLower !== "cancelled" && (
                               <Button
                                 fullWidth
                                 variant="contained"
@@ -613,8 +531,6 @@ const UserHome = () => {
                   );
                 })}
               </Slider>
-
-              {/* Custom Arrows */}
               <CustomPrevArrow />
               <CustomNextArrow />
             </Box>
@@ -727,3 +643,4 @@ const UserHome = () => {
 };
 
 export default UserHome;
+
