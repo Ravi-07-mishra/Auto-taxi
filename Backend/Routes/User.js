@@ -79,28 +79,31 @@ router.get(
 );
 
 // Google OAuth callback route (JWT is created here, no sessions used)
+const CLIENT_URL = process.env.CLIENT_URL;       // https://auto-taxi-rh6i.vercel.app
+const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN; // auto-taxi-rh6i.vercel.app
+
 router.get(
-  '/auth/google/callback',
-  passport.authenticate('google', { failureRedirect: '/login', session: false }),
+  "/auth/google/callback",
+  passport.authenticate("google", { failureRedirect: "/login", session: false }),
   (req, res) => {
-    // Create token after successful authentication
-    const token = createToken(
-      req.user._id.toString(),
-      req.user.email,
-      "7d"
-    );
+    // Issue JWT
+    const token = createToken(req.user._id.toString(), req.user.email, "7d");
     const expires = new Date();
     expires.setDate(expires.getDate() + 7);
 
+    // Set cookie explicitly
     res.cookie(COOKIE_NAME, token, {
       path: "/",
-      domain: "localhost",
-      expires,
+      domain: COOKIE_DOMAIN,
       httpOnly: true,
       signed: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "none",
+      expires,
     });
 
-    res.redirect('http://localhost:5173/userhome');;
+    // Redirect into your frontend
+    res.redirect(`${CLIENT_URL}/userhome`);
   }
 );
 
