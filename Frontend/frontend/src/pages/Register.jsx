@@ -153,7 +153,7 @@ const DriverRegistrationForm = () => {
           </div>
           <div className="mt-4">
             <hr className="border-gray-300" />
-            <DriverGoogleSignInButton />
+            {/* <DriverGoogleSignInButton /> */}
           </div>
         </form>
       </div>

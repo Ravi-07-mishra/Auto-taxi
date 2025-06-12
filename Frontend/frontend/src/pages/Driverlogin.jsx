@@ -275,7 +275,7 @@ const DriverLogin = () => {
 
         <Divider sx={{ my: 2, backgroundColor: "rgba(255,255,255,0.5)" }} />
 
-        <DriverGoogleSignInButton />
+        {/* <DriverGoogleSignInButton /> */}
       </Box>
     </Box>
   );
