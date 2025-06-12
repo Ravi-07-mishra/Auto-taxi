@@ -194,10 +194,13 @@ const logoutUser = async (req, res) => {
   try {
     if (req.signedCookies[COOKIE_NAME]) {
       res.clearCookie(COOKIE_NAME, {
-        path: "/",
-        domain: COOKIE_DOMAIN,
-        signed: true,
-      });
+  path: "/",
+  domain: COOKIE_DOMAIN,
+  signed: true,
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "none",
+});
     }
     res.status(200).send("Logged out");
   } catch (error) {
