@@ -157,7 +157,9 @@ const getallDriverBookings = async (req, res) => {
 
 const Review = async (req, res) => {
   try {
-    const { bookingId, review, rating } = req.body;
+    const { rating, comment } = req.body;
+    const { bookingId } = req.params;
+
     if (rating < 1 || rating > 5) {
       return res.status(400).json({ message: 'Rating must be between 1 and 5' });
     }
@@ -168,7 +170,7 @@ const Review = async (req, res) => {
     const driver = await Driver.findById(booking.driver);
     if (!driver) return res.status(404).json({ message: 'Driver not found' });
 
-    booking.review = review;
+    booking.review = comment;
     booking.rating = rating;
 
     const totalRatings = driver.numRatings * driver.avgRating + rating;

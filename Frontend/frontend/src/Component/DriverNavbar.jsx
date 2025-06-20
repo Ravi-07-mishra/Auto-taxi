@@ -175,33 +175,39 @@ const DriverNavbar = () => {
                     {!auth.driver.profileImage && driverInitial}
                   </Avatar>
                   <Menu
-                    anchorEl={anchorEl}
-                    open={Boolean(anchorEl)}
-                    onClose={handleMenuClose}
-                    anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-                    transformOrigin={{ vertical: "top", horizontal: "right" }}
-                    sx={{ zIndex: 2000 }}
-                  >
-                    <MenuItem onClick={handleMenuClose} sx={{ gap: 1 }}>
-                      <Person fontSize="small" />
-                      <RouterNavLink
-                        to="/driverprofile"
-                        style={{ textDecoration: "none", color: "inherit" }}
-                      >
-                        Profile
-                      </RouterNavLink>
-                    </MenuItem>
-                    <MenuItem
-                      onClick={() => {
-                        auth.logout();
-                        handleMenuClose();
-                      }}
-                      sx={{ gap: 1 }}
-                    >
-                      <Logout fontSize="small" />
-                      Logout
-                    </MenuItem>
-                  </Menu>
+  anchorEl={anchorEl}
+  open={Boolean(anchorEl)}
+  onClose={handleMenuClose}
+  anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+  transformOrigin={{ vertical: "top", horizontal: "right" }}
+  sx={{ zIndex: 2000 }}
+>
+  {auth.driver
+    ? [
+        <MenuItem key="profile" onClick={handleMenuClose} sx={{ gap: 1 }}>
+          <Person fontSize="small" />
+          <RouterNavLink
+            to="/driverprofile"
+            style={{ textDecoration: "none", color: "inherit" }}
+          >
+            Profile
+          </RouterNavLink>
+        </MenuItem>,
+        <MenuItem
+          key="logout"
+          onClick={() => {
+            auth.logout();
+            handleMenuClose();
+          }}
+          sx={{ gap: 1 }}
+        >
+          <Logout fontSize="small" />
+          Logout
+        </MenuItem>,
+      ]
+    : []}
+</Menu>
+
                 </>
               ) : (
                 <>

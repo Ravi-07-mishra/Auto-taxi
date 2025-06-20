@@ -162,8 +162,10 @@ const UserHome = () => {
   };
 
   const handleSubmitReview = async (bookingId) => {
+      console.log("Calling handleSubmitReview for:", bookingId); // ✅ Add this
+
     try {
-      const res = await fetch(`${API_BASE}/booking/review/${bookingId}`, {
+      const res = await fetch(`${API_BASE}/user/rating/${bookingId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rating, comment }),
@@ -602,7 +604,9 @@ const UserHome = () => {
       >
         <DialogTitle id="review-dialog-title">Leave a Review</DialogTitle>
         <DialogContent dividers>
-          <Box component="form" noValidate>
+          <Box component="form" noValidate
+           onSubmit={e => e.preventDefault()}
+          >
             <TextField
               type="number"
               label="Rating (1–5)"
@@ -629,13 +633,15 @@ const UserHome = () => {
           <Button onClick={() => setReviewVisible(null)} color="secondary">
             Cancel
           </Button>
-          <Button
-            onClick={() => handleSubmitReview(reviewVisible)}
-            color="primary"
-            variant="contained"
-          >
-            Submit Review
-          </Button>
+         <Button
+  type="button"
+  onClick={() => handleSubmitReview(reviewVisible)}
+  color="primary"
+  variant="contained"
+>
+  Submit Review
+</Button>
+
         </DialogActions>
       </Dialog>
     </Box>

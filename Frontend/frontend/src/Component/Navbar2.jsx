@@ -228,58 +228,58 @@ const Navbar2 = () => {
                 {!auth.user?.profileImage &&
                   (auth.user?.name?.[0]?.toUpperCase() || "U")}
               </Avatar>
-              <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleMenuClose}
-                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-                transformOrigin={{ vertical: "top", horizontal: "right" }}
-              >
-                {auth.user ? (
-                  <>
-                    <MenuItem onClick={handleMenuClose} sx={{ gap: 1 }}>
-                      <Person fontSize="small" />
-                      <RouterNavLink
-                        to="/userprofile"
-                        style={{ textDecoration: "none", color: "inherit" }}
-                      >
-                        Profile
-                      </RouterNavLink>
-                    </MenuItem>
-                    <MenuItem
-                      onClick={() => {
-                        auth.logout();
-                        handleMenuClose();
-                      }}
-                      sx={{ gap: 1 }}
-                    >
-                      <Logout fontSize="small" />
-                      Logout
-                    </MenuItem>
-                  </>
-                ) : (
-                  <>
-                    <MenuItem onClick={handleMenuClose} sx={{ gap: 1 }}>
-                      <Person fontSize="small" />
-                      <RouterNavLink
-                        to="/userlogin"
-                        style={{ textDecoration: "none", color: "inherit" }}
-                      >
-                        Login
-                      </RouterNavLink>
-                    </MenuItem>
-                    <MenuItem onClick={handleMenuClose} sx={{ gap: 1 }}>
-                      <Logout fontSize="small" />
-                      <RouterNavLink
-                        to="/usersignup"
-                        style={{ textDecoration: "none", color: "inherit" }}
-                      >
-                        Signup
-                      </RouterNavLink>
-                    </MenuItem>
-                  </>
-                )}
-              </Menu>
+            <Menu
+  anchorEl={anchorEl}
+  open={Boolean(anchorEl)}
+  onClose={handleMenuClose}
+  anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+  transformOrigin={{ vertical: "top", horizontal: "right" }}
+>
+  {auth.user
+    ? [
+        <MenuItem key="profile" onClick={handleMenuClose} sx={{ gap: 1 }}>
+          <Person fontSize="small" />
+          <RouterNavLink
+            to="/userprofile"
+            style={{ textDecoration: "none", color: "inherit" }}
+          >
+            Profile
+          </RouterNavLink>
+        </MenuItem>,
+        <MenuItem
+          key="logout"
+          onClick={() => {
+            auth.logout();
+            handleMenuClose();
+          }}
+          sx={{ gap: 1 }}
+        >
+          <Logout fontSize="small" />
+          Logout
+        </MenuItem>,
+      ]
+    : [
+        <MenuItem key="login" onClick={handleMenuClose} sx={{ gap: 1 }}>
+          <Person fontSize="small" />
+          <RouterNavLink
+            to="/userlogin"
+            style={{ textDecoration: "none", color: "inherit" }}
+          >
+            Login
+          </RouterNavLink>
+        </MenuItem>,
+        <MenuItem key="signup" onClick={handleMenuClose} sx={{ gap: 1 }}>
+          <Logout fontSize="small" />
+          <RouterNavLink
+            to="/usersignup"
+            style={{ textDecoration: "none", color: "inherit" }}
+          >
+            Signup
+          </RouterNavLink>
+        </MenuItem>,
+      ]}
+</Menu>
+
             </Box>
 
             {/* Mobile Auth Button removed; handled in mobile menu */}
