@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Polyline, Tooltip } from "react-leaflet";
-import { Button, TextField, LinearProgress, Snackbar, Alert } from "@mui/material";
+import { Button, TextField, LinearProgress, Snackbar, Alert, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import io from "socket.io-client";
 import axios from "axios";
 import { useDriverAuth } from "../Context/driverContext";
@@ -34,7 +34,7 @@ const DrivePage = () => {
   const [destinationLocation, setDestinationLocation] = useState(null);
   const [route, setRoute] = useState([]);
   const [driverToDestinationRoute, setDriverToDestinationRoute] = useState([]);
-  const [instructions, setInstructions] = useState([]);               // ← new
+  const [instructions, setInstructions] = useState([]);
   const [driverLocation, setDriverLocation] = useState(null);
   const [eta, setEta] = useState(null);
   const [speed, setSpeed] = useState(null);
@@ -52,6 +52,9 @@ const DrivePage = () => {
   const [isListening, setIsListening] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [otpDialogOpen, setOtpDialogOpen] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [otpVerifying, setOtpVerifying] = useState(false);
 
   // Refs
   const socketRef = useRef(null);
@@ -328,8 +331,36 @@ const DrivePage = () => {
     setNewMessage("");
   }, [newMessage, bookingId, driver]);
 
-  // Ride controls
-  const handleStartRide = useCallback(() => {
+  // Verify OTP
+  const verifyOtp = useCallback(async () => {
+    if (!otp.trim()) {
+      setError("Please enter OTP");
+      return;
+    }
+    
+    setOtpVerifying(true);
+    try {
+      const { data } = await axios.post(
+        `${API_BASE}/driver/${bookingId}/verify-otp`,
+        { otp: otp.trim() },
+        { withCredentials: true }
+      );
+
+      if (data.success) {
+        setOtpDialogOpen(false);
+        setOtp("");
+        startRide();
+      }
+    } catch (err) {
+      console.error("OTP verification error:", err);
+      setError(err.response?.data?.message || "Invalid OTP. Please try again.");
+    } finally {
+      setOtpVerifying(false);
+    }
+  }, [otp, bookingId]);
+
+  // Start ride after OTP verification
+  const startRide = useCallback(() => {
     setRideStatus("started");
     setRideStartTime(Date.now());
     setSuccess("Ride started successfully!");
@@ -341,6 +372,11 @@ const DrivePage = () => {
       speechSynthesis.speak(utter);
     });
   }, [instructions]);
+
+  // Ride controls
+  const handleStartRide = useCallback(() => {
+    setOtpDialogOpen(true);
+  }, []);
 
   const handleCompleteRide = useCallback(async () => {
     try {
@@ -440,6 +476,35 @@ const DrivePage = () => {
           {success}
         </Alert>
       </Snackbar>
+
+      {/* OTP Verification Dialog */}
+      <Dialog open={otpDialogOpen} onClose={() => setOtpDialogOpen(false)}>
+        <DialogTitle>Verify OTP to Start Ride</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Enter OTP"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={otp}
+            onChange={(e) => setOtp(e.target.value)}
+            inputProps={{ maxLength: 6 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOtpDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={verifyOtp} 
+            variant="contained" 
+            color="primary"
+            disabled={otpVerifying || !otp.trim()}
+          >
+            {otpVerifying ? "Verifying..." : "Verify"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Full-screen map */}
       <div className="fixed inset-0 z-0">

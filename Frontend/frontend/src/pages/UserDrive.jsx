@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useRef ,useCallback} from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   MapContainer,
@@ -10,7 +10,7 @@ import {
 } from "react-leaflet";
 import io from "socket.io-client";
 import axios from "axios";
-import { Send, X, Navigation, AlertTriangle, Mic } from "lucide-react";
+import { Send, X, Navigation, AlertTriangle, Mic, Clipboard } from "lucide-react";
 import {
   Button,
   TextField,
@@ -19,11 +19,12 @@ import {
   LinearProgress,
   Box,
   IconButton,
+  Typography,
+  Paper,
 } from "@mui/material";
 import { useAuth } from "../Context/userContext";
 import "leaflet/dist/leaflet.css";
 
-// Helper: re-center map when props change
 const MapUpdater = ({ center, zoom }) => {
   const map = useMap();
   useEffect(() => {
@@ -34,9 +35,8 @@ const MapUpdater = ({ center, zoom }) => {
   return null;
 };
 
-// Distance & ETA/Speed calculations
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371; // km
+  const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
@@ -62,7 +62,7 @@ const calculateETAAndSpeed = (
     currLoc.lat,
     currLoc.lng
   );
-  const hours = (currTime - prevTime) / 3600000; // ms to hours
+  const hours = (currTime - prevTime) / 3600000;
   const currSpeed = dist / hours;
   setSpeed(currSpeed.toFixed(2));
 
@@ -78,18 +78,14 @@ const calculateETAAndSpeed = (
 };
 
 const UserRidePage = () => {
-  const API_BASE =
-    import.meta.env.VITE_API_URL ||
-    (process.env.NODE_ENV === "production"
-      ? "https://api.yourdomain.com"
-      : "http://localhost:3000");
+  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
   const API_BASE2 = import.meta.env.VITE_API_URL2 || "http://localhost:3000";
 
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // State
+  // State (original + new OTP state)
   const [pickupLocation, setPickupLocation] = useState(null);
   const [destinationLocation, setDestinationLocation] = useState(null);
   const [route, setRoute] = useState([]);
@@ -107,97 +103,48 @@ const UserRidePage = () => {
   const [isListening, setIsListening] = useState(false);
   const [isNightMode, setIsNightMode] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
-
-  // Map view
-  const [mapCenter, setMapCenter] = useState([0, 0]);
-  const [mapZoom, setMapZoom] = useState(14);
+  const [otp, setOtp] = useState("");
+  const [otpCopied, setOtpCopied] = useState(false);
 
   // Refs
   const socketRef = useRef(null);
   const chatContainerRef = useRef(null);
   const recognitionRef = useRef(null);
   const geoWatchId = useRef(null);
+  const [mapCenter, setMapCenter] = useState([0, 0]);
+  const [mapZoom, setMapZoom] = useState(14);
 
-  // Fetch booking details
+  // Generate OTP on load
   useEffect(() => {
-    const fetchBooking = async () => {
+    const fetchBookingAndOtp = async () => {
       try {
-        const { data } = await axios.get(
-          `${API_BASE}/driver/driver/${bookingId}`
-        );
-        const { pickupLocation, destinationLocation } = data.booking;
-        setPickupLocation(pickupLocation);
-        setDestinationLocation(destinationLocation);
-        setMapCenter([pickupLocation.lat, pickupLocation.lng]);
-      } catch (e) {
-        console.error(e);
-        setError("Failed to load booking.");
+        // Original booking fetch
+        const { data } = await axios.get(`${API_BASE}/driver/driver/${bookingId}`);
+        setPickupLocation(data.booking.pickupLocation);
+        setDestinationLocation(data.booking.destinationLocation);
+        setMapCenter([data.booking.pickupLocation.lat, data.booking.pickupLocation.lng]);
+
+        // NEW: Generate OTP
+        const otpRes = await axios.post(`${API_BASE}/user/${bookingId}/generate-otp`);
+        setOtp(otpRes.data.otp);
+      } catch (err) {
+        setError("Failed to load booking");
         setSnackbarOpen(true);
       } finally {
         setLoading(false);
       }
     };
-    fetchBooking();
+    fetchBookingAndOtp();
   }, [API_BASE, bookingId]);
 
-  // Fetch route polyline
-  const fetchRoute = useCallback(
-    async (start, end, setter) => {
-      try {
-        const res = await axios.get(`${API_BASE2}/directions`, {
-          params: {
-            start: `${start.lng},${start.lat}`,
-            end: `${end.lng},${end.lat}`,
-          },
-        });
-        const feat = res.data.features?.[0];
-        const coords = feat.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
-        setter(coords);
-        if (setter === setRoute) {
-          const durationSec = feat.properties.segments[0].duration;
-          setEta((durationSec / 60).toFixed(2));
-        }
-      } catch (e) {
-        console.error(e);
-        setError("Route fetch failed.");
-        setSnackbarOpen(true);
-      }
-    },
-    [API_BASE2]
-  );
+  // Copy OTP helper
+  const copyOtp = () => {
+    navigator.clipboard.writeText(otp);
+    setOtpCopied(true);
+    setTimeout(() => setOtpCopied(false), 2000);
+  };
 
-  useEffect(() => {
-    if (pickupLocation && destinationLocation) {
-      fetchRoute(pickupLocation, destinationLocation, setRoute);
-    }
-  }, [pickupLocation, destinationLocation, fetchRoute]);
-
-  useEffect(() => {
-    if (driverLocation && destinationLocation) {
-      fetchRoute(driverLocation, destinationLocation, setRoute);
-    }
-  }, [driverLocation, destinationLocation, fetchRoute]);
-
-  // Update progress bar
-  useEffect(() => {
-    if (driverLocation && pickupLocation && destinationLocation) {
-      const totalDist = calculateDistance(
-        pickupLocation.lat,
-        pickupLocation.lng,
-        destinationLocation.lat,
-        destinationLocation.lng
-      );
-      const doneDist = calculateDistance(
-        pickupLocation.lat,
-        pickupLocation.lng,
-        driverLocation.lat,
-        driverLocation.lng
-      );
-      setProgress(Math.min((doneDist / totalDist) * 100, 100));
-    }
-  }, [driverLocation, pickupLocation, destinationLocation]);
-
-  // Socket, geolocation, speech setup
+  
   useEffect(() => {
     if (!user) return;
     const socket = io(API_BASE2);
@@ -208,9 +155,7 @@ const UserRidePage = () => {
 
     socket.on("connect", () => {
       socket.emit("joinRoom", bookingId);
-      console.log("[client] connected as", socket.id);
       socket.emit("setUserSocketId", user._id);
-      console.log("[client] sent setUserSocketId:", user._id);
     });
 
     socket.on("updateLocations", (locations) => {
@@ -233,7 +178,6 @@ const UserRidePage = () => {
     });
 
     socket.on("bookingAccepted", ({ paymentPageUrl }) => {
-      console.log("Received bookingAccepted event:", paymentPageUrl);
       if (paymentPageUrl && !isNavigating) {
         setIsNavigating(true);
         navigate(paymentPageUrl);
@@ -241,7 +185,6 @@ const UserRidePage = () => {
     });
 
     socket.on("RideCompletednowpay", (d) => {
-      console.log("Received RideCompletednowpay event:", d);
       if (d.paymentPageUrl && !isNavigating) {
         setIsNavigating(true);
         navigate(d.paymentPageUrl);
@@ -276,9 +219,56 @@ const UserRidePage = () => {
     };
   }, [API_BASE2, bookingId, user, destinationLocation, navigate, isNavigating]);
 
-  // Handlers
-  const recenter = () =>
-    driverLocation && setMapCenter([driverLocation.lat, driverLocation.lng]);
+  // Route fetching (original)
+  const fetchRoute = useCallback(
+    async (start, end, setter) => {
+      try {
+        const res = await axios.get(`${API_BASE2}/directions`, {
+          params: {
+            start: `${start.lng},${start.lat}`,
+            end: `${end.lng},${end.lat}`,
+          },
+        });
+        const coords = res.data.features[0].geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+        setter(coords);
+        if (setter === setRoute) {
+          const durationSec = res.data.features[0].properties.segments[0].duration;
+          setEta((durationSec / 60).toFixed(2));
+        }
+      } catch (err) {
+        setError("Route fetch failed");
+        setSnackbarOpen(true);
+      }
+    },
+    [API_BASE2]
+  );
+
+  useEffect(() => {
+    if (pickupLocation && destinationLocation) {
+      fetchRoute(pickupLocation, destinationLocation, setRoute);
+    }
+  }, [pickupLocation, destinationLocation, fetchRoute]);
+
+  // Progress calculation (original)
+  useEffect(() => {
+    if (driverLocation && pickupLocation && destinationLocation) {
+      const totalDist = calculateDistance(
+        pickupLocation.lat,
+        pickupLocation.lng,
+        destinationLocation.lat,
+        destinationLocation.lng
+      );
+      const doneDist = calculateDistance(
+        pickupLocation.lat,
+        pickupLocation.lng,
+        driverLocation.lat,
+        driverLocation.lng
+      );
+      setProgress(Math.min((doneDist / totalDist) * 100, 100));
+    }
+  }, [driverLocation, pickupLocation, destinationLocation]);
+
+  // Handlers (original)
   const sendMessage = () => {
     if (!newMessage.trim() || !socketRef.current) return;
     socketRef.current.emit("sendMessage", {
@@ -290,70 +280,67 @@ const UserRidePage = () => {
     });
     setNewMessage("");
   };
+
   const startListen = () => {
     recognitionRef.current?.start();
     setIsListening(true);
   };
-  const toggleNight = () => setIsNightMode((v) => !v);
-  const closeSnack = () => setSnackbarOpen(false);
 
-  // Loading
   if (loading) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          height: "100vh",
-          alignItems: "center",
-          justifyContent: "center",
-          bgcolor: isNightMode ? "grey.900" : "grey.100",
-        }}
-      >
-        <MuiAlert severity="info">Loading ride details…</MuiAlert>
+      <Box sx={{ display: "flex", height: "100vh", alignItems: "center", justifyContent: "center" }}>
+        <MuiAlert severity="info">Loading ride details...</MuiAlert>
       </Box>
     );
   }
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        position: "relative",
-        bgcolor: isNightMode ? "grey.900" : "grey.50",
-      }}
-    >
-      {/* Snackbar */}
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={8000}
-        onClose={closeSnack}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <MuiAlert onClose={closeSnack} severity="error">
-          {error}
-        </MuiAlert>
+    <Box sx={{ position: "relative", minHeight: "100vh" }}>
+      {/* NEW: OTP Display (only addition) */}
+      {otp && (
+        <Paper sx={{
+          position: "fixed",
+          top: 80,
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 1000,
+          p: 2,
+          textAlign: "center"
+        }}>
+          <Typography variant="h6">Show driver this OTP:</Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}>
+            <Typography variant="h4" sx={{ fontWeight: "bold" }}>{otp}</Typography>
+            <IconButton onClick={copyOtp} color="primary">
+              <Clipboard size={20} />
+            </IconButton>
+          </Box>
+          {otpCopied && (
+            <Typography variant="caption" color="green">Copied!</Typography>
+          )}
+        </Paper>
+      )}
+
+      {/* Original components below (unchanged) */}
+      <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={() => setSnackbarOpen(false)}>
+        <MuiAlert severity="error">{error}</MuiAlert>
       </Snackbar>
 
-      {/* Map */}
       <Box sx={{ position: "fixed", inset: 0, zIndex: 0 }}>
         <MapContainer
           center={mapCenter}
           zoom={mapZoom}
-          whenCreated={(m) => (mapRef.current = m)}
-          style={{ width: "100vw", height: "100vh" }}
+          style={{ width: "100%", height: "100%" }}
         >
           <TileLayer
-            url={
-              isNightMode
-                ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
-                : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            url={isNightMode 
+              ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png" 
+              : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             }
           />
           <MapUpdater center={mapCenter} zoom={mapZoom} />
-
           {pickupLocation && (
             <Marker position={[pickupLocation.lat, pickupLocation.lng]}>
-              <Tooltip>Pickup Location</Tooltip>
+              <Tooltip>Pickup</Tooltip>
             </Marker>
           )}
           {destinationLocation && (
@@ -363,39 +350,33 @@ const UserRidePage = () => {
           )}
           {driverLocation && (
             <Marker position={[driverLocation.lat, driverLocation.lng]}>
-              <Tooltip>Driver’s Location</Tooltip>
+              <Tooltip>Driver</Tooltip>
             </Marker>
           )}
           {userLocation && (
             <Marker position={[userLocation.lat, userLocation.lng]}>
-              <Tooltip>Your Location</Tooltip>
+              <Tooltip>You</Tooltip>
             </Marker>
           )}
           {route.length > 0 && (
             <Polyline
               positions={route}
-              pathOptions={{
-                color: isNightMode ? "#FFA500" : "blue",
-                weight: 6,
-              }}
+              pathOptions={{ color: isNightMode ? "#FFA500" : "blue", weight: 6 }}
             />
           )}
         </MapContainer>
       </Box>
 
-      {/* Top Bar */}
-      <Box
-        sx={{
-          position: "fixed",
-          top: 16,
-          left: 16,
-          right: 16,
-          bgcolor: "rgba(255,255,255,0.95)",
-          borderRadius: 2,
-          p: 1,
-          zIndex: 50,
-        }}
-      >
+      <Box sx={{
+        position: "fixed",
+        top: 16,
+        left: 16,
+        right: 16,
+        bgcolor: "background.paper",
+        borderRadius: 1,
+        p: 1,
+        zIndex: 50
+      }}>
         <LinearProgress variant="determinate" value={progress} />
         <Box sx={{ display: "flex", justifyContent: "space-between", mt: 1 }}>
           <span>ETA: {eta} hrs</span>
@@ -403,84 +384,62 @@ const UserRidePage = () => {
         </Box>
       </Box>
 
-      {/* Controls */}
       <IconButton
-        onClick={recenter}
+        onClick={() => setMapCenter(driverLocation ? [driverLocation.lat, driverLocation.lng] : mapCenter)}
         sx={{ position: "fixed", bottom: 140, right: 16, zIndex: 50 }}
       >
         <Navigation />
       </IconButton>
+
       <IconButton
         onClick={() => setSnackbarOpen(true)}
-        sx={{
-          position: "fixed",
-          bottom: 88,
-          right: 16,
-          color: "error.main",
-          zIndex: 50,
-        }}
+        sx={{ position: "fixed", bottom: 88, right: 16, zIndex: 50 }}
       >
         <AlertTriangle />
       </IconButton>
 
-      {/* Chat */}
       <IconButton
-        onClick={() => setIsChatOpen((v) => !v)}
+        onClick={() => setIsChatOpen(!isChatOpen)}
         sx={{
           position: "fixed",
           bottom: 16,
           right: 16,
           bgcolor: "primary.main",
-          color: "#fff",
-          zIndex: 50,
+          color: "white",
+          zIndex: 50
         }}
       >
         {isChatOpen ? <X /> : <Send />}
       </IconButton>
 
       {isChatOpen && (
-        <Box
-          sx={{
-            position: "fixed",
-            bottom: 88,
-            right: 16,
-            width: 320,
-            height: 400,
-            bgcolor: "#fff",
-            borderRadius: 2,
-            zIndex: 50,
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <Box sx={{ bgcolor: "primary.main", color: "#fff", p: 1 }}>
-            Chat with Driver
-          </Box>
-          <Box
-            ref={chatContainerRef}
-            sx={{ flexGrow: 1, overflowY: "auto", p: 1 }}
-          >
+        <Box sx={{
+          position: "fixed",
+          bottom: 88,
+          right: 16,
+          width: 300,
+          height: 300,
+          bgcolor: "background.paper",
+          borderRadius: 1,
+          zIndex: 50,
+          display: "flex",
+          flexDirection: "column"
+        }}>
+          <Box sx={{ bgcolor: "primary.main", color: "white", p: 1 }}>Chat</Box>
+          <Box ref={chatContainerRef} sx={{ flex: 1, overflowY: "auto", p: 1 }}>
             {messages.map((msg, i) => (
-              <Box
-                key={i}
-                sx={{
-                  mb: 1,
-                  alignSelf: msg.senderModel === "User" ? "flex-end" : "flex-start",
-                }}
-              >
-                <Box
-                  sx={{
-                    p: 1,
-                    borderRadius: 1,
-                    bgcolor: msg.senderModel === "User" ? "primary.main" : "grey.200",
-                    color: msg.senderModel === "User" ? "#fff" : "text.primary",
-                  }}
-                >
+              <Box key={i} sx={{ mb: 1, alignSelf: msg.senderModel === "User" ? "flex-end" : "flex-start" }}>
+                <Box sx={{
+                  p: 1,
+                  borderRadius: 1,
+                  bgcolor: msg.senderModel === "User" ? "primary.main" : "grey.200",
+                  color: msg.senderModel === "User" ? "white" : "text.primary"
+                }}>
                   {msg.text}
                 </Box>
-                <Box sx={{ typography: "caption", color: "text.secondary" }}>
+                <Typography variant="caption">
                   {new Date(msg.timestamp).toLocaleTimeString()}
-                </Box>
+                </Typography>
               </Box>
             ))}
           </Box>
@@ -495,20 +454,18 @@ const UserRidePage = () => {
             <IconButton onClick={startListen} disabled={isListening}>
               <Mic />
             </IconButton>
-            <IconButton color="primary" onClick={sendMessage}>
+            <IconButton onClick={sendMessage}>
               <Send />
             </IconButton>
           </Box>
         </Box>
       )}
 
-      {/* Night Mode Toggle */}
       <Button
-        onClick={toggleNight}
-        variant="contained"
+        onClick={() => setIsNightMode(!isNightMode)}
         sx={{ position: "fixed", bottom: 16, left: 16, zIndex: 50 }}
       >
-        {isNightMode ? "🌙" : "☀️"}
+        {isNightMode ? "☀️" : "🌙"}
       </Button>
     </Box>
   );

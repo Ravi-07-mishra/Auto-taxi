@@ -289,7 +289,54 @@ const CancelBooking = async (req, res) => {
     return res.status(500).json({ message: 'Server error. Please try again later.' });
   }
 };
+const generateOtp = () => Math.floor(100000 + Math.random()*900000).toString();
 
+const generateRideOtp = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const otp = generateOtp();
+    const expiry = new Date(Date.now() + 30*60*1000); // 30 minutes
+
+    await Booking.findByIdAndUpdate(bookingId, {
+      rideOtp: otp,
+      rideOtpExpiry: expiry,
+    });
+
+    // (optional) notify driver via SMS/email here
+
+    res.status(200).json({ otp });
+  } catch (err) {
+    console.error('generateRideOtp error:', err);
+    res.status(500).json({ message: 'Could not generate ride OTP', cause: err.message });
+  }
+};
+
+const verifyRideOtp = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { otp } = req.body;
+
+    const b = await Booking.findById(bookingId);
+    if (!b) return res.status(404).json({ message: 'Booking not found' });
+
+    if (!b.rideOtp || b.rideOtpExpiry < new Date()) {
+      return res.status(400).json({ message: 'OTP expired or not generated' });
+    }
+    if (b.rideOtp !== otp) {
+      return res.status(400).json({ message: 'Incorrect OTP' });
+    }
+
+    // clear OTP so it can’t be re‑used
+    b.rideOtp = null;
+    b.rideOtpExpiry = null;
+    await b.save();
+
+    res.status(200).json({ success: true });
+  } catch (err) {
+    console.error('verifyRideOtp error:', err);
+    res.status(500).json({ message: 'Could not verify ride OTP', cause: err.message });
+  }
+};
 module.exports = {
   DoBooking,
   getallDriverBookings,
@@ -298,5 +345,6 @@ module.exports = {
   getBooking,
   GetCompletedBookings,
   CompleteBooking,
-  CancelBooking
+  CancelBooking,generateRideOtp,
+  verifyRideOtp
 };

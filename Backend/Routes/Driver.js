@@ -6,7 +6,7 @@ const passport = require('passport')
 const path = require('path');
 const Driver = require('../Models/drivermodel')
 const {Register,GetallDrivers,Login, updateAvailability, verifyDriver, GetSubscriptionStatus, Logout, updateProfile, getTopRatedDrivers} = require('../controllers/driver');
-const { getallDriverBookings, getBooking, CompleteBooking } = require('../controllers/Booking');
+const { getallDriverBookings, getBooking, CompleteBooking,verifyRideOtp } = require('../controllers/Booking');
 const { verifyDriverToken } = require('../utiils/token-manager');
 const { DRIVER_COOKIE_NAME } = require('../utiils/constants');
 const BASE_UPLOAD_PATH = "D:/PROJECT/Auto-taxi/Backend/uploads/drivers";
@@ -190,5 +190,5 @@ router.put("/updateProfile", verifyDriverToken, async (req, res) => {
     res.status(500).json({ message: "Server error while updating profile." });
   }
 });
-
+router.post('/:bookingId/verify-otp',   verifyRideOtp);
 module.exports = router;

@@ -9,7 +9,7 @@ const { Usersignup, userlogin, verifyUser, updateProfile,
   getUserProfile, 
   logoutUser } = require('../controllers/User');
 const otpController = require('../controllers/otpController');
-const { DoBooking, getallUserBookings, Review, GetCompletedBookings, getBooking } = require('../controllers/Booking');
+const { DoBooking, getallUserBookings, Review, GetCompletedBookings, getBooking,generateRideOtp } = require('../controllers/Booking');
 const { verifyToken } = require('../utiils/token-manager');
 const { createToken } = require('../utiils/token-manager');
 const { COOKIE_NAME } = require('../utiils/constants');
@@ -175,5 +175,6 @@ router.put("/updateProfile", verifyToken, async (req, res) => {
     res.status(500).json({ message: "Server error while updating profile." });
   }
 });
+router.post('/:bookingId/generate-otp', generateRideOtp);
 
 module.exports = router;
