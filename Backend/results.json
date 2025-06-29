@@ -1,0 +1,864 @@
+{
+  "aggregate": {
+    "counters": {
+      "vusers.created_by_name.Simulated Cab Booking": 600,
+      "vusers.created": 600,
+      "http.requests": 600,
+      "http.codes.404": 264,
+      "http.responses": 264,
+      "http.downloaded_bytes": 30360,
+      "plugins.metrics-by-endpoint./api/user/test-booking.codes.404": 264,
+      "vusers.failed": 336,
+      "vusers.completed": 264,
+      "plugins.metrics-by-endpoint./api/user/test-booking.errors.ETIMEDOUT": 303,
+      "errors.ETIMEDOUT": 303,
+      "plugins.metrics-by-endpoint./api/user/test-booking.errors.ECONNRESET": 33,
+      "errors.ECONNRESET": 33
+    },
+    "rates": {
+      "http.request_rate": 10
+    },
+    "firstCounterAt": 1751197224734,
+    "firstHistogramAt": 1751197225411,
+    "lastCounterAt": 1751197294308,
+    "lastHistogramAt": 1751197260966,
+    "firstMetricAt": 1751197224734,
+    "lastMetricAt": 1751197294308,
+    "period": 1751197290000,
+    "summaries": {
+      "http.response_time": {
+        "min": 312,
+        "max": 4682,
+        "count": 264,
+        "mean": 740.1,
+        "p50": 441.5,
+        "median": 441.5,
+        "p75": 539.2,
+        "p90": 1326.4,
+        "p95": 3328.3,
+        "p99": 4583.6,
+        "p999": 4676.2
+      },
+      "http.response_time.4xx": {
+        "min": 312,
+        "max": 4682,
+        "count": 264,
+        "mean": 740.1,
+        "p50": 441.5,
+        "median": 441.5,
+        "p75": 539.2,
+        "p90": 1326.4,
+        "p95": 3328.3,
+        "p99": 4583.6,
+        "p999": 4676.2
+      },
+      "plugins.metrics-by-endpoint.response_time./api/user/test-booking": {
+        "min": 312,
+        "max": 4682,
+        "count": 264,
+        "mean": 740.1,
+        "p50": 441.5,
+        "median": 441.5,
+        "p75": 539.2,
+        "p90": 1326.4,
+        "p95": 3328.3,
+        "p99": 4583.6,
+        "p999": 4676.2
+      },
+      "vusers.session_length": {
+        "min": 423.1,
+        "max": 9984.1,
+        "count": 264,
+        "mean": 1436.6,
+        "p50": 772.9,
+        "median": 772.9,
+        "p75": 1043.3,
+        "p90": 2780,
+        "p95": 6569.8,
+        "p99": 9607.1,
+        "p999": 9801.2
+      }
+    },
+    "histograms": {
+      "http.response_time": {
+        "min": 312,
+        "max": 4682,
+        "count": 264,
+        "mean": 740.1,
+        "p50": 441.5,
+        "median": 441.5,
+        "p75": 539.2,
+        "p90": 1326.4,
+        "p95": 3328.3,
+        "p99": 4583.6,
+        "p999": 4676.2
+      },
+      "http.response_time.4xx": {
+        "min": 312,
+        "max": 4682,
+        "count": 264,
+        "mean": 740.1,
+        "p50": 441.5,
+        "median": 441.5,
+        "p75": 539.2,
+        "p90": 1326.4,
+        "p95": 3328.3,
+        "p99": 4583.6,
+        "p999": 4676.2
+      },
+      "plugins.metrics-by-endpoint.response_time./api/user/test-booking": {
+        "min": 312,
+        "max": 4682,
+        "count": 264,
+        "mean": 740.1,
+        "p50": 441.5,
+        "median": 441.5,
+        "p75": 539.2,
+        "p90": 1326.4,
+        "p95": 3328.3,
+        "p99": 4583.6,
+        "p999": 4676.2
+      },
+      "vusers.session_length": {
+        "min": 423.1,
+        "max": 9984.1,
+        "count": 264,
+        "mean": 1436.6,
+        "p50": 772.9,
+        "median": 772.9,
+        "p75": 1043.3,
+        "p90": 2780,
+        "p95": 6569.8,
+        "p99": 9607.1,
+        "p999": 9801.2
+      }
+    }
+  },
+  "intermediate": [
+    {
+      "counters": {
+        "vusers.created_by_name.Simulated Cab Booking": 55,
+        "vusers.created": 55,
+        "http.requests": 55,
+        "http.codes.404": 49,
+        "http.responses": 49,
+        "http.downloaded_bytes": 5635,
+        "plugins.metrics-by-endpoint./api/user/test-booking.codes.404": 49,
+        "vusers.failed": 0,
+        "vusers.completed": 49
+      },
+      "rates": {
+        "http.request_rate": 10
+      },
+      "http.request_rate": null,
+      "firstCounterAt": 1751197224734,
+      "firstHistogramAt": 1751197225411,
+      "lastCounterAt": 1751197229983,
+      "lastHistogramAt": 1751197229935,
+      "firstMetricAt": 1751197224734,
+      "lastMetricAt": 1751197229983,
+      "period": "1751197220000",
+      "summaries": {
+        "http.response_time": {
+          "min": 313,
+          "max": 1358,
+          "count": 49,
+          "mean": 506,
+          "p50": 450.4,
+          "median": 450.4,
+          "p75": 539.2,
+          "p90": 685.5,
+          "p95": 889.1,
+          "p99": 1002.4,
+          "p999": 1002.4
+        },
+        "http.response_time.4xx": {
+          "min": 313,
+          "max": 1358,
+          "count": 49,
+          "mean": 506,
+          "p50": 450.4,
+          "median": 450.4,
+          "p75": 539.2,
+          "p90": 685.5,
+          "p95": 889.1,
+          "p99": 1002.4,
+          "p999": 1002.4
+        },
+        "plugins.metrics-by-endpoint.response_time./api/user/test-booking": {
+          "min": 313,
+          "max": 1358,
+          "count": 49,
+          "mean": 506,
+          "p50": 450.4,
+          "median": 450.4,
+          "p75": 539.2,
+          "p90": 685.5,
+          "p95": 889.1,
+          "p99": 1002.4,
+          "p999": 1002.4
+        },
+        "vusers.session_length": {
+          "min": 539.6,
+          "max": 1841,
+          "count": 49,
+          "mean": 917.8,
+          "p50": 820.7,
+          "median": 820.7,
+          "p75": 1043.3,
+          "p90": 1274.3,
+          "p95": 1380.5,
+          "p99": 1720.2,
+          "p999": 1720.2
+        }
+      },
+      "histograms": {
+        "http.response_time": {
+          "min": 313,
+          "max": 1358,
+          "count": 49,
+          "mean": 506,
+          "p50": 450.4,
+          "median": 450.4,
+          "p75": 539.2,
+          "p90": 685.5,
+          "p95": 889.1,
+          "p99": 1002.4,
+          "p999": 1002.4
+        },
+        "http.response_time.4xx": {
+          "min": 313,
+          "max": 1358,
+          "count": 49,
+          "mean": 506,
+          "p50": 450.4,
+          "median": 450.4,
+          "p75": 539.2,
+          "p90": 685.5,
+          "p95": 889.1,
+          "p99": 1002.4,
+          "p999": 1002.4
+        },
+        "plugins.metrics-by-endpoint.response_time./api/user/test-booking": {
+          "min": 313,
+          "max": 1358,
+          "count": 49,
+          "mean": 506,
+          "p50": 450.4,
+          "median": 450.4,
+          "p75": 539.2,
+          "p90": 685.5,
+          "p95": 889.1,
+          "p99": 1002.4,
+          "p999": 1002.4
+        },
+        "vusers.session_length": {
+          "min": 539.6,
+          "max": 1841,
+          "count": 49,
+          "mean": 917.8,
+          "p50": 820.7,
+          "median": 820.7,
+          "p75": 1043.3,
+          "p90": 1274.3,
+          "p95": 1380.5,
+          "p99": 1720.2,
+          "p999": 1720.2
+        }
+      }
+    },
+    {
+      "counters": {
+        "http.codes.404": 100,
+        "http.responses": 100,
+        "http.downloaded_bytes": 11500,
+        "plugins.metrics-by-endpoint./api/user/test-booking.codes.404": 100,
+        "vusers.failed": 0,
+        "vusers.completed": 100,
+        "vusers.created_by_name.Simulated Cab Booking": 100,
+        "vusers.created": 100,
+        "http.requests": 100
+      },
+      "rates": {
+        "http.request_rate": 10
+      },
+      "http.request_rate": null,
+      "firstCounterAt": 1751197230044,
+      "firstHistogramAt": 1751197230499,
+      "lastCounterAt": 1751197239991,
+      "lastHistogramAt": 1751197239991,
+      "firstMetricAt": 1751197230044,
+      "lastMetricAt": 1751197239991,
+      "period": "1751197230000",
+      "summaries": {
+        "http.response_time": {
+          "min": 312,
+          "max": 1556,
+          "count": 100,
+          "mean": 444.2,
+          "p50": 391.6,
+          "median": 391.6,
+          "p75": 507.8,
+          "p90": 572.6,
+          "p95": 685.5,
+          "p99": 907,
+          "p999": 907
+        },
+        "http.response_time.4xx": {
+          "min": 312,
+          "max": 1556,
+          "count": 100,
+          "mean": 444.2,
+          "p50": 391.6,
+          "median": 391.6,
+          "p75": 507.8,
+          "p90": 572.6,
+          "p95": 685.5,
+          "p99": 907,
+          "p999": 907
+        },
+        "plugins.metrics-by-endpoint.response_time./api/user/test-booking": {
+          "min": 312,
+          "max": 1556,
+          "count": 100,
+          "mean": 444.2,
+          "p50": 391.6,
+          "median": 391.6,
+          "p75": 507.8,
+          "p90": 572.6,
+          "p95": 685.5,
+          "p99": 907,
+          "p999": 907
+        },
+        "vusers.session_length": {
+          "min": 423.1,
+          "max": 2578.7,
+          "count": 100,
+          "mean": 792.7,
+          "p50": 727.9,
+          "median": 727.9,
+          "p75": 820.7,
+          "p90": 1043.3,
+          "p95": 1153.1,
+          "p99": 2322.1,
+          "p999": 2322.1
+        }
+      },
+      "histograms": {
+        "http.response_time": {
+          "min": 312,
+          "max": 1556,
+          "count": 100,
+          "mean": 444.2,
+          "p50": 391.6,
+          "median": 391.6,
+          "p75": 507.8,
+          "p90": 572.6,
+          "p95": 685.5,
+          "p99": 907,
+          "p999": 907
+        },
+        "http.response_time.4xx": {
+          "min": 312,
+          "max": 1556,
+          "count": 100,
+          "mean": 444.2,
+          "p50": 391.6,
+          "median": 391.6,
+          "p75": 507.8,
+          "p90": 572.6,
+          "p95": 685.5,
+          "p99": 907,
+          "p999": 907
+        },
+        "plugins.metrics-by-endpoint.response_time./api/user/test-booking": {
+          "min": 312,
+          "max": 1556,
+          "count": 100,
+          "mean": 444.2,
+          "p50": 391.6,
+          "median": 391.6,
+          "p75": 507.8,
+          "p90": 572.6,
+          "p95": 685.5,
+          "p99": 907,
+          "p999": 907
+        },
+        "vusers.session_length": {
+          "min": 423.1,
+          "max": 2578.7,
+          "count": 100,
+          "mean": 792.7,
+          "p50": 727.9,
+          "median": 727.9,
+          "p75": 820.7,
+          "p90": 1043.3,
+          "p95": 1153.1,
+          "p99": 2322.1,
+          "p999": 2322.1
+        }
+      }
+    },
+    {
+      "counters": {
+        "http.codes.404": 85,
+        "http.responses": 85,
+        "http.downloaded_bytes": 9775,
+        "plugins.metrics-by-endpoint./api/user/test-booking.codes.404": 85,
+        "vusers.failed": 0,
+        "vusers.completed": 85,
+        "vusers.created_by_name.Simulated Cab Booking": 100,
+        "vusers.created": 100,
+        "http.requests": 100
+      },
+      "rates": {
+        "http.request_rate": 10
+      },
+      "http.request_rate": null,
+      "firstCounterAt": 1751197240044,
+      "firstHistogramAt": 1751197240288,
+      "lastCounterAt": 1751197249983,
+      "lastHistogramAt": 1751197249625,
+      "firstMetricAt": 1751197240044,
+      "lastMetricAt": 1751197249983,
+      "period": "1751197240000",
+      "summaries": {
+        "http.response_time": {
+          "min": 323,
+          "max": 1138,
+          "count": 85,
+          "mean": 475.3,
+          "p50": 441.5,
+          "median": 441.5,
+          "p75": 507.8,
+          "p90": 561.2,
+          "p95": 788.5,
+          "p99": 1107.9,
+          "p999": 1107.9
+        },
+        "http.response_time.4xx": {
+          "min": 323,
+          "max": 1138,
+          "count": 85,
+          "mean": 475.3,
+          "p50": 441.5,
+          "median": 441.5,
+          "p75": 507.8,
+          "p90": 561.2,
+          "p95": 788.5,
+          "p99": 1107.9,
+          "p999": 1107.9
+        },
+        "plugins.metrics-by-endpoint.response_time./api/user/test-booking": {
+          "min": 323,
+          "max": 1138,
+          "count": 85,
+          "mean": 475.3,
+          "p50": 441.5,
+          "median": 441.5,
+          "p75": 507.8,
+          "p90": 561.2,
+          "p95": 788.5,
+          "p99": 1107.9,
+          "p999": 1107.9
+        },
+        "vusers.session_length": {
+          "min": 514.3,
+          "max": 1687.6,
+          "count": 85,
+          "mean": 855.4,
+          "p50": 788.5,
+          "median": 788.5,
+          "p75": 925.4,
+          "p90": 1153.1,
+          "p95": 1465.9,
+          "p99": 1686.1,
+          "p999": 1686.1
+        }
+      },
+      "histograms": {
+        "http.response_time": {
+          "min": 323,
+          "max": 1138,
+          "count": 85,
+          "mean": 475.3,
+          "p50": 441.5,
+          "median": 441.5,
+          "p75": 507.8,
+          "p90": 561.2,
+          "p95": 788.5,
+          "p99": 1107.9,
+          "p999": 1107.9
+        },
+        "http.response_time.4xx": {
+          "min": 323,
+          "max": 1138,
+          "count": 85,
+          "mean": 475.3,
+          "p50": 441.5,
+          "median": 441.5,
+          "p75": 507.8,
+          "p90": 561.2,
+          "p95": 788.5,
+          "p99": 1107.9,
+          "p999": 1107.9
+        },
+        "plugins.metrics-by-endpoint.response_time./api/user/test-booking": {
+          "min": 323,
+          "max": 1138,
+          "count": 85,
+          "mean": 475.3,
+          "p50": 441.5,
+          "median": 441.5,
+          "p75": 507.8,
+          "p90": 561.2,
+          "p95": 788.5,
+          "p99": 1107.9,
+          "p999": 1107.9
+        },
+        "vusers.session_length": {
+          "min": 514.3,
+          "max": 1687.6,
+          "count": 85,
+          "mean": 855.4,
+          "p50": 788.5,
+          "median": 788.5,
+          "p75": 925.4,
+          "p90": 1153.1,
+          "p95": 1465.9,
+          "p99": 1686.1,
+          "p999": 1686.1
+        }
+      }
+    },
+    {
+      "counters": {
+        "http.codes.404": 25,
+        "http.responses": 25,
+        "http.downloaded_bytes": 2875,
+        "plugins.metrics-by-endpoint./api/user/test-booking.codes.404": 25,
+        "vusers.failed": 5,
+        "vusers.completed": 25,
+        "vusers.created_by_name.Simulated Cab Booking": 100,
+        "vusers.created": 100,
+        "http.requests": 100,
+        "plugins.metrics-by-endpoint./api/user/test-booking.errors.ETIMEDOUT": 1,
+        "errors.ETIMEDOUT": 1,
+        "plugins.metrics-by-endpoint./api/user/test-booking.errors.ECONNRESET": 4,
+        "errors.ECONNRESET": 4
+      },
+      "rates": {
+        "http.request_rate": 10
+      },
+      "http.request_rate": null,
+      "firstCounterAt": 1751197250044,
+      "firstHistogramAt": 1751197250566,
+      "lastCounterAt": 1751197259983,
+      "lastHistogramAt": 1751197258287,
+      "firstMetricAt": 1751197250044,
+      "lastMetricAt": 1751197259983,
+      "period": "1751197250000",
+      "summaries": {
+        "http.response_time": {
+          "min": 1028,
+          "max": 3646,
+          "count": 25,
+          "mean": 2511.4,
+          "p50": 2515.5,
+          "median": 2515.5,
+          "p75": 3328.3,
+          "p90": 3534.1,
+          "p95": 3534.1,
+          "p99": 3605.5,
+          "p999": 3605.5
+        },
+        "http.response_time.4xx": {
+          "min": 1028,
+          "max": 3646,
+          "count": 25,
+          "mean": 2511.4,
+          "p50": 2515.5,
+          "median": 2515.5,
+          "p75": 3328.3,
+          "p90": 3534.1,
+          "p95": 3534.1,
+          "p99": 3605.5,
+          "p999": 3605.5
+        },
+        "plugins.metrics-by-endpoint.response_time./api/user/test-booking": {
+          "min": 1028,
+          "max": 3646,
+          "count": 25,
+          "mean": 2511.4,
+          "p50": 2515.5,
+          "median": 2515.5,
+          "p75": 3328.3,
+          "p90": 3534.1,
+          "p95": 3534.1,
+          "p99": 3605.5,
+          "p999": 3605.5
+        },
+        "vusers.session_length": {
+          "min": 2522.3,
+          "max": 8053.2,
+          "count": 25,
+          "mean": 5353.2,
+          "p50": 5168,
+          "median": 5168,
+          "p75": 6976.1,
+          "p90": 7709.8,
+          "p95": 7865.6,
+          "p99": 8024.5,
+          "p999": 8024.5
+        }
+      },
+      "histograms": {
+        "http.response_time": {
+          "min": 1028,
+          "max": 3646,
+          "count": 25,
+          "mean": 2511.4,
+          "p50": 2515.5,
+          "median": 2515.5,
+          "p75": 3328.3,
+          "p90": 3534.1,
+          "p95": 3534.1,
+          "p99": 3605.5,
+          "p999": 3605.5
+        },
+        "http.response_time.4xx": {
+          "min": 1028,
+          "max": 3646,
+          "count": 25,
+          "mean": 2511.4,
+          "p50": 2515.5,
+          "median": 2515.5,
+          "p75": 3328.3,
+          "p90": 3534.1,
+          "p95": 3534.1,
+          "p99": 3605.5,
+          "p999": 3605.5
+        },
+        "plugins.metrics-by-endpoint.response_time./api/user/test-booking": {
+          "min": 1028,
+          "max": 3646,
+          "count": 25,
+          "mean": 2511.4,
+          "p50": 2515.5,
+          "median": 2515.5,
+          "p75": 3328.3,
+          "p90": 3534.1,
+          "p95": 3534.1,
+          "p99": 3605.5,
+          "p999": 3605.5
+        },
+        "vusers.session_length": {
+          "min": 2522.3,
+          "max": 8053.2,
+          "count": 25,
+          "mean": 5353.2,
+          "p50": 5168,
+          "median": 5168,
+          "p75": 6976.1,
+          "p90": 7709.8,
+          "p95": 7865.6,
+          "p99": 8024.5,
+          "p999": 8024.5
+        }
+      }
+    },
+    {
+      "counters": {
+        "http.codes.404": 5,
+        "http.responses": 5,
+        "http.downloaded_bytes": 575,
+        "plugins.metrics-by-endpoint./api/user/test-booking.codes.404": 5,
+        "vusers.failed": 86,
+        "vusers.completed": 5,
+        "plugins.metrics-by-endpoint./api/user/test-booking.errors.ECONNRESET": 29,
+        "errors.ECONNRESET": 29,
+        "vusers.created_by_name.Simulated Cab Booking": 100,
+        "vusers.created": 100,
+        "http.requests": 100,
+        "plugins.metrics-by-endpoint./api/user/test-booking.errors.ETIMEDOUT": 57,
+        "errors.ETIMEDOUT": 57
+      },
+      "rates": {
+        "http.request_rate": 10
+      },
+      "http.request_rate": null,
+      "firstCounterAt": 1751197260003,
+      "firstHistogramAt": 1751197260003,
+      "lastCounterAt": 1751197269984,
+      "lastHistogramAt": 1751197260966,
+      "firstMetricAt": 1751197260003,
+      "lastMetricAt": 1751197269984,
+      "period": "1751197260000",
+      "summaries": {
+        "http.response_time": {
+          "min": 4470,
+          "max": 4682,
+          "count": 5,
+          "mean": 4597.8,
+          "p50": 4583.6,
+          "median": 4583.6,
+          "p75": 4676.2,
+          "p90": 4676.2,
+          "p95": 4676.2,
+          "p99": 4676.2,
+          "p999": 4676.2
+        },
+        "http.response_time.4xx": {
+          "min": 4470,
+          "max": 4682,
+          "count": 5,
+          "mean": 4597.8,
+          "p50": 4583.6,
+          "median": 4583.6,
+          "p75": 4676.2,
+          "p90": 4676.2,
+          "p95": 4676.2,
+          "p99": 4676.2,
+          "p999": 4676.2
+        },
+        "plugins.metrics-by-endpoint.response_time./api/user/test-booking": {
+          "min": 4470,
+          "max": 4682,
+          "count": 5,
+          "mean": 4597.8,
+          "p50": 4583.6,
+          "median": 4583.6,
+          "p75": 4676.2,
+          "p90": 4676.2,
+          "p95": 4676.2,
+          "p99": 4676.2,
+          "p999": 4676.2
+        },
+        "vusers.session_length": {
+          "min": 9272.1,
+          "max": 9984.1,
+          "count": 5,
+          "mean": 9695.8,
+          "p50": 9801.2,
+          "median": 9801.2,
+          "p75": 9801.2,
+          "p90": 9801.2,
+          "p95": 9801.2,
+          "p99": 9801.2,
+          "p999": 9801.2
+        }
+      },
+      "histograms": {
+        "http.response_time": {
+          "min": 4470,
+          "max": 4682,
+          "count": 5,
+          "mean": 4597.8,
+          "p50": 4583.6,
+          "median": 4583.6,
+          "p75": 4676.2,
+          "p90": 4676.2,
+          "p95": 4676.2,
+          "p99": 4676.2,
+          "p999": 4676.2
+        },
+        "http.response_time.4xx": {
+          "min": 4470,
+          "max": 4682,
+          "count": 5,
+          "mean": 4597.8,
+          "p50": 4583.6,
+          "median": 4583.6,
+          "p75": 4676.2,
+          "p90": 4676.2,
+          "p95": 4676.2,
+          "p99": 4676.2,
+          "p999": 4676.2
+        },
+        "plugins.metrics-by-endpoint.response_time./api/user/test-booking": {
+          "min": 4470,
+          "max": 4682,
+          "count": 5,
+          "mean": 4597.8,
+          "p50": 4583.6,
+          "median": 4583.6,
+          "p75": 4676.2,
+          "p90": 4676.2,
+          "p95": 4676.2,
+          "p99": 4676.2,
+          "p999": 4676.2
+        },
+        "vusers.session_length": {
+          "min": 9272.1,
+          "max": 9984.1,
+          "count": 5,
+          "mean": 9695.8,
+          "p50": 9801.2,
+          "median": 9801.2,
+          "p75": 9801.2,
+          "p90": 9801.2,
+          "p95": 9801.2,
+          "p99": 9801.2,
+          "p999": 9801.2
+        }
+      }
+    },
+    {
+      "counters": {
+        "vusers.created_by_name.Simulated Cab Booking": 100,
+        "vusers.created": 100,
+        "http.requests": 100,
+        "plugins.metrics-by-endpoint./api/user/test-booking.errors.ETIMEDOUT": 100,
+        "errors.ETIMEDOUT": 100,
+        "vusers.failed": 100
+      },
+      "rates": {
+        "http.request_rate": 10
+      },
+      "http.request_rate": null,
+      "firstCounterAt": 1751197270044,
+      "lastCounterAt": 1751197279984,
+      "firstMetricAt": 1751197270044,
+      "lastMetricAt": 1751197279984,
+      "period": "1751197270000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.created_by_name.Simulated Cab Booking": 45,
+        "vusers.created": 45,
+        "http.requests": 45,
+        "plugins.metrics-by-endpoint./api/user/test-booking.errors.ETIMEDOUT": 100,
+        "errors.ETIMEDOUT": 100,
+        "vusers.failed": 100
+      },
+      "rates": {
+        "http.request_rate": 10
+      },
+      "http.request_rate": null,
+      "firstCounterAt": 1751197280043,
+      "lastCounterAt": 1751197289988,
+      "firstMetricAt": 1751197280043,
+      "lastMetricAt": 1751197289988,
+      "period": "1751197280000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "plugins.metrics-by-endpoint./api/user/test-booking.errors.ETIMEDOUT": 45,
+        "errors.ETIMEDOUT": 45,
+        "vusers.failed": 45
+      },
+      "rates": {},
+      "firstCounterAt": 1751197290051,
+      "lastCounterAt": 1751197294308,
+      "firstMetricAt": 1751197290051,
+      "lastMetricAt": 1751197294308,
+      "period": "1751197290000",
+      "summaries": {},
+      "histograms": {}
+    }
+  ]
+}

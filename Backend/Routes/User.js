@@ -9,7 +9,7 @@ const { Usersignup, userlogin, verifyUser, updateProfile,
   getUserProfile, 
   logoutUser } = require('../controllers/User');
 const otpController = require('../controllers/otpController');
-const { DoBooking, getallUserBookings, Review, GetCompletedBookings, getBooking,generateRideOtp } = require('../controllers/Booking');
+const { DoBooking, getallUserBookings, Review, GetCompletedBookings, getBooking,generateRideOtp,TestBooking } = require('../controllers/Booking');
 const { verifyToken } = require('../utiils/token-manager');
 const { createToken } = require('../utiils/token-manager');
 const { COOKIE_NAME } = require('../utiils/constants');
@@ -18,7 +18,7 @@ router.route('/driver/:bookingId').get(getBooking);
 router.route('/usersignup').post(Usersignup);
 router.route('/userlogin').post(userlogin);
 router.route('/tryingtodoit/:bookingId').get(getBooking);
-
+router.post('/test-booking', TestBooking);
 router.route('/completedBookings/:userId').get(GetCompletedBookings);
 // router.route('/completedBookings/:userId').get(GetCompletedBookings);
 

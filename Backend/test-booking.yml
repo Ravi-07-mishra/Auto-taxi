@@ -1,0 +1,23 @@
+config:
+  target: "https://auto-taxi-1.onrender.com"
+  phases:
+    - duration: 60
+      arrivalRate: 10
+  payload:
+    path: "users.csv"
+    fields:
+      - userId
+
+scenarios:
+  - name: Simulated Cab Booking
+    flow:
+      - post:
+          url: "/api/user/test-booking"
+          json:
+            userId: "{{ userId }}"
+            pickupLocation:
+              lat: 12.9716
+              lng: 77.5946
+            destinationLocation:
+              lat: 12.9352
+              lng: 77.6140

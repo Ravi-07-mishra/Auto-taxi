@@ -339,6 +339,65 @@ const verifyRideOtp = async (req, res) => {
     res.status(500).json({ message: 'Could not verify ride OTP', cause: err.message });
   }
 };
+const TestBooking = async (req, res) => {
+  try {
+    const { userId, pickupLocation, destinationLocation } = req.body;
+
+    const validateLocation = (location) =>
+      location &&
+      typeof location.lat === "number" &&
+      typeof location.lng === "number";
+
+    if (!userId || !validateLocation(pickupLocation) || !validateLocation(destinationLocation)) {
+      return res.status(400).json({ msg: "All fields are required and must be valid." });
+    }
+
+    const drivers = await Driver.find({ isAvailable: true });
+    if (drivers.length === 0) {
+      return res.status(404).json({ msg: "No drivers available at the moment." });
+    }
+
+    const driversWithDistance = drivers
+      .filter(d => d.location?.lat && d.location?.lng)
+      .map(d => ({
+        driver: d,
+        distance: calculateDistance(pickupLocation, d.location),
+      }))
+      .sort((a, b) => a.distance - b.distance);
+
+    const tripDistance = calculateDistance(pickupLocation, destinationLocation);
+    if (isNaN(tripDistance) || tripDistance <= 0) {
+      return res.status(400).json({ msg: "Invalid trip distance calculated." });
+    }
+
+    const price = +(tripDistance * RATE_PER_KM).toFixed(2);
+    const selectedDriver = driversWithDistance[0].driver;
+
+    const booking = await Booking.create({
+      user: userId,
+      pickupLocation,
+      destinationLocation,
+      driver: selectedDriver._id,
+      profileImage: selectedDriver.profileImage,
+      price,
+      status: 'Accepted'  // Auto-accepted for test
+    });
+
+    return res.status(200).json({
+      success: true,
+      msg: "Test booking created and auto-accepted.",
+      bookingId: booking._id,
+      driver: selectedDriver.name,
+      price,
+      tripDistance
+    });
+
+  } catch (error) {
+    console.error("TestBooking error:", error);
+    return res.status(500).json({ msg: "Server error in test-booking", error: error.message });
+  }
+};
+
 module.exports = {
   DoBooking,
   getallDriverBookings,
@@ -348,5 +407,5 @@ module.exports = {
   GetCompletedBookings,
   CompleteBooking,
   CancelBooking,generateRideOtp,
-  verifyRideOtp
+  verifyRideOtp,TestBooking
 };
