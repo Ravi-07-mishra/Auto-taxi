@@ -47,16 +47,24 @@ app.get('/health', (req, res) => {
 // ─── SOCKET.IO INITIALIZATION ─────────────────────────────────────
 const io = new Server(server, {
   cors: {
-    origin: process.env.ALLOWED_ORIGINS?.split(",") || true,
+    origin: "*", // Allow all for now
     methods: ["GET", "POST"],
     credentials: true
   },
-  transports: ["websocket"], // WebSocket only
-  allowUpgrades: false,     // No protocol switching
-  pingTimeout: 5000,        // 5s timeout
-  pingInterval: 10000,      // 10s ping interval
-  perMessageDeflate: false, // Disable compression
-  cookie: false             // No session cookies
+  transports: ["websocket"], // Force WebSocket only
+  allowUpgrades: false, // Disable protocol switching
+  connectTimeout: 3000, // 3s connection timeout
+  pingTimeout: 5000, // 5s ping timeout
+  pingInterval: 10000 // 10s between pings
+});
+
+// Add this error handling:
+io.engine.on("connection_error", (err) => {
+  console.log("WebSocket error:", {
+    code: err.code,
+    message: err.message,
+    context: err.context
+  });
 });
 
 // Track active connections
