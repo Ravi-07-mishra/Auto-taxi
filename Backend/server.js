@@ -107,28 +107,6 @@ const io = new Server(server, {
 // Connection tracker for duplicate prevention
 const connectionTracker = new Map();
 
-server.on('upgrade', (req, socket, head) => {
-  const connectionId = req.headers['sec-websocket-key'];
-  
-  if (!connectionId) {
-    console.log('No WebSocket key found - closing connection');
-    socket.destroy();
-    return;
-  }
-
-  if (connectionTracker.has(connectionId)) {
-    console.log('Duplicate connection attempt blocked:', connectionId);
-    socket.destroy();
-    return;
-  }
-
-  connectionTracker.set(connectionId, true);
-  socket.on('close', () => connectionTracker.delete(connectionId));
-
-  io.engine.handleUpgrade(req, socket, head, (ws) => {
-    io.engine.emit('connection', ws, req);
-  });
-});
 
 // Enhanced error handling
 io.engine.on("connection_error", (err) => {

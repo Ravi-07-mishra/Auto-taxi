@@ -2,8 +2,8 @@ const { io } = require('socket.io-client');
 
 const socket = io("wss://auto-taxi-1.onrender.com", {
   transports: ["websocket"],
-  reconnectionAttempts: 2,
-  timeout: 3000,
+  reconnectionAttempts: Infinity,
+  timeout: 10000,
   forceNew: true
 });
 
