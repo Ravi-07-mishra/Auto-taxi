@@ -8,15 +8,14 @@ export const SocketProvider = ({ children }) => {
   const [connectionStatus, setStatus] = useState('disconnected');
 
   useEffect(() => {
-    const socketInstance = io(import.meta.env.VITE_APP_WS_URL, {
-      transports: ['websocket'],
-      reconnection: true,
-      reconnectionAttempts: 3,
-      reconnectionDelay: 1000,
-      timeout: 5000,
-      withCredentials: true,
-      forceNew: true
-    });
+    const socketInstance = io('wss://auto-taxi-1.onrender.com', {
+  transports: ['websocket'],
+  reconnectionAttempts: 3,
+  withCredentials: true,
+  extraHeaders: {
+    'X-Connection-ID': uuidv4() // Add unique ID per connection
+  }
+});
 
     // Connection events
     socketInstance.on('connect', () => {

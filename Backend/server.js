@@ -47,45 +47,35 @@ app.get('/health', (req, res) => {
 // ─── SOCKET.IO INITIALIZATION ─────────────────────────────────────
 const io = new Server(server, {
   cors: {
-    origin: "*", // Allow all for now
-    methods: ["GET", "POST"],
+    // origin: process.env.NODE_ENV === 'production' 
+    //   ? ['https://your-frontend-domain.com'] 
+    //   : '*',
+    origin: '*',
     credentials: true
   },
-  transports: ["websocket"], // Force WebSocket only
-  allowUpgrades: false, // Disable protocol switching
-  connectTimeout: 3000, // 3s connection timeout
-  pingTimeout: 5000, // 5s ping timeout
-  pingInterval: 10000 // 10s between pings
+  transports: ['websocket'],
+  allowUpgrades: false
 });
 
-// Add this error handling:
-io.engine.on("connection_error", (err) => {
-  console.log("WebSocket error:", {
-    code: err.code,
-    message: err.message,
-    context: err.context
-  });
-});
+// Add this EXACT upgrade handler
+const activeConnections = new Set();
 
-// Track active connections
-const activeSockets = new Map();
-
-// Secure upgrade handling
 server.on('upgrade', (req, socket, head) => {
-  const socketKey = `${req.socket.remoteAddress}:${Date.now()}`;
+  const connectionId = `${req.socket.remoteAddress}:${req.headers['sec-websocket-key']}`;
   
-  if (activeSockets.has(socketKey)) {
+  if (activeConnections.has(connectionId)) {
     socket.destroy();
     return;
   }
 
-  activeSockets.set(socketKey, socket);
-  socket.on('close', () => activeSockets.delete(socketKey));
+  activeConnections.add(connectionId);
+  socket.on('close', () => activeConnections.delete(connectionId));
 
   io.engine.handleUpgrade(req, socket, head, (ws) => {
     io.engine.emit('connection', ws, req);
   });
 });
+
 global.io = io;
 
 app.use(passport.initialize());
