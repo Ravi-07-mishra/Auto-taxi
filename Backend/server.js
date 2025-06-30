@@ -27,40 +27,24 @@ const Paymentrouter = require("./Routes/payment");
 // Create HTTP server
 const server = http.createServer(app);
 const allowedOrigins = [
-  // All localhost variants
   /^http:\/\/localhost(:\d+)?$/,
   /^http:\/\/127\.0\.0\.1(:\d+)?$/,
-  
-  // All Vercel deployments
+  'https://auto-taxi-1.onrender.com',
   'https://*.vercel.app',
-  
-  // Environment-specific origins
   ...(process.env.ALLOWED_ORIGINS?.split(',') || [])
 ];
-
 const corsOptions = {
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
-    
-    // Check if origin matches any allowed pattern
     const isAllowed = allowedOrigins.some(pattern => {
-      if (typeof pattern === 'string') {
-        // Handle wildcard domains (like *.vercel.app)
-        if (pattern.includes('*')) {
-          const domain = pattern.replace('*.', '');
-          return origin.endsWith(domain);
-        }
-        // Exact match for production domains
-        return origin === pattern;
+      if (typeof pattern === 'string' && pattern.includes('*')) {
+        const domain = pattern.replace('*.', '');
+        return origin.endsWith(domain);
       }
-      // Regex match for localhost variations
-      if (pattern instanceof RegExp) {
-        return pattern.test(origin);
-      }
+      if (typeof pattern === 'string') return origin === pattern;
+      if (pattern instanceof RegExp) return pattern.test(origin);
       return false;
     });
-
     callback(null, isAllowed);
   },
   credentials: true,
@@ -81,27 +65,20 @@ app.get('/health', (req, res) => {
   res.send('OK');
 });
 
-// ─── SOCKET.IO INITIALIZATION ─────────────────────────────────────
-app.get('/ws-health', (req, res) => {
-  res.json({
-    status: 'healthy',
-    connections: io.engine?.clientsCount || 0,
-    serverTime: new Date().toISOString()
-  });
-});
+// ─── SOCKET.IO INITIALIZATION 
 
 // ─── SOCKET.IO INITIALIZATION ─────────────────────────────────────
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins, // Use the same origin list
+    origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST']
   },
   transports: ['websocket'],
   allowUpgrades: false,
-  connectTimeout: 3000,
-  pingTimeout: 5000,
-  pingInterval: 10000
+  connectTimeout: 2000,
+  pingTimeout: 4000,
+  pingInterval: 12000
 });
 
 // Connection tracker for duplicate prevention

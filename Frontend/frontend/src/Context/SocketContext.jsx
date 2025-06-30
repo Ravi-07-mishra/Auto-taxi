@@ -1,3 +1,4 @@
+// src/context/SocketContext.jsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 
@@ -5,17 +6,17 @@ const SocketContext = createContext();
 
 export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
-  const [connectionStatus, setStatus] = useState('connecting');
+  const [status, setStatus] = useState('connecting');
 
   useEffect(() => {
-    // Use VITE_API_URL2 from .env or fallback
     const socketUrl = import.meta.env.VITE_API_URL2 || 'https://auto-taxi-1.onrender.com';
-    
+
+    // Use only websocket, short timeouts
     const socketInstance = io(socketUrl, {
       transports: ['websocket'],
-      reconnectionAttempts: 3,
-      reconnectionDelay: 1000,
-      timeout: 5000,
+      reconnectionAttempts: 2,
+      reconnectionDelay: 800,
+      timeout: 2000,
       secure: true,
       withCredentials: true,
       extraHeaders: {
@@ -25,13 +26,13 @@ export const SocketProvider = ({ children }) => {
     });
 
     socketInstance.on('connect', () => {
-      console.log('✅ WebSocket connected:', socketInstance.id);
       setStatus('connected');
+      console.log('✅ WebSocket connected:', socketInstance.id);
     });
 
     socketInstance.on('connect_error', (err) => {
-      console.error('Connection failed:', err.message);
       setStatus('error');
+      console.error('Connection failed:', err.message);
     });
 
     socketInstance.on('disconnect', () => {
@@ -41,15 +42,15 @@ export const SocketProvider = ({ children }) => {
     setSocket(socketInstance);
 
     return () => {
-      if (socketInstance) socketInstance.disconnect();
+      socketInstance.disconnect();
     };
   }, []);
 
   return (
     <SocketContext.Provider value={{ socket, status }}>
-      {connectionStatus === 'connected' ? children : (
+      {status === 'connected' ? children : (
         <div className="connection-status">
-          {connectionStatus === 'error' ? (
+          {status === 'error' ? (
             <div className="text-red-500">Connection failed - retrying...</div>
           ) : (
             <div className="flex items-center gap-2">
