@@ -41,14 +41,23 @@ app.get('/health', (req, res) => {
 
 // ─── SOCKET.IO INITIALIZATION ─────────────────────────────────────
 const io = socketIo(server, {
-  cors: {
-    origin: true,             // allow any origin
+   cors: {
+    origin: true,
     methods: ["GET", "POST"],
-    credentials: true,
+    credentials: true
   },
-  transports: ["websocket", "polling"],
-  pingTimeout: 60000,
-  pingInterval: 25000,
+  transports: ["websocket"], // WebSocket ONLY - no fallback
+  allowUpgrades: false,      // Prevent switching protocols
+  pingTimeout: 5000,         // Faster timeout detection (5s)
+  pingInterval: 10000,       // Health check every 10s
+  perMessageDeflate: false,  // Disable compression
+  cookie: false              // Skip session cookies
+});
+server.on("upgrade", (req, socket, head) => {
+  console.log("WebSocket upgrade initiated:", new Date().toISOString());
+  io.engine.handleUpgrade(req, socket, head, (ws) => {
+    io.engine.emit("connection", ws, req);
+  });
 });
 global.io = io;
 
