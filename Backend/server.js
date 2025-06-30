@@ -45,36 +45,59 @@ app.get('/health', (req, res) => {
 });
 
 // ─── SOCKET.IO INITIALIZATION ─────────────────────────────────────
-const io = new Server(server, {
-  cors: {
-    // origin: process.env.NODE_ENV === 'production' 
-    //   ? ['https://your-frontend-domain.com'] 
-    //   : '*',
-    origin: '*',
-    credentials: true
-  },
-  transports: ['websocket'],
-  allowUpgrades: false
+app.get('/ws-health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    connections: io.engine?.clientsCount || 0,
+    serverTime: new Date().toISOString()
+  });
 });
 
-// Add this EXACT upgrade handler
-const activeConnections = new Set();
+// ─── SOCKET.IO INITIALIZATION ─────────────────────────────────────
+const io = new Server(server, {
+  cors: corsOptions,
+  transports: ['websocket'],
+  allowUpgrades: false,
+  connectTimeout: 3000,
+  pingTimeout: 5000,
+  pingInterval: 10000
+});
+
+// Connection tracker for duplicate prevention
+const connectionTracker = new Map();
 
 server.on('upgrade', (req, socket, head) => {
-  const connectionId = `${req.socket.remoteAddress}:${req.headers['sec-websocket-key']}`;
+  const connectionId = req.headers['sec-websocket-key'];
   
-  if (activeConnections.has(connectionId)) {
+  if (!connectionId) {
+    console.log('No WebSocket key found - closing connection');
     socket.destroy();
     return;
   }
 
-  activeConnections.add(connectionId);
-  socket.on('close', () => activeConnections.delete(connectionId));
+  if (connectionTracker.has(connectionId)) {
+    console.log('Duplicate connection attempt blocked:', connectionId);
+    socket.destroy();
+    return;
+  }
+
+  connectionTracker.set(connectionId, true);
+  socket.on('close', () => connectionTracker.delete(connectionId));
 
   io.engine.handleUpgrade(req, socket, head, (ws) => {
     io.engine.emit('connection', ws, req);
   });
 });
+
+// Enhanced error handling
+io.engine.on("connection_error", (err) => {
+  console.error("WebSocket Error:", {
+    code: err.code,
+    message: err.message,
+    context: err.context
+  });
+});
+
 
 global.io = io;
 
