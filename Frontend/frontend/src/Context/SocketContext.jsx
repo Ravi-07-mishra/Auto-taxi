@@ -1,58 +1,58 @@
-// SocketContext.jsx
-import React, { createContext, useContext, useRef, useEffect, useState } from "react";
-import io from "socket.io-client";
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { io } from 'socket.io-client';
 
 const SocketContext = createContext();
 
-export const useSocket = () => {
-  return useContext(SocketContext);
-};
-
 export const SocketProvider = ({ children }) => {
-  // ─── Backend Base URL ───────────────────────────────────────────
-  // const API_BASE =  "http://localhost:3000";
-  const API_BASE = import.meta.env.VITE_API_URL2 || "http://localhost:3000";
-
-  const socketRef = useRef(null);
-  const [isSocketInitialized, setIsSocketInitialized] = useState(false);
+  const [socket, setSocket] = useState(null);
+  const [connectionStatus, setStatus] = useState('disconnected');
 
   useEffect(() => {
-    // Initialize socket connection using the base URL
-    socketRef.current = io(API_BASE, {
-      transports: ["websocket", "polling"], // Include polling as a fallback
+    const socketInstance = io(import.meta.env.VITE_APP_WS_URL, {
+      transports: ['websocket'],
       reconnection: true,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 3,
       reconnectionDelay: 1000,
+      timeout: 5000,
+      withCredentials: true,
+      forceNew: true
     });
 
-    console.log("Socket initialized:", socketRef.current);
-
-    // Handle connection events
-    socketRef.current.on("connect", () => {
-      console.log("Socket connected:", socketRef.current.id);
-      setIsSocketInitialized(true);
+    // Connection events
+    socketInstance.on('connect', () => {
+      setStatus('connected');
+      console.log('WebSocket connected:', socketInstance.id);
     });
 
-    socketRef.current.on("connect_error", (error) => {
-      console.error("Connection error:", error.message);
+    socketInstance.on('disconnect', () => {
+      setStatus('disconnected');
     });
 
-    socketRef.current.on("disconnect", (reason) => {
-      console.log("Socket disconnected. Reason:", reason);
+    socketInstance.on('connect_error', (err) => {
+      setStatus('error');
+      console.error('Connection error:', err.message);
     });
 
-    // Clean up on component unmount
+    setSocket(socketInstance);
+
     return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-        console.log("Socket disconnected on cleanup.");
-      }
+      if (socketInstance) socketInstance.disconnect();
     };
-  }, [API_BASE]);
+  }, []);
 
   return (
-    <SocketContext.Provider value={socketRef.current}>
-      {isSocketInitialized ? children : <div>Loading socket...</div>}
+    <SocketContext.Provider value={{ socket, connectionStatus }}>
+      {connectionStatus === 'connected' ? children : (
+        <div className="connection-status">
+          {connectionStatus === 'error' ? (
+            <p>Connection failed. Retrying...</p>
+          ) : (
+            <p>Establishing secure connection...</p>
+          )}
+        </div>
+      )}
     </SocketContext.Provider>
   );
 };
+
+export const useSocket = () => useContext(SocketContext);

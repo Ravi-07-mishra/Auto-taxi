@@ -7,6 +7,7 @@ const cors = require("cors");
 const http = require("http");
 const app = express();
 const socketIo = require("socket.io");
+const { Server } = require("socket.io");
 const passport = require("passport");
 require("./controllers/googleauth");
 require("./controllers/drivergoogleauth");
@@ -28,7 +29,11 @@ const server = http.createServer(app);
 
 // ─── CORS CONFIGURATION ───────────────────────────────────────────
 // Temporarily allow all origins for testing
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({ 
+  origin: process.env.ALLOWED_ORIGINS?.split(",") || true,
+  credentials: true 
+}));
+
 app.use(express.json());
 app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(morgan("dev"));
@@ -40,23 +45,37 @@ app.get('/health', (req, res) => {
 });
 
 // ─── SOCKET.IO INITIALIZATION ─────────────────────────────────────
-const io = socketIo(server, {
-   cors: {
-    origin: true,
+const io = new Server(server, {
+  cors: {
+    origin: process.env.ALLOWED_ORIGINS?.split(",") || true,
     methods: ["GET", "POST"],
     credentials: true
   },
-  transports: ["websocket"], // WebSocket ONLY - no fallback
-  allowUpgrades: false,      // Prevent switching protocols
-  pingTimeout: 5000,         // Faster timeout detection (5s)
-  pingInterval: 10000,       // Health check every 10s
-  perMessageDeflate: false,  // Disable compression
-  cookie: false              // Skip session cookies
+  transports: ["websocket"], // WebSocket only
+  allowUpgrades: false,     // No protocol switching
+  pingTimeout: 5000,        // 5s timeout
+  pingInterval: 10000,      // 10s ping interval
+  perMessageDeflate: false, // Disable compression
+  cookie: false             // No session cookies
 });
-server.on("upgrade", (req, socket, head) => {
-  console.log("WebSocket upgrade initiated:", new Date().toISOString());
+
+// Track active connections
+const activeSockets = new Map();
+
+// Secure upgrade handling
+server.on('upgrade', (req, socket, head) => {
+  const socketKey = `${req.socket.remoteAddress}:${Date.now()}`;
+  
+  if (activeSockets.has(socketKey)) {
+    socket.destroy();
+    return;
+  }
+
+  activeSockets.set(socketKey, socket);
+  socket.on('close', () => activeSockets.delete(socketKey));
+
   io.engine.handleUpgrade(req, socket, head, (ws) => {
-    io.engine.emit("connection", ws, req);
+    io.engine.emit('connection', ws, req);
   });
 });
 global.io = io;
@@ -141,7 +160,12 @@ app.get("/directions", async (req, res) => {
 // ─── SOCKET.IO EVENT HANDLING ───────────────────────────────────────
 io.on("connection", (socket) => {
   console.log("Client connected:", socket.id);
-
+ // Initialize connection
+  socket.emit("connection_ack", { 
+    status: "connected",
+    socketId: socket.id,
+    serverTime: new Date().toISOString()
+  });
   // Send existing driver locations on new connection
   socket.emit("updateLocations", driverLocations);
   socket.emit("testEvent", { message: "Hello from server!" });
