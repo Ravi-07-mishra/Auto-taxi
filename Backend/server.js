@@ -26,13 +26,50 @@ const Paymentrouter = require("./Routes/payment");
 
 // Create HTTP server
 const server = http.createServer(app);
+const allowedOrigins = [
+  // All localhost variants
+  /^http:\/\/localhost(:\d+)?$/,
+  /^http:\/\/127\.0\.0\.1(:\d+)?$/,
+  
+  // All Vercel deployments
+  'https://*.vercel.app',
+  
+  // Environment-specific origins
+  ...(process.env.ALLOWED_ORIGINS?.split(',') || [])
+];
 
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin matches any allowed pattern
+    const isAllowed = allowedOrigins.some(pattern => {
+      if (typeof pattern === 'string') {
+        // Handle wildcard domains (like *.vercel.app)
+        if (pattern.includes('*')) {
+          const domain = pattern.replace('*.', '');
+          return origin.endsWith(domain);
+        }
+        // Exact match for production domains
+        return origin === pattern;
+      }
+      // Regex match for localhost variations
+      if (pattern instanceof RegExp) {
+        return pattern.test(origin);
+      }
+      return false;
+    });
+
+    callback(null, isAllowed);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'OPTIONS']
+};
 // ─── CORS CONFIGURATION ───────────────────────────────────────────
 // Temporarily allow all origins for testing
-app.use(cors({ 
-  origin: process.env.ALLOWED_ORIGINS?.split(",") || true,
-  credentials: true 
-}));
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); 
 
 app.use(express.json());
 app.use(cookieParser(process.env.COOKIE_SECRET));
@@ -55,7 +92,11 @@ app.get('/ws-health', (req, res) => {
 
 // ─── SOCKET.IO INITIALIZATION ─────────────────────────────────────
 const io = new Server(server, {
-  cors: corsOptions,
+  cors: {
+    origin: allowedOrigins, // Use the same origin list
+    credentials: true,
+    methods: ['GET', 'POST']
+  },
   transports: ['websocket'],
   allowUpgrades: false,
   connectTimeout: 3000,
