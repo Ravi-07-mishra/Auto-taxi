@@ -1,6 +1,18 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../Context/userContext";
+import {
+  Box,
+  Button,
+  Typography,
+  TextField,
+  CircularProgress,
+  InputAdornment,
+  Alert
+} from "@mui/material";
+import Divider from '@mui/material/Divider';
+
+import { RiUser3Line, RiMailLine, RiLockLine, RiShieldCheckLine } from "react-icons/ri";
 import GoogleSignInButton from "../Component/Googlesigninbutton";
 
 const Signup = () => {
@@ -22,7 +34,6 @@ const Signup = () => {
 
     try {
       await signup(name, email, password, otp);
-      alert("Signup successful!");
       navigate("/userhome");
     } catch (err) {
       setError(err.message || "Something went wrong. Please try again.");
@@ -32,114 +43,353 @@ const Signup = () => {
   };
 
   return (
-    <div
-      className="flex justify-center items-center min-h-screen relative px-4 sm:px-6"
-      style={{
-        backgroundImage: "url('/bg1.jpg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        minHeight: "100vh",
+        background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+        px: 2,
+        position: "relative",
+        overflow: "hidden",
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          top: "-50%",
+          right: "-10%",
+          width: "700px",
+          height: "700px",
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(203, 229, 87, 0.1) 0%, transparent 70%)",
+          zIndex: 1,
+        },
+        "&::after": {
+          content: '""',
+          position: "absolute",
+          bottom: "-30%",
+          left: "-10%",
+          width: "600px",
+          height: "600px",
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%)",
+          zIndex: 1,
+        },
       }}
     >
-      {/* Dark Overlay */}
-      <div className="absolute inset-0 bg-black/50"></div>
-
-      {/* Signup Form Container */}
-      <div className="w-full max-w-md bg-white/10 backdrop-blur-lg rounded-xl shadow-lg p-6 sm:p-8 relative z-10 border border-white/10 transition-all duration-300 hover:scale-105 hover:shadow-2xl">
-        {/* Logo */}
-        <h1 className="text-2xl md:text-3xl font-extrabold lowercase tracking-wider shadow-md flex justify-center items-center gap-2 mb-6 flex-wrap">
-          {["a", "u", "t", "o", "-", "d", "r", "i", "v", "e"].map((letter, index) => (
-            <span key={index} style={{ color: index % 2 === 0 ? "#cbe557" : "white" }}>
-              {letter}
-            </span>
-          ))}
-        </h1>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <h2 className="text-xl font-bold text-center text-white">Sign Up</h2>
-
-          {error && (
-            <div className="bg-red-100 text-red-700 border border-red-400 rounded p-3 text-sm break-words">
-              {error}
-            </div>
-          )}
-
-          {/* Name Input */}
-          <div>
-            <label className="block text-sm font-medium text-gray-200 mb-1" htmlFor="name">
-              Name
-            </label>
-            <input
-              type="text"
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="w-full px-3 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#cbe557] text-white placeholder-gray-300 transition-all duration-300 hover:border-[#cbe557]"
-            />
-          </div>
-
-          {/* Email Input */}
-          <div>
-            <label className="block text-sm font-medium text-gray-200 mb-1" htmlFor="email">
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-3 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#cbe557] text-white placeholder-gray-300 transition-all duration-300 hover:border-[#cbe557]"
-            />
-          </div>
-
-          {/* Password Input */}
-          <div>
-            <label className="block text-sm font-medium text-gray-200 mb-1" htmlFor="password">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full px-3 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#cbe557] text-white placeholder-gray-300 transition-all duration-300 hover:border-[#cbe557]"
-            />
-          </div>
-
-          {/* OTP Input */}
-          <div>
-            <label className="block text-sm font-medium text-gray-200 mb-1" htmlFor="otp">
-              OTP
-            </label>
-            <input
-              type="text"
-              id="otp"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              required
-              className="w-full px-3 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#cbe557] text-white placeholder-gray-300 transition-all duration-300 hover:border-[#cbe557]"
-            />
-          </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full py-2 bg-[#cbe557] text-gray-900 rounded-lg hover:bg-[#b8d93e] focus:ring-2 focus:ring-[#cbe557] transition-all duration-300 hover:scale-105"
+      {/* Signup Card */}
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        sx={{
+          width: "100%",
+          maxWidth: "500px",
+          padding: { xs: 3, sm: 4 },
+          borderRadius: "16px",
+          background: "rgba(15, 23, 42, 0.7)",
+          backdropFilter: "blur(12px)",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
+          boxShadow: "0 20px 40px rgba(0, 0, 0, 0.4)",
+          position: "relative",
+          zIndex: 2,
+          overflow: "hidden",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "4px",
+            background: "linear-gradient(90deg, #cbe557, #3b82f6)",
+            zIndex: 3,
+          },
+        }}
+      >
+        {/* Branding */}
+        <Box sx={{ textAlign: "center", mb: 4 }}>
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 700,
+              mb: 1,
+              color: "#f1f5f9",
+              letterSpacing: "-0.5px",
+            }}
           >
-            {isLoading ? "Signing up..." : "Signup"}
-          </button>
-        </form>
+            CREATE ACCOUNT
+          </Typography>
+          <Typography sx={{ color: "#94a3b8", maxWidth: "300px", margin: "0 auto" }}>
+            Join our platform to get started
+          </Typography>
+        </Box>
 
-        {/* Divider */}
-        <div className="text-center text-white my-4">OR</div>
+        {error && (
+          <Alert
+            severity="error"
+            sx={{
+              backgroundColor: "rgba(220, 38, 38, 0.15)",
+              color: "#fecaca",
+              padding: "12px 16px",
+              borderRadius: "8px",
+              mb: 3,
+              border: "1px solid rgba(220, 38, 38, 0.3)",
+              fontSize: "0.9rem",
+            }}
+          >
+            {error}
+          </Alert>
+        )}
 
-        {/* Google Sign In Button */}
-        <GoogleSignInButton />
-      </div>
-    </div>
+        <Box mb={3}>
+          <Typography variant="subtitle2" sx={{ color: "#94a3b8", mb: 1, fontWeight: 500 }}>
+            FULL NAME
+          </Typography>
+          <TextField
+            fullWidth
+            placeholder="John Doe"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <RiUser3Line color="#94a3b8" size={20} />
+                </InputAdornment>
+              ),
+              sx: {
+                borderRadius: "10px",
+                background: "rgba(30, 41, 59, 0.5)",
+                "& input": { 
+                  color: "#f1f5f9", 
+                  padding: "14px",
+                  fontSize: "1rem"
+                },
+              },
+            }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                "& fieldset": { 
+                  borderColor: "rgba(148, 163, 184, 0.2)",
+                },
+                "&:hover fieldset": { 
+                  borderColor: "rgba(203, 229, 87, 0.3)" 
+                },
+                "&.Mui-focused fieldset": { 
+                  borderColor: "#cbe557",
+                  borderWidth: "1px"
+                },
+              },
+            }}
+          />
+        </Box>
+
+        <Box mb={3}>
+          <Typography variant="subtitle2" sx={{ color: "#94a3b8", mb: 1, fontWeight: 500 }}>
+            EMAIL ADDRESS
+          </Typography>
+          <TextField
+            type="email"
+            fullWidth
+            placeholder="you@company.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <RiMailLine color="#94a3b8" size={20} />
+                </InputAdornment>
+              ),
+              sx: {
+                borderRadius: "10px",
+                background: "rgba(30, 41, 59, 0.5)",
+                "& input": { 
+                  color: "#f1f5f9", 
+                  padding: "14px",
+                  fontSize: "1rem"
+                },
+              },
+            }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                "& fieldset": { 
+                  borderColor: "rgba(148, 163, 184, 0.2)",
+                },
+                "&:hover fieldset": { 
+                  borderColor: "rgba(203, 229, 87, 0.3)" 
+                },
+                "&.Mui-focused fieldset": { 
+                  borderColor: "#cbe557",
+                  borderWidth: "1px"
+                },
+              },
+            }}
+          />
+        </Box>
+
+        <Box mb={3}>
+          <Typography variant="subtitle2" sx={{ color: "#94a3b8", mb: 1, fontWeight: 500 }}>
+            PASSWORD
+          </Typography>
+          <TextField
+            type="password"
+            fullWidth
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <RiLockLine color="#94a3b8" size={20} />
+                </InputAdornment>
+              ),
+              sx: {
+                borderRadius: "10px",
+                background: "rgba(30, 41, 59, 0.5)",
+                "& input": { 
+                  color: "#f1f5f9", 
+                  padding: "14px",
+                  fontSize: "1rem"
+                },
+              },
+            }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                "& fieldset": { 
+                  borderColor: "rgba(148, 163, 184, 0.2)",
+                },
+                "&:hover fieldset": { 
+                  borderColor: "rgba(203, 229, 87, 0.3)" 
+                },
+                "&.Mui-focused fieldset": { 
+                  borderColor: "#cbe557",
+                  borderWidth: "1px"
+                },
+              },
+            }}
+          />
+        </Box>
+
+        <Box mb={4}>
+          <Typography variant="subtitle2" sx={{ color: "#94a3b8", mb: 1, fontWeight: 500 }}>
+            OTP CODE
+          </Typography>
+          <TextField
+            fullWidth
+            placeholder="Enter OTP"
+            value={otp}
+            onChange={(e) => setOtp(e.target.value)}
+            required
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <RiShieldCheckLine color="#94a3b8" size={20} />
+                </InputAdornment>
+              ),
+              sx: {
+                borderRadius: "10px",
+                background: "rgba(30, 41, 59, 0.5)",
+                "& input": { 
+                  color: "#f1f5f9", 
+                  padding: "14px",
+                  fontSize: "1rem"
+                },
+              },
+            }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                "& fieldset": { 
+                  borderColor: "rgba(148, 163, 184, 0.2)",
+                },
+                "&:hover fieldset": { 
+                  borderColor: "rgba(203, 229, 87, 0.3)" 
+                },
+                "&.Mui-focused fieldset": { 
+                  borderColor: "#cbe557",
+                  borderWidth: "1px"
+                },
+              },
+            }}
+          />
+        </Box>
+
+        <Button
+          type="submit"
+          fullWidth
+          sx={{
+            py: 1.8,
+            mb: 2,
+            borderRadius: "10px",
+            background: "linear-gradient(90deg, #cbe557 0%, #3b82f6 100%)",
+            color: "#0f172a",
+            fontWeight: 700,
+            fontSize: "1rem",
+            letterSpacing: "0.5px",
+            position: "relative",
+            overflow: "hidden",
+            zIndex: 1,
+            "&:hover": {
+              "&::before": {
+                opacity: 1,
+              },
+            },
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              background: "rgba(255, 255, 255, 0.2)",
+              opacity: 0,
+              transition: "opacity 0.3s",
+              zIndex: -1,
+            },
+            "&:disabled": {
+              background: "#334155",
+              color: "#94a3b8",
+            },
+          }}
+          disabled={isLoading}
+        >
+          {isLoading ? <CircularProgress size={24} color="inherit" /> : "CREATE ACCOUNT"}
+        </Button>
+
+        <Divider sx={{ my: 3, backgroundColor: "rgba(148, 163, 184, 0.2)" }}>
+          <Typography variant="body2" sx={{ color: "#94a3b8", px: 2, fontWeight: 500 }}>
+            OR CONTINUE WITH
+          </Typography>
+        </Divider>
+
+        <Box sx={{ mt: 3, mb: 2 }}>
+          <GoogleSignInButton />
+        </Box>
+
+        <Box sx={{ mt: 4, textAlign: "center" }}>
+          <Typography variant="body2" sx={{ color: "#64748b", fontWeight: 500 }}>
+            Already have an account?{" "}
+            <Button
+              variant="text"
+              sx={{
+                color: "#cbe557",
+                textTransform: "none",
+                fontWeight: 600,
+                fontSize: "0.95rem",
+                p: 0,
+                "&:hover": {
+                  background: "none",
+                  textDecoration: "underline",
+                },
+              }}
+              onClick={() => navigate("/userlogin")}
+            >
+              Sign in here
+            </Button>
+          </Typography>
+        </Box>
+      </Box>
+    </Box>
   );
 };
 

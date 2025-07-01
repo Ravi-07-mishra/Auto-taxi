@@ -82,3 +82,77 @@
   @apply bg-indigo-100 text-indigo-800;
 }
 
+/* For small screens */
+@media (max-width: 640px) {
+  /* Go Online/Offline button fix */
+  .go-online-btn {
+    position: relative; /* Remove fixed positioning */
+    margin-top: 10%; /* Adjust for centering */
+    margin-right: auto;
+    margin-left: auto;
+    width: 80%; /* Adjust the width for small screens */
+    display: flex; /* Ensure it's centered */
+    justify-content: center;
+  }
+
+  /* Ensure full width and no horizontal overflow */
+  .min-h-screen {
+    padding-right: 0;
+    width: 100%; /* Ensure it takes the full screen width */
+    overflow-x: hidden; /* Prevent horizontal overflow */
+  }
+
+  /* Adjust content containers */
+  .container {
+    padding: 0 10px; /* Adjust container padding for smaller screens */
+  }
+
+  /* Adjust text size for small screens */
+  .text-6xl {
+    font-size: 2rem; /* Adjust for small screens */
+  }
+
+  /* Card padding and font adjustments */
+  .card-body {
+    padding: 1rem;
+  }
+
+  /* Status badge adjustments */
+  .status-badge {
+    font-size: 0.75rem; /* Smaller badge font */
+    padding: 0.25rem 0.5rem;
+  }
+
+  /* Make the carousel responsive */
+  .slick-slider {
+    width: 100%; /* Ensure the carousel takes full width */
+  }
+
+  .slick-slide {
+    width: 100%;
+  }
+
+  /* Adjust the font sizes */
+  .text-3xl {
+    font-size: 1.5rem;
+  }
+
+  /* Ensure buttons are fully responsive */
+  .btn {
+    width: 100%;
+  }
+
+  /* Adjust carousel dots for small screens */
+  .slick-dots {
+    bottom: -25px; /* Keep the dot position adjusted */
+  }
+
+  .slick-dots li button:before {
+    font-size: 8px;
+    color: #818cf8;
+  }
+
+  .slick-dots li.slick-active button:before {
+    color: #4f46e5;
+  }
+}

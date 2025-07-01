@@ -4,14 +4,11 @@ import { useDriverAuth } from "../Context/driverContext";
 import { BiUserPlus } from "react-icons/bi";
 import DriverGoogleSignInButton from "../Component/Drivergooglesigninbutton";
 import toast from "react-hot-toast";
+import { Box, Button, Typography, TextField, CircularProgress, InputAdornment } from "@mui/material";
+import { MdOutlineDriveFileRenameOutline, MdEmail, MdPassword, 
+         MdCreditCard, MdDirectionsCar, MdCalendarToday, 
+         MdCloudUpload, MdLocationOn } from "react-icons/md";
 
-/**
- * DriverRegistrationForm
- *
- * - Collects driver details, including name, email, IDs, date of birth, password.
- * - Fetches geolocation on demand.
- * - Uploads license document and submits via signup from driverContext.
- */
 const DriverRegistrationForm = () => {
   const [formData, setFormData] = useState({
     name: "",
@@ -60,6 +57,7 @@ const DriverRegistrationForm = () => {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
         }));
+        toast.success("Location captured successfully!");
       },
       (error) => {
         if (!isMounted.current) return;
@@ -91,73 +89,521 @@ const DriverRegistrationForm = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen px-4" style={{ backgroundImage: "url('/bg1.jpg')", backgroundSize: "cover", backgroundPosition: "center" }}>
-      <div className="absolute inset-0 bg-black/50"></div>
-      <div className="w-full max-w-3xl bg-white/5 backdrop-blur-lg rounded-xl shadow-lg p-8 relative z-10 border border-white/10">
-        <h1 className="text-3xl font-extrabold lowercase tracking-wider flex justify-center items-center gap-2 mb-6">
-          {Array.from("auto-drive").map((letter, i) => (
-            <span key={i} style={{ color: i % 2 === 0 ? "#cbe557" : "white" }}>{letter}</span>
-          ))}
-        </h1>
-        <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-          <h2 className="text-xl font-bold text-center text-white">Driver Registration</h2>
-          {msg && <div className="bg-red-100 text-red-700 border border-red-400 rounded p-3 text-sm">{msg}</div>}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
-              { name: "name", label: "Name", type: "text" },
-              { name: "email", label: "Email", type: "email" },
-              { name: "password", label: "Password", type: "password" },
-              { name: "aadhaar_number", label: "Aadhaar Number", type: "text" },
-              { name: "driving_license_number", label: "Driving License Number", type: "text" },
-              { name: "vehicle_license_number", label: "Vehicle License Number", type: "text" },
-              { name: "date_of_birth", label: "Date of Birth", type: "date" },
-            ].map(({ name, label, type }) => (
-              <div key={name} className="flex flex-col">
-                <label htmlFor={name} className="text-gray-200 mb-1 text-sm font-medium">{label}</label>
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        minHeight: "100vh",
+        background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+        px: 2,
+        position: "relative",
+        overflow: "hidden",
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          top: "-50%",
+          right: "-10%",
+          width: "700px",
+          height: "700px",
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(203, 229, 87, 0.1) 0%, transparent 70%)",
+          zIndex: 1,
+        },
+        "&::after": {
+          content: '""',
+          position: "absolute",
+          bottom: "-30%",
+          left: "-10%",
+          width: "600px",
+          height: "600px",
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%)",
+          zIndex: 1,
+        },
+      }}
+    >
+      {/* Registration Card */}
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        sx={{
+          width: "100%",
+          maxWidth: "800px",
+          padding: { xs: 3, sm: 4, md: 5 },
+          borderRadius: "16px",
+          background: "rgba(15, 23, 42, 0.7)",
+          backdropFilter: "blur(12px)",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
+          boxShadow: "0 20px 40px rgba(0, 0, 0, 0.4)",
+          position: "relative",
+          zIndex: 2,
+          overflow: "hidden",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "4px",
+            background: "linear-gradient(90deg, #cbe557, #3b82f6)",
+            zIndex: 3,
+          },
+        }}
+      >
+        {/* Branding */}
+        <Box sx={{ textAlign: "center", mb: 4 }}>
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 700,
+              mb: 1,
+              color: "#f1f5f9",
+              letterSpacing: "-0.5px",
+            }}
+          >
+            DRIVER REGISTRATION
+          </Typography>
+          <Typography sx={{ color: "#94a3b8", maxWidth: "500px", margin: "0 auto" }}>
+            Create your account to start driving with us
+          </Typography>
+        </Box>
+
+        {msg && (
+          <Box
+            sx={{
+              backgroundColor: "rgba(220, 38, 38, 0.15)",
+              color: "#fecaca",
+              padding: "12px 16px",
+              borderRadius: "8px",
+              mb: 3,
+              border: "1px solid rgba(220, 38, 38, 0.3)",
+              fontSize: "0.9rem",
+            }}
+          >
+            {msg}
+          </Box>
+        )}
+
+        <Box sx={{ display: "grid", gridTemplateColumns: { md: "1fr 1fr" }, gap: 3 }}>
+          {/* Left Column */}
+          <Box>
+            {/* Personal Information */}
+            <Typography variant="subtitle1" sx={{ color: "#cbe557", mb: 2, fontWeight: 600 }}>
+              Personal Information
+            </Typography>
+            
+            <Box mb={3}>
+              <TextField
+                name="name"
+                fullWidth
+                variant="outlined"
+                placeholder="Full Name"
+                value={formData.name}
+                onChange={handleChange}
+                required
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <MdOutlineDriveFileRenameOutline color="#94a3b8" size={20} />
+                    </InputAdornment>
+                  ),
+                  sx: {
+                    borderRadius: "10px",
+                    background: "rgba(30, 41, 59, 0.5)",
+                    "& input": { 
+                      color: "#f1f5f9", 
+                      padding: "14px",
+                      fontSize: "1rem"
+                    },
+                  },
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": { 
+                      borderColor: "rgba(148, 163, 184, 0.2)",
+                    },
+                    "&:hover fieldset": { 
+                      borderColor: "rgba(203, 229, 87, 0.3)" 
+                    },
+                    "&.Mui-focused fieldset": { 
+                      borderColor: "#cbe557",
+                      borderWidth: "1px"
+                    },
+                  },
+                }}
+              />
+            </Box>
+            
+            <Box mb={3}>
+              <TextField
+                type="email"
+                name="email"
+                fullWidth
+                variant="outlined"
+                placeholder="Email address"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <MdEmail color="#94a3b8" size={20} />
+                    </InputAdornment>
+                  ),
+                  sx: {
+                    borderRadius: "10px",
+                    background: "rgba(30, 41, 59, 0.5)",
+                    "& input": { 
+                      color: "#f1f5f9", 
+                      padding: "14px",
+                      fontSize: "1rem"
+                    },
+                  },
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": { 
+                      borderColor: "rgba(148, 163, 184, 0.2)",
+                    },
+                    "&:hover fieldset": { 
+                      borderColor: "rgba(203, 229, 87, 0.3)" 
+                    },
+                    "&.Mui-focused fieldset": { 
+                      borderColor: "#cbe557",
+                      borderWidth: "1px"
+                    },
+                  },
+                }}
+              />
+            </Box>
+            
+            <Box mb={3}>
+              <TextField
+                type="password"
+                name="password"
+                fullWidth
+                variant="outlined"
+                placeholder="Password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <MdPassword color="#94a3b8" size={20} />
+                    </InputAdornment>
+                  ),
+                  sx: {
+                    borderRadius: "10px",
+                    background: "rgba(30, 41, 59, 0.5)",
+                    "& input": { 
+                      color: "#f1f5f9", 
+                      padding: "14px",
+                      fontSize: "1rem"
+                    },
+                  },
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": { 
+                      borderColor: "rgba(148, 163, 184, 0.2)",
+                    },
+                    "&:hover fieldset": { 
+                      borderColor: "rgba(203, 229, 87, 0.3)" 
+                    },
+                    "&.Mui-focused fieldset": { 
+                      borderColor: "#cbe557",
+                      borderWidth: "1px"
+                    },
+                  },
+                }}
+              />
+            </Box>
+            
+            <Box mb={3}>
+              <TextField
+                type="date"
+                name="date_of_birth"
+                fullWidth
+                variant="outlined"
+                placeholder="Date of Birth"
+                value={formData.date_of_birth}
+                onChange={handleChange}
+                required
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <MdCalendarToday color="#94a3b8" size={20} />
+                    </InputAdornment>
+                  ),
+                  sx: {
+                    borderRadius: "10px",
+                    background: "rgba(30, 41, 59, 0.5)",
+                    "& input": { 
+                      color: formData.date_of_birth ? "#f1f5f9" : "#94a3b8", 
+                      padding: "14px",
+                      fontSize: "1rem"
+                    },
+                  },
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": { 
+                      borderColor: "rgba(148, 163, 184, 0.2)",
+                    },
+                    "&:hover fieldset": { 
+                      borderColor: "rgba(203, 229, 87, 0.3)" 
+                    },
+                    "&.Mui-focused fieldset": { 
+                      borderColor: "#cbe557",
+                      borderWidth: "1px"
+                    },
+                  },
+                }}
+              />
+            </Box>
+          </Box>
+          
+          {/* Right Column */}
+          <Box>
+            {/* License Information */}
+            <Typography variant="subtitle1" sx={{ color: "#cbe557", mb: 2, fontWeight: 600 }}>
+              License & Vehicle
+            </Typography>
+            
+            <Box mb={3}>
+              <TextField
+                name="aadhaar_number"
+                fullWidth
+                variant="outlined"
+                placeholder="Aadhaar Number"
+                value={formData.aadhaar_number}
+                onChange={handleChange}
+                required
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <MdCreditCard color="#94a3b8" size={20} />
+                    </InputAdornment>
+                  ),
+                  sx: {
+                    borderRadius: "10px",
+                    background: "rgba(30, 41, 59, 0.5)",
+                    "& input": { 
+                      color: "#f1f5f9", 
+                      padding: "14px",
+                      fontSize: "1rem"
+                    },
+                  },
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": { 
+                      borderColor: "rgba(148, 163, 184, 0.2)",
+                    },
+                    "&:hover fieldset": { 
+                      borderColor: "rgba(203, 229, 87, 0.3)" 
+                    },
+                    "&.Mui-focused fieldset": { 
+                      borderColor: "#cbe557",
+                      borderWidth: "1px"
+                    },
+                  },
+                }}
+              />
+            </Box>
+            
+            <Box mb={3}>
+              <TextField
+                name="driving_license_number"
+                fullWidth
+                variant="outlined"
+                placeholder="Driving License Number"
+                value={formData.driving_license_number}
+                onChange={handleChange}
+                required
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <MdCreditCard color="#94a3b8" size={20} />
+                    </InputAdornment>
+                  ),
+                  sx: {
+                    borderRadius: "10px",
+                    background: "rgba(30, 41, 59, 0.5)",
+                    "& input": { 
+                      color: "#f1f5f9", 
+                      padding: "14px",
+                      fontSize: "1rem"
+                    },
+                  },
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": { 
+                      borderColor: "rgba(148, 163, 184, 0.2)",
+                    },
+                    "&:hover fieldset": { 
+                      borderColor: "rgba(203, 229, 87, 0.3)" 
+                    },
+                    "&.Mui-focused fieldset": { 
+                      borderColor: "#cbe557",
+                      borderWidth: "1px"
+                    },
+                  },
+                }}
+              />
+            </Box>
+            
+            <Box mb={3}>
+              <TextField
+                name="vehicle_license_number"
+                fullWidth
+                variant="outlined"
+                placeholder="Vehicle License Number"
+                value={formData.vehicle_license_number}
+                onChange={handleChange}
+                required
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <MdDirectionsCar color="#94a3b8" size={20} />
+                    </InputAdornment>
+                  ),
+                  sx: {
+                    borderRadius: "10px",
+                    background: "rgba(30, 41, 59, 0.5)",
+                    "& input": { 
+                      color: "#f1f5f9", 
+                      padding: "14px",
+                      fontSize: "1rem"
+                    },
+                  },
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": { 
+                      borderColor: "rgba(148, 163, 184, 0.2)",
+                    },
+                    "&:hover fieldset": { 
+                      borderColor: "rgba(203, 229, 87, 0.3)" 
+                    },
+                    "&.Mui-focused fieldset": { 
+                      borderColor: "#cbe557",
+                      borderWidth: "1px"
+                    },
+                  },
+                }}
+              />
+            </Box>
+            
+            <Box mb={3}>
+              <Typography variant="body2" sx={{ color: "#94a3b8", mb: 1 }}>
+                Upload License Document
+              </Typography>
+              <Button
+                component="label"
+                variant="outlined"
+                fullWidth
+                startIcon={<MdCloudUpload />}
+                sx={{
+                  py: 1.5,
+                  borderRadius: "10px",
+                  borderColor: "rgba(148, 163, 184, 0.3)",
+                  color: "#f1f5f9",
+                  textTransform: "none",
+                  justifyContent: "flex-start",
+                  "&:hover": {
+                    borderColor: "#cbe557",
+                    backgroundColor: "rgba(203, 229, 87, 0.1)",
+                  },
+                }}
+              >
+                {formData.licenseDoc ? formData.licenseDoc.name : "Select file"}
                 <input
-                  id={name}
-                  name={name}
-                  type={type}
-                  value={formData[name]}
-                  onChange={handleChange}
+                  type="file"
+                  name="licenseDoc"
+                  onChange={handleFileChange}
                   required
-                  className="w-full px-3 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#cbe557]"
+                  hidden
                 />
-              </div>
-            ))}
-          </div>
-          <div className="flex flex-col">
-            <label className="text-gray-200 mb-1 text-sm font-medium">Upload License Document</label>
-            <input
-              type="file"
-              name="licenseDoc"
-              onChange={handleFileChange}
-              required
-              className="block w-full text-gray-300 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#cbe557]"
-            />
-          </div>
-          <div className="flex flex-col md:flex-row gap-4">
-            <button
-              type="button"
-              onClick={getLocation}
-              className="w-full md:w-auto py-2 px-4 bg-[#cbe557] text-gray-900 rounded-lg hover:bg-[#b8d93e] focus:ring-2 focus:ring-[#cbe557] transition"
-            >Get My Location</button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full md:w-auto py-2 px-4 flex items-center justify-center gap-2 bg-[#cbe557] text-gray-900 rounded-lg hover:bg-[#b8d93e] focus:ring-2 focus:ring-[#cbe557] transition"
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+
+        {/* Location & Submit */}
+        <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2, mt: 3 }}>
+          <Button
+            type="button"
+            onClick={getLocation}
+            startIcon={<MdLocationOn />}
+            sx={{
+              py: 1.8,
+              borderRadius: "10px",
+              background: "rgba(30, 41, 59, 0.8)",
+              color: "#f1f5f9",
+              fontWeight: 500,
+              flex: { xs: 1, sm: 0.5 },
+              "&:hover": {
+                background: "rgba(59, 130, 246, 0.2)",
+                border: "1px solid rgba(59, 130, 246, 0.5)",
+              },
+            }}
+          >
+            Get My Location
+          </Button>
+          
+          <Button
+            type="submit"
+            disabled={loading}
+            startIcon={<BiUserPlus />}
+            sx={{
+              py: 1.8,
+              borderRadius: "10px",
+              background: "linear-gradient(90deg, #cbe557 0%, #3b82f6 100%)",
+              color: "#0f172a",
+              fontWeight: 600,
+              flex: { xs: 1, sm: 0.5 },
+              "&:hover": {
+                background: "linear-gradient(90deg, #b8d93e 0%, #2563eb 100%)",
+              },
+              "&:disabled": {
+                background: "#334155",
+                color: "#94a3b8",
+              },
+            }}
+          >
+            {loading ? <CircularProgress size={24} color="inherit" /> : "Register Now"}
+          </Button>
+        </Box>
+
+        <Box sx={{ mt: 4, textAlign: "center" }}>
+          <Typography variant="body2" sx={{ color: "#64748b", fontWeight: 500 }}>
+            Already have an account?{" "}
+            <Button
+              variant="text"
+              sx={{
+                color: "#cbe557",
+                textTransform: "none",
+                fontWeight: 600,
+                fontSize: "0.95rem",
+                p: 0,
+                "&:hover": {
+                  background: "none",
+                  textDecoration: "underline",
+                },
+              }}
+              onClick={() => navigate("/driverlogin")}
             >
-              <BiUserPlus className="text-lg" />
-              <span>{loading ? "Registering..." : "Register"}</span>
-            </button>
-          </div>
-          <div className="mt-4">
-            <hr className="border-gray-300" />
-            {/* <DriverGoogleSignInButton /> */}
-          </div>
-        </form>
-      </div>
-    </div>
+              Sign in here
+            </Button>
+          </Typography>
+        </Box>
+      </Box>
+    </Box>
   );
 };
+
 export default DriverRegistrationForm;

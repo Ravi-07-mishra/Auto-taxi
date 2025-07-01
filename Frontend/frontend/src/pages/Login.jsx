@@ -11,24 +11,11 @@ import {
   useMediaQuery,
   useTheme,
   CircularProgress,
+  InputAdornment
 } from "@mui/material";
-import { RiLoginCircleFill } from "react-icons/ri";
-import { keyframes } from "@emotion/react";
+import { RiLoginCircleFill, RiMailLine, RiLockLine } from "react-icons/ri";
 import GoogleSignInButton from "../Component/Googlesigninbutton";
 
-const float = keyframes`
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
-  100% { transform: translateY(0px); }
-`;
-
-/**
- * LoginPage
- *
- * - Handles email/password login via `login` from userContext.
- * - Displays errors, shows spinner when logging in.
- * - Provides Google Sign-In button.
- */
 const LoginPage = () => {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
@@ -61,147 +48,264 @@ const LoginPage = () => {
   return (
     <Box
       sx={{
-        minHeight: "100vh",
         display: "flex",
-        alignItems: "center",
         justifyContent: "center",
-        backgroundImage: "url('/bg1.jpg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
+        alignItems: "center",
+        minHeight: "100vh",
+        background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+        px: 2,
         position: "relative",
-        p: isMobile ? 2 : 4,
+        overflow: "hidden",
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          top: "-50%",
+          right: "-10%",
+          width: "700px",
+          height: "700px",
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(203, 229, 87, 0.1) 0%, transparent 70%)",
+          zIndex: 1,
+        },
+        "&::after": {
+          content: '""',
+          position: "absolute",
+          bottom: "-30%",
+          left: "-10%",
+          width: "600px",
+          height: "600px",
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%)",
+          zIndex: 1,
+        },
       }}
     >
-      {/* Dark translucent overlay */}
-      <Box sx={{ position: "absolute", inset: 0, backgroundColor: "rgba(0, 0, 0, 0.6)" }} />
-
-      {/* Login Form Container */}
+      {/* Login Card */}
       <Box
         component="form"
         onSubmit={handleLogin}
         sx={{
-          position: "relative",
-          zIndex: 1,
           width: "100%",
-          maxWidth: isMobile ? "95%" : "400px",
-          p: isMobile ? 3 : 4,
-          borderRadius: 3,
-          background: "rgba(255, 255, 255, 0.15)",
-          backdropFilter: "blur(10px)",
-          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
-          border: "1px solid rgba(255, 255, 255, 0.25)",
-          animation: `${float} 3s ease-in-out infinite`,
-          textAlign: "center",
+          maxWidth: "500px",
+          padding: { xs: 3, sm: 4 },
+          borderRadius: "16px",
+          background: "rgba(15, 23, 42, 0.7)",
+          backdropFilter: "blur(12px)",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
+          boxShadow: "0 20px 40px rgba(0, 0, 0, 0.4)",
+          position: "relative",
+          zIndex: 2,
+          overflow: "hidden",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "4px",
+            background: "linear-gradient(90deg, #cbe557, #3b82f6)",
+            zIndex: 3,
+          },
         }}
       >
-        {/* App Name */}
-        <Typography
-          variant={isMobile ? "h5" : "h4"}
-          sx={{
-            fontWeight: "bold",
-            mb: 3,
-            textShadow: "0 2px 4px rgba(0, 0, 0, 0.4)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: 0.5,
-            flexWrap: "wrap",
-          }}
-        >
-          {Array.from("auto-drive").map((letter, index) => (
-            <span key={index} style={{ color: index % 2 === 0 ? "#cbe557" : "#fff" }}>
-              {letter}
-            </span>
-          ))}
-        </Typography>
+        {/* Branding */}
+        <Box sx={{ textAlign: "center", mb: 4 }}>
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 700,
+              mb: 1,
+              color: "#f1f5f9",
+              letterSpacing: "-0.5px",
+            }}
+          >
+            USER LOGIN
+          </Typography>
+          <Typography sx={{ color: "#94a3b8", maxWidth: "300px", margin: "0 auto" }}>
+            Sign in to access your account
+          </Typography>
+        </Box>
 
         {error && (
           <Alert
             severity="error"
             sx={{
+              backgroundColor: "rgba(220, 38, 38, 0.15)",
+              color: "#fecaca",
+              padding: "12px 16px",
+              borderRadius: "8px",
               mb: 3,
-              backgroundColor: "rgba(255, 0, 0, 0.15)",
-              border: "1px solid rgba(255, 0, 0, 0.3)",
-              color: "#fff",
+              border: "1px solid rgba(220, 38, 38, 0.3)",
+              fontSize: "0.9rem",
             }}
           >
             {error}
           </Alert>
         )}
 
-        {/* Email Input */}
-        <TextField
-          type="email"
-          fullWidth
-          label="Email"
-          variant="outlined"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          sx={{
-            mb: 3,
-            input: { color: "#fff" },
-            label: { color: "rgba(255,255,255,0.8)" },
-            "& .MuiOutlinedInput-root": {
-              "& fieldset": { borderColor: "rgba(255,255,255,0.4)" },
-              "&:hover fieldset": { borderColor: "#cbe557" },
-              "&.Mui-focused fieldset": { borderColor: "#cbe557" },
-            },
-          }}
-        />
+        <Box mb={3}>
+          <Typography variant="subtitle2" sx={{ color: "#94a3b8", mb: 1, fontWeight: 500 }}>
+            EMAIL ADDRESS
+          </Typography>
+          <TextField
+            type="email"
+            fullWidth
+            placeholder="you@company.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <RiMailLine color="#94a3b8" size={20} />
+                </InputAdornment>
+              ),
+              sx: {
+                borderRadius: "10px",
+                background: "rgba(30, 41, 59, 0.5)",
+                "& input": { 
+                  color: "#f1f5f9", 
+                  padding: "14px",
+                  fontSize: "1rem"
+                },
+              },
+            }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                "& fieldset": { 
+                  borderColor: "rgba(148, 163, 184, 0.2)",
+                },
+                "&:hover fieldset": { 
+                  borderColor: "rgba(203, 229, 87, 0.3)" 
+                },
+                "&.Mui-focused fieldset": { 
+                  borderColor: "#cbe557",
+                  borderWidth: "1px"
+                },
+              },
+            }}
+          />
+        </Box>
 
-        {/* Password Input */}
-        <TextField
-          type="password"
-          fullWidth
-          label="Password"
-          variant="outlined"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          sx={{
-            mb: 3,
-            input: { color: "#fff" },
-            label: { color: "rgba(255,255,255,0.8)" },
-            "& .MuiOutlinedInput-root": {
-              "& fieldset": { borderColor: "rgba(255,255,255,0.4)" },
-              "&:hover fieldset": { borderColor: "#cbe557" },
-              "&.Mui-focused fieldset": { borderColor: "#cbe557" },
-            },
-          }}
-        />
+        <Box mb={4}>
+          <Typography variant="subtitle2" sx={{ color: "#94a3b8", mb: 1, fontWeight: 500 }}>
+            PASSWORD
+          </Typography>
+          <TextField
+            type="password"
+            fullWidth
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <RiLockLine color="#94a3b8" size={20} />
+                </InputAdornment>
+              ),
+              sx: {
+                borderRadius: "10px",
+                background: "rgba(30, 41, 59, 0.5)",
+                "& input": { 
+                  color: "#f1f5f9", 
+                  padding: "14px",
+                  fontSize: "1rem"
+                },
+              },
+            }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                "& fieldset": { 
+                  borderColor: "rgba(148, 163, 184, 0.2)",
+                },
+                "&:hover fieldset": { 
+                  borderColor: "rgba(203, 229, 87, 0.3)" 
+                },
+                "&.Mui-focused fieldset": { 
+                  borderColor: "#cbe557",
+                  borderWidth: "1px"
+                },
+              },
+            }}
+          />
+        </Box>
 
-        {/* Login Button */}
         <Button
           type="submit"
           fullWidth
-          variant="contained"
-          endIcon={<RiLoginCircleFill />}
-          disabled={loading}
           sx={{
-            py: 1.5,
+            py: 1.8,
             mb: 2,
-            borderRadius: 2,
-            background: "linear-gradient(45deg, #cbe557, #b8d93e)",
-            color: "#000",
-            fontWeight: "bold",
-            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
-            textTransform: "none",
-            transition: "transform 0.2s, box-shadow 0.2s",
+            borderRadius: "10px",
+            background: "linear-gradient(90deg, #cbe557 0%, #3b82f6 100%)",
+            color: "#0f172a",
+            fontWeight: 700,
+            fontSize: "1rem",
+            letterSpacing: "0.5px",
+            position: "relative",
+            overflow: "hidden",
+            zIndex: 1,
             "&:hover": {
-              transform: "scale(1.03)",
-              boxShadow: "0 6px 8px rgba(0, 0, 0, 0.4)",
-              background: "linear-gradient(45deg, #b8d93e, #cbe557)",
+              "&::before": {
+                opacity: 1,
+              },
+            },
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              background: "rgba(255, 255, 255, 0.2)",
+              opacity: 0,
+              transition: "opacity 0.3s",
+              zIndex: -1,
+            },
+            "&:disabled": {
+              background: "#334155",
+              color: "#94a3b8",
             },
           }}
+          endIcon={<RiLoginCircleFill size={20} />}
+          disabled={loading}
         >
-          {loading ? <CircularProgress size={20} color="inherit" /> : "Login"}
+          {loading ? <CircularProgress size={24} color="inherit" /> : "SIGN IN"}
         </Button>
 
-        <Divider sx={{ my: 2, color: "rgba(255,255,255,0.7)" }}>OR</Divider>
+        <Divider sx={{ my: 3, backgroundColor: "rgba(148, 163, 184, 0.2)" }}>
+          <Typography variant="body2" sx={{ color: "#94a3b8", px: 2, fontWeight: 500 }}>
+            OR CONTINUE WITH
+          </Typography>
+        </Divider>
 
-        {/* Google Sign In Button */}
-        <GoogleSignInButton />
+        <Box sx={{ mt: 3, mb: 2 }}>
+          <GoogleSignInButton />
+        </Box>
+
+        <Box sx={{ mt: 4, textAlign: "center" }}>
+          <Typography variant="body2" sx={{ color: "#64748b", fontWeight: 500 }}>
+            Don't have an account?{" "}
+            <Button
+              variant="text"
+              sx={{
+                color: "#cbe557",
+                textTransform: "none",
+                fontWeight: 600,
+                fontSize: "0.95rem",
+                p: 0,
+                "&:hover": {
+                  background: "none",
+                  textDecoration: "underline",
+                },
+              }}
+              onClick={() => navigate("/send-otp")}
+            >
+              Sign up here
+            </Button>
+          </Typography>
+        </Box>
       </Box>
     </Box>
   );

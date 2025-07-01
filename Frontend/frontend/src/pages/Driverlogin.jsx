@@ -1,41 +1,23 @@
 // src/components/DriverLogin.jsx
-
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Box, Button, Typography, TextField, Divider, CircularProgress } from "@mui/material";
-import { RiLoginCircleFill } from "react-icons/ri";
+import { Box, Button, Typography, TextField, Divider, CircularProgress, InputAdornment, IconButton } from "@mui/material";
+import { RiLoginCircleFill, RiEyeLine, RiEyeOffLine } from "react-icons/ri";
+import { MdEmail, MdPassword } from "react-icons/md";
 import toast from "react-hot-toast";
-import { keyframes } from "@emotion/react";
-import DriverGoogleSignInButton from "../Component/Drivergooglesigninbutton";
 import { useSocket } from "../Context/SocketContext";
 import { useDriverAuth } from "../Context/driverContext";
 
-const float = keyframes`
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
-`;
-
-/**
- * DriverLogin
- *
- * - Handles email/password login via `login` from driverContext.
- * - Once logged in, emits driver location via WebSocket every 10 seconds.
- * - Provides Google Sign-In button (DriverGoogleSignInButton).
- * - Displays feedback via toast and on-screen message box.
- */
 const DriverLogin = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const socket = useSocket();
   const { login } = useDriverAuth();
   const navigate = useNavigate();
   const locationIntervalRef = useRef(null);
 
-  /**
-   * Clears the periodic location interval when the component unmounts.
-   */
   useEffect(() => {
     return () => {
       if (locationIntervalRef.current) {
@@ -49,11 +31,11 @@ const DriverLogin = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
   const sendDriverLocation = useCallback((driverId) => {
-    /**
-     * Attempts to get geolocation and emit via socket.
-     * Retries every 5 seconds if socket is not connected.
-     */
     const attemptSend = () => {
       if (!navigator.geolocation) {
         console.error("Geolocation not supported.");
@@ -111,95 +93,104 @@ const DriverLogin = () => {
         justifyContent: "center",
         alignItems: "center",
         minHeight: "100vh",
-        backgroundImage: "url('/bg1.jpg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        position: "relative",
+        background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
         px: 2,
+        position: "relative",
+        overflow: "hidden",
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          top: "-50%",
+          right: "-10%",
+          width: "700px",
+          height: "700px",
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(203, 229, 87, 0.1) 0%, transparent 70%)",
+          zIndex: 1,
+        },
+        "&::after": {
+          content: '""',
+          position: "absolute",
+          bottom: "-30%",
+          left: "-10%",
+          width: "600px",
+          height: "600px",
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%)",
+          zIndex: 1,
+        },
       }}
     >
-      {/* Overlay */}
-      <Box
-        sx={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          backgroundColor: "rgba(0, 0, 0, 0.5)",
-          zIndex: 1,
-        }}
-      />
-
-      {/* Login Box */}
+      {/* Login Card */}
       <Box
         component="form"
         onSubmit={handleSubmit}
         sx={{
           width: "100%",
-          maxWidth: { xs: "90%", sm: "400px" },
-          padding: { xs: 3, sm: 4 },
+          maxWidth: "500px",
+          padding: { xs: 3, sm: 4, md: 5 },
           borderRadius: "16px",
-          background: "rgba(255, 255, 255, 0.1)",
-          backdropFilter: "blur(10px)",
-          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
+          background: "rgba(15, 23, 42, 0.7)",
+          backdropFilter: "blur(12px)",
           border: "1px solid rgba(255, 255, 255, 0.1)",
-          textAlign: "center",
+          boxShadow: "0 20px 40px rgba(0, 0, 0, 0.4)",
           position: "relative",
           zIndex: 2,
-          animation: `${float} 4s ease-in-out infinite`,
+          overflow: "hidden",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "4px",
+            background: "linear-gradient(90deg, #cbe557, #3b82f6)",
+            zIndex: 3,
+          },
         }}
       >
-        <Typography
-          variant="h4"
-          sx={{
-            fontWeight: "bold",
-            mb: 3,
-            textShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: "0.5rem",
-          }}
-        >
-          {[
-            "a",
-            "u",
-            "t",
-            "o",
-            "-",
-            "d",
-            "r",
-            "i",
-            "v",
-            "e",
-          ].map((letter, index) => (
-            <span key={index} style={{ color: index % 2 === 0 ? "#cbe557" : "white" }}>
-              {letter}
-            </span>
-          ))}
-        </Typography>
-
-        <Typography
-          variant="h5"
-          textAlign="center"
-          fontWeight={600}
-          mb={3}
-          sx={{ fontSize: { xs: "1.2rem", sm: "1.5rem" } }}
-        >
-          Driver Login
-        </Typography>
+        {/* Branding */}
+        <Box sx={{ textAlign: "center", mb: 5 }}>
+          <Box
+            sx={{
+              width: "80px",
+              height: "80px",
+              borderRadius: "16px",
+              background: "rgba(30, 41, 59, 0.8)",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "1px solid rgba(203, 229, 87, 0.3)",
+              mb: 3,
+            }}
+          >
+            <RiLoginCircleFill size={40} color="#cbe557" />
+          </Box>
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 700,
+              mb: 1,
+              color: "#f1f5f9",
+              letterSpacing: "-0.5px",
+            }}
+          >
+            DRIVER LOGIN
+          </Typography>
+          <Typography sx={{ color: "#94a3b8", maxWidth: "300px", margin: "0 auto" }}>
+            Sign in to access your driver dashboard
+          </Typography>
+        </Box>
 
         {msg && (
           <Box
             sx={{
-              backgroundColor: "rgba(255, 0, 0, 0.1)",
-              border: "1px solid rgba(255, 0, 0, 0.2)",
-              color: "#fff",
-              padding: 2,
-              borderRadius: 1,
+              backgroundColor: "rgba(220, 38, 38, 0.15)",
+              color: "#fecaca",
+              padding: "12px 16px",
+              borderRadius: "8px",
               mb: 3,
+              border: "1px solid rgba(220, 38, 38, 0.3)",
               fontSize: "0.9rem",
             }}
           >
@@ -208,43 +199,104 @@ const DriverLogin = () => {
         )}
 
         <Box mb={3}>
+          <Typography variant="subtitle2" sx={{ color: "#94a3b8", mb: 1, fontWeight: 500 }}>
+            EMAIL ADDRESS
+          </Typography>
           <TextField
             type="email"
             name="email"
             fullWidth
             variant="outlined"
-            placeholder="Email"
+            placeholder="you@company.com"
             value={formData.email}
             onChange={handleChange}
             required
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <MdEmail color="#94a3b8" size={20} />
+                </InputAdornment>
+              ),
+              sx: {
+                borderRadius: "10px",
+                background: "rgba(30, 41, 59, 0.5)",
+                "& input": { 
+                  color: "#f1f5f9", 
+                  padding: "14px",
+                  fontSize: "1rem"
+                },
+              },
+            }}
             sx={{
               "& .MuiOutlinedInput-root": {
-                "& fieldset": { borderColor: "rgba(255, 255, 255, 0.3)" },
-                "&:hover fieldset": { borderColor: "rgba(255, 255, 255, 0.5)" },
-                "&.Mui-focused fieldset": { borderColor: "#cbe557" },
+                "& fieldset": { 
+                  borderColor: "rgba(148, 163, 184, 0.2)",
+                },
+                "&:hover fieldset": { 
+                  borderColor: "rgba(203, 229, 87, 0.3)" 
+                },
+                "&.Mui-focused fieldset": { 
+                  borderColor: "#cbe557",
+                  borderWidth: "1px"
+                },
               },
-              "& .MuiInputBase-input": { color: "#fff" },
             }}
           />
         </Box>
 
-        <Box mb={3}>
+        <Box mb={4}>
+          <Typography variant="subtitle2" sx={{ color: "#94a3b8", mb: 1, fontWeight: 500 }}>
+            PASSWORD
+          </Typography>
           <TextField
-            type="password"
+            type={showPassword ? "text" : "password"}
             name="password"
             fullWidth
             variant="outlined"
-            placeholder="Password"
+            placeholder="••••••••"
             value={formData.password}
             onChange={handleChange}
             required
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <MdPassword color="#94a3b8" size={20} />
+                </InputAdornment>
+              ),
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={togglePasswordVisibility}
+                    edge="end"
+                    sx={{ color: "#94a3b8", "&:hover": { color: "#cbe557" } }}
+                  >
+                    {showPassword ? <RiEyeOffLine size={20} /> : <RiEyeLine size={20} />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+              sx: {
+                borderRadius: "10px",
+                background: "rgba(30, 41, 59, 0.5)",
+                "& input": { 
+                  color: "#f1f5f9", 
+                  padding: "14px",
+                  fontSize: "1rem"
+                },
+              },
+            }}
             sx={{
               "& .MuiOutlinedInput-root": {
-                "& fieldset": { borderColor: "rgba(255, 255, 255, 0.3)" },
-                "&:hover fieldset": { borderColor: "rgba(255, 255, 255, 0.5)" },
-                "&.Mui-focused fieldset": { borderColor: "#cbe557" },
+                "& fieldset": { 
+                  borderColor: "rgba(148, 163, 184, 0.2)",
+                },
+                "&:hover fieldset": { 
+                  borderColor: "rgba(203, 229, 87, 0.3)" 
+                },
+                "&.Mui-focused fieldset": { 
+                  borderColor: "#cbe557",
+                  borderWidth: "1px"
+                },
               },
-              "& .MuiInputBase-input": { color: "#fff" },
             }}
           />
         </Box>
@@ -253,29 +305,68 @@ const DriverLogin = () => {
           type="submit"
           fullWidth
           sx={{
-            py: 1.5,
-            mt: 2,
+            py: 1.8,
+            mb: 2,
             borderRadius: "10px",
-            background: "linear-gradient(45deg, #cbe557, #b8d93e)",
-            color: "#000",
-            fontWeight: "bold",
-            boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
-            transition: "transform 0.2s, box-shadow 0.2s",
-            ":hover": {
-              transform: "scale(1.05)",
-              boxShadow: "0 6px 8px rgba(0, 0, 0, 0.3)",
-              background: "linear-gradient(45deg, #b8d93e, #cbe557)",
+            background: "linear-gradient(90deg, #cbe557 0%, #3b82f6 100%)",
+            color: "#0f172a",
+            fontWeight: 700,
+            fontSize: "1rem",
+            letterSpacing: "0.5px",
+            position: "relative",
+            overflow: "hidden",
+            zIndex: 1,
+            "&:hover": {
+              "&::before": {
+                opacity: 1,
+              },
+            },
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              background: "rgba(255, 255, 255, 0.2)",
+              opacity: 0,
+              transition: "opacity 0.3s",
+              zIndex: -1,
+            },
+            "&:disabled": {
+              background: "#334155",
+              color: "#94a3b8",
             },
           }}
-          endIcon={<RiLoginCircleFill />}
+          endIcon={<RiLoginCircleFill size={20} />}
           disabled={loading}
         >
-          {loading ? <CircularProgress size={20} color="inherit" /> : "Login"}
+          {loading ? <CircularProgress size={24} color="inherit" /> : "SIGN IN"}
         </Button>
 
-        <Divider sx={{ my: 2, backgroundColor: "rgba(255,255,255,0.5)" }} />
+      
 
-        {/* <DriverGoogleSignInButton /> */}
+        <Box sx={{ mt: 4, textAlign: "center" }}>
+          <Typography variant="body2" sx={{ color: "#64748b", fontWeight: 500 }}>
+            Need driver access?{" "}
+            <Button
+              variant="text"
+              sx={{
+                color: "#cbe557",
+                textTransform: "none",
+                fontWeight: 600,
+                fontSize: "0.95rem",
+                p: 0,
+                "&:hover": {
+                  background: "none",
+                  textDecoration: "underline",
+                },
+              }}
+            >
+              Contact Administrator
+            </Button>
+          </Typography>
+        </Box>
       </Box>
     </Box>
   );

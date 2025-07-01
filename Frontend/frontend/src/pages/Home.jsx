@@ -120,7 +120,7 @@ const Home = () => {
             </div>
 
             <div className="hidden md:flex gap-8">
-              <NavLink href="/Home" text="Home" currentPath="/Home" />
+              <NavLink href="/" text="Home" currentPath="/" />
               <button
                 onClick={() => {
                   topDriversRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -130,7 +130,7 @@ const Home = () => {
               >
                 Trusted Drivers
               </button>
-              <NavLink href="/OurServices" text="Our Services" currentPath="/Home" />
+              <NavLink href="/Aboutus" text="About us" currentPath="/Home" />
               <button
                 onClick={scrollToContact}
                 className="bg-[#cbe557] text-black px-4 py-2 rounded-lg hover:bg-opacity-80 transition-all"
@@ -150,7 +150,7 @@ const Home = () => {
             <button className="absolute top-4 right-4 text-white" onClick={toggleMenu}>
               <X size={24} />
             </button>
-            <NavLink href="/Home" text="Home" currentPath="/Home" onClick={toggleMenu} />
+            <NavLink href="/" text="Home" currentPath="/" onClick={toggleMenu} />
             <button
               onClick={() => {
                 topDriversRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -160,7 +160,7 @@ const Home = () => {
             >
               Trusted Drivers
             </button>
-            <NavLink href="/OurServices" text="Our Services" currentPath="/Home" onClick={toggleMenu} />
+            <NavLink href="/Aboutus" text="About us" currentPath="/Home" onClick={toggleMenu} />
             <button
               onClick={() => {
                 scrollToContact();
@@ -288,56 +288,114 @@ const Home = () => {
         </section>
 
         {/* Contact */}
-        <section ref={contactRef} className="py-20 bg-black bg-opacity-70 text-white">
-          <div className="max-w-screen-xl mx-auto px-4 w-full">
-            <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center">Contact Us</h2>
-            <p className="text-center max-w-2xl mx-auto mb-8">
-              Reach out to us for assistance or to address any concerns. We're here to help with your issues,
-              complaints, or questions. Your satisfaction matters to us, so don't hesitate to contact us anytime.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 justify-items-center">
-              <div className="flex items-center">
-                <Mail className="mr-2 text-[#cbe557]" />
-                <span>info@auto-drive.com</span>
-              </div>
-              <div className="flex items-center">
-                <Phone className="mr-2 text-[#cbe557]" />
-                <span>+1 (555) 123-4567</span>
-              </div>
-              <div className="flex items-center">
-                <MapPin className="mr-2 text-[#cbe557]" />
-                <span>123 Drive St, City, State 12345</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
+        {/* Contact */}
+<section ref={contactRef} className="py-20 bg-black bg-opacity-70 text-white">
+  <div className="max-w-screen-xl mx-auto px-4 w-full">
+    <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center">Contact Us</h2>
+    <p className="text-center max-w-2xl mx-auto mb-8">
+      Reach out to us for assistance or to address any concerns. We're here to help with your issues,
+      complaints, or questions. Your satisfaction matters to us, so don't hesitate to contact us anytime.
+    </p>
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 justify-items-center">
+      <a 
+        href="mailto:info@auto-drive.com" 
+        className="flex items-center hover:text-[#cbe557] transition-colors"
+      >
+        <Mail className="mr-2 text-[#cbe557]" />
+        <span>info@auto-drive.com</span>
+      </a>
+      <a 
+        href="tel:+15551234567" 
+        className="flex items-center hover:text-[#cbe557] transition-colors"
+      >
+        <Phone className="mr-2 text-[#cbe557]" />
+        <span>+1 (555) 123-4567</span>
+      </a>
+      <a 
+        href="https://www.google.com/maps/search/?api=1&query=123+Drive+St,City,State+12345" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="flex items-center hover:text-[#cbe557] transition-colors"
+      >
+        <MapPin className="mr-2 text-[#cbe557]" />
+        <span>123 Drive St, City, State 12345</span>
+      </a>
+    </div>
+  </div>
+</section>
         {/* Role Selection Card */}
-        {isCardVisible && (
-          <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 z-50 p-4">
-            <div className="bg-white rounded-lg overflow-hidden shadow-lg w-full max-w-4xl h-auto md:h-3/4 flex flex-col md:flex-row">
-              <Link to="/send-otp" className="w-full md:w-1/2 h-1/2 md:h-full relative group">
-                <div className="h-full w-full">
-                  <img src="/user.jpg" alt="User" className="h-full w-full object-cover object-center" />
-                  <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center group-hover:bg-opacity-50 transition">
-                    <h3 className="text-white text-3xl font-bold">User</h3>
-                  </div>
-                </div>
-              </Link>
-              <Link to="/driverdashboard" className="w-full md:w-1/2 h-1/2 md:h-full relative group">
-                <div className="h-full w-full">
-                  <img src="/driver.jpg" alt="Driver" className="h-full w-full object-cover object-center" />
-                  <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center group-hover:bg-opacity-50 transition">
-                    <h3 className="text-white text-3xl font-bold">Driver</h3>
-                  </div>
-                </div>
-              </Link>
-            </div>
-            <button onClick={handleCloseCard} className="absolute top-4 right-4 bg-red-500 text-white font-bold py-2 px-4 rounded-full hover:bg-red-600 transition-all">
-              Close
-            </button>
+       {isCardVisible && (
+  <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-70 z-50 p-4">
+    <div className="relative w-full max-w-4xl h-auto md:h-[80vh] flex flex-col md:flex-row rounded-2xl overflow-hidden shadow-2xl transform transition-all duration-300 scale-95 group">
+      {/* Close Button */}
+      <button 
+        onClick={handleCloseCard} 
+        className="absolute top-4 right-4 z-30 bg-red-500 text-white font-bold w-10 h-10 rounded-full flex items-center justify-center hover:bg-red-600 transition-all shadow-lg hover:scale-110"
+      >
+        <X className="h-6 w-6" />
+      </button>
+      
+      {/* Card Title */}
+      <div className="absolute top-0 left-0 w-full py-4 z-20 bg-gradient-to-r from-[#0f172a] to-[#1e293b]">
+        <h2 className="text-2xl md:text-3xl font-bold text-center text-white">
+          Choose Your Role
+        </h2>
+      </div>
+      
+      {/* User Card */}
+      <Link 
+        to="/send-otp" 
+        className="w-full md:w-1/2 h-1/2 md:h-full relative overflow-hidden transition-all duration-500 group-hover:md:w-2/5 hover:md:w-3/5"
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a] to-transparent z-10"></div>
+        <div className="absolute bottom-0 left-0 w-full z-20 p-6 text-center">
+          <div className="bg-[#cbe557] text-[#0f172a] rounded-full w-14 h-14 flex items-center justify-center mx-auto mb-3">
+            <Users className="h-8 w-8" />
           </div>
-        )}
+          <h3 className="text-3xl font-bold text-white mb-1">User</h3>
+          <p className="text-white/90 max-w-xs mx-auto">
+            Book rides and travel comfortably
+          </p>
+        </div>
+        <img 
+          src="/user.jpg" 
+          alt="User" 
+          className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" 
+        />
+      </Link>
+      
+      {/* Driver Card */}
+      <Link 
+        to="/driverregister" 
+        className="w-full md:w-1/2 h-1/2 md:h-full relative overflow-hidden transition-all duration-500 group-hover:md:w-2/5 hover:md:w-3/5"
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a] to-transparent z-10"></div>
+        <div className="absolute bottom-0 left-0 w-full z-20 p-6 text-center">
+          <div className="bg-[#3b82f6] text-white rounded-full w-14 h-14 flex items-center justify-center mx-auto mb-3">
+            <Car className="h-8 w-8" />
+          </div>
+          <h3 className="text-3xl font-bold text-white mb-1">Driver</h3>
+          <p className="text-white/90 max-w-xs mx-auto">
+            Join our network and earn
+          </p>
+        </div>
+        <img 
+          src="/driver.jpg" 
+          alt="Driver" 
+          className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" 
+        />
+      </Link>
+      
+      {/* Divider */}
+      <div className="absolute inset-y-0 left-1/2 transform -translate-x-1/2 w-1 bg-gradient-to-b from-[#cbe557] to-[#3b82f6] z-20 hidden md:block"></div>
+      
+      {/* Or Text */}
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-[#0f172a] text-white w-12 h-12 rounded-full flex items-center justify-center z-30 border-2 border-[#cbe557] shadow-lg">
+        <span className="font-bold">OR</span>
+      </div>
+    </div>
+  </div>
+)}
       </div>
     </div>
   );

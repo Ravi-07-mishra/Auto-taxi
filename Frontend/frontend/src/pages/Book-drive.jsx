@@ -70,7 +70,7 @@ const Bookdrive = () => {
 
   useEffect(() => {
     socketRef.current = io(API_BASE2, {
-      transports: ["websocket", "polling"],
+      transports: ["websocket"],
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,

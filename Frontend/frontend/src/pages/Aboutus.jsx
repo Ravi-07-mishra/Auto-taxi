@@ -10,6 +10,7 @@ import {
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import BackgroundSlider from "../Component/BackgroundSlider";
 
 const backgroundImages = ["./bg1.jpg", "./bg2.jpg", "./bg3.jpg"];
@@ -29,6 +30,8 @@ const Feature = ({ icon, title, description }) => (
 );
 
 const AboutUs = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="relative text-white min-h-screen py-16 px-4 sm:px-8 md:px-16 overflow-hidden">
       <BackgroundSlider images={backgroundImages} interval={5000} />
@@ -112,17 +115,13 @@ const AboutUs = () => {
           <p className="text-gray-300 mt-4 sm:mt-6 text-sm sm:text-base md:text-lg">
             Whether you're a passenger or driver, you're part of a revolution to make transportation fair, safe, and transparent.
           </p>
-          <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row justify-center gap-4 sm:gap-6">
+          <div className="mt-6 sm:mt-8 flex justify-center">
             <motion.button
-              className="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-3 sm:px-8 sm:py-4 rounded-xl text-base sm:text-lg font-medium transition-all"
+              className="bg-indigo-500 hover:bg-indigo-600 text-white px-8 py-4 rounded-xl text-lg font-medium transition-all flex items-center"
               whileHover={{ scale: 1.05 }}
+              onClick={() => navigate("/driverregister")}
             >
-              Download App
-            </motion.button>
-            <motion.button
-              className="border-2 border-indigo-500 hover:bg-indigo-500 text-white px-6 py-3 sm:px-8 sm:py-4 rounded-xl text-base sm:text-lg font-medium transition-all"
-              whileHover={{ scale: 1.05 }}
-            >
+              <DirectionsCar className="mr-2" />
               Become a Driver
             </motion.button>
           </div>

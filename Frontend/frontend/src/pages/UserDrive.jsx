@@ -147,7 +147,13 @@ const UserRidePage = () => {
   
   useEffect(() => {
     if (!user) return;
-    const socket = io(API_BASE2);
+   const socket = io(API_BASE2, {
+  transports: ["websocket"],  // Force WebSocket only
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000,
+  timeout: 20000,
+});
     socketRef.current = socket;
 
     let prevLoc = null;

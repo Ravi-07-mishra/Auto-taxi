@@ -1,6 +1,5 @@
 // src/pages/UserHome.jsx
-
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "../Context/userContext";
 import { useNavigate } from "react-router-dom";
 import {
@@ -29,6 +28,9 @@ import {
   Alert as MuiAlert,
   MenuItem,
   Stack,
+  Chip,
+  useMediaQuery,
+  useTheme
 } from "@mui/material";
 
 const logError = (message, error) => {
@@ -38,6 +40,7 @@ const logError = (message, error) => {
 const fetchAddressFromCoordinates = async (lat, lon, API_BASE, addressCache) => {
   const key = `${lat},${lon}`;
   if (addressCache.current[key]) return addressCache.current[key];
+  
   try {
     const res = await fetch(`${API_BASE}/reverse-geocode?lat=${lat}&lon=${lon}`);
     if (!res.ok) throw new Error(res.statusText);
@@ -65,6 +68,9 @@ const UserHome = () => {
   const auth = useAuth();
   const navigate = useNavigate();
   const sliderRef = useRef(null);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
 
   const [bookings, setBookings] = useState([]);
   const [addresses, setAddresses] = useState({});
@@ -80,6 +86,8 @@ const UserHome = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   const addressCache = useRef({});
+  const addressesRef = useRef({});
+  addressesRef.current = addresses;
 
   useEffect(() => {
     if (!auth.user?._id) {
@@ -108,15 +116,19 @@ const UserHome = () => {
     return bk.status?.toLowerCase() === filter;
   });
 
-  useEffect(() => {
-    const booking = filteredBookings[currentIndex];
-    if (!booking) return;
-    const id = booking._id.toString();
-    if (addresses[id]) return;
-    const { pickupLocation, destinationLocation } = booking;
-    (async () => {
+  // Optimized address fetching
+  const fetchAddresses = useCallback(async (bookingIds) => {
+    const newAddresses = { ...addressesRef.current };
+    let needsUpdate = false;
+
+    for (const id of bookingIds) {
+      const booking = bookings.find(bk => bk._id.toString() === id);
+      if (!booking || newAddresses[id]) continue;
+
+      const { pickupLocation, destinationLocation } = booking;
       let pickupAddress = "Address not available";
       let destinationAddress = "Address not available";
+
       if (pickupLocation?.lat && pickupLocation?.lng) {
         pickupAddress = await fetchAddressFromCoordinates(
           pickupLocation.lat,
@@ -125,6 +137,7 @@ const UserHome = () => {
           addressCache
         );
       }
+
       if (destinationLocation?.lat && destinationLocation?.lng) {
         destinationAddress = await fetchAddressFromCoordinates(
           destinationLocation.lat,
@@ -133,12 +146,26 @@ const UserHome = () => {
           addressCache
         );
       }
-      setAddresses((prev) => ({
-        ...prev,
-        [id]: { pickupAddress, destinationAddress },
-      }));
-    })();
-  }, [currentIndex, bookings, addresses, API_BASE, filter]);
+
+      newAddresses[id] = { pickupAddress, destinationAddress };
+      needsUpdate = true;
+    }
+
+    if (needsUpdate) {
+      setAddresses(newAddresses);
+    }
+  }, [API_BASE]);
+
+  useEffect(() => {
+    if (filteredBookings.length === 0) return;
+    
+    // Fetch addresses for visible bookings only
+    const visibleIds = filteredBookings
+      .slice(Math.max(0, currentIndex - 1), currentIndex + 2)
+      .map(bk => bk._id.toString());
+    
+    fetchAddresses(visibleIds);
+  }, [currentIndex, filteredBookings, fetchAddresses]);
 
   const handleCancelBooking = async (bookingId) => {
     try {
@@ -162,8 +189,6 @@ const UserHome = () => {
   };
 
   const handleSubmitReview = async (bookingId) => {
-      console.log("Calling handleSubmitReview for:", bookingId); // ✅ Add this
-
     try {
       const res = await fetch(`${API_BASE}/user/rating/${bookingId}`, {
         method: "POST",
@@ -193,17 +218,17 @@ const UserHome = () => {
       sx={{
         position: "absolute",
         top: "50%",
-        left: 16,
+        left: isMobile ? 4 : 16,
         transform: "translateY(-50%)",
-        bgcolor: "rgba(0,0,0,0.5)",
+        bgcolor: "rgba(0,0,0,0.7)",
         borderRadius: "50%",
         p: 1,
         cursor: "pointer",
         zIndex: 30,
-        "&:hover": { bgcolor: "rgba(63,81,181,0.8)", transform: "scale(1.1)" },
+        "&:hover": { bgcolor: "rgba(99,102,241,0.9)", transform: "scale(1.1)" },
       }}
     >
-      <ChevronLeft size={24} color="#fff" />
+      <ChevronLeft size={isMobile ? 18 : 24} color="#fff" />
     </Box>
   );
 
@@ -213,17 +238,17 @@ const UserHome = () => {
       sx={{
         position: "absolute",
         top: "50%",
-        right: 16,
+        right: isMobile ? 4 : 16,
         transform: "translateY(-50%)",
-        bgcolor: "rgba(0,0,0,0.5)",
+        bgcolor: "rgba(0,0,0,0.7)",
         borderRadius: "50%",
         p: 1,
         cursor: "pointer",
         zIndex: 30,
-        "&:hover": { bgcolor: "rgba(63,81,181,0.8)", transform: "scale(1.1)" },
+        "&:hover": { bgcolor: "rgba(99,102,241,0.9)", transform: "scale(1.1)" },
       }}
     >
-      <ChevronRight size={24} color="#fff" />
+      <ChevronRight size={isMobile ? 18 : 24} color="#fff" />
     </Box>
   );
 
@@ -231,14 +256,14 @@ const UserHome = () => {
     dots: true,
     infinite: true,
     speed: 500,
-    slidesToShow: 1,
+    slidesToShow: isMobile ? 1 : isTablet ? 2 : 3,
     slidesToScroll: 1,
     autoplay: true,
-    autoplaySpeed: 5000,
+    autoplaySpeed: 7000,
     arrows: false,
     afterChange: (idx) => setCurrentIndex(idx),
     appendDots: (dots) => (
-      <Box sx={{ mt: 2, display: "flex", justifyContent: "center", gap: 1 }}>
+      <Box sx={{ mt: 2, display: "flex", justifyContent: "center", gap: 0.5 }}>
         {dots}
       </Box>
     ),
@@ -253,6 +278,22 @@ const UserHome = () => {
         }}
       />
     ),
+    responsive: [
+      {
+        breakpoint: 900,
+        settings: {
+          slidesToShow: 2,
+          slidesToScroll: 1,
+        }
+      },
+      {
+        breakpoint: 600,
+        settings: {
+          slidesToShow: 1,
+          slidesToScroll: 1,
+        }
+      }
+    ]
   };
 
   if (loadingBookings) {
@@ -275,10 +316,11 @@ const UserHome = () => {
     <Box
       sx={{
         minHeight: "100vh",
-        bgcolor: "linear-gradient(to bottom right, #1f2937, #4338ca)",
+        background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
         color: "#fff",
-        fontFamily: "sans-serif",
+        fontFamily: "'Inter', sans-serif",
         position: "relative",
+        overflowX: "hidden",
       }}
     >
       <BackgroundSlider
@@ -302,19 +344,47 @@ const UserHome = () => {
         </MuiAlert>
       </Snackbar>
 
-      <Box component="section" sx={{ pt: 24, pb: 12, textAlign: "center", zIndex: 10, px: 2 }}>
-        <Typography variant="h3" component="h1" sx={{ fontWeight: "bold", mb: 2 }}>
+      <Box component="section" sx={{ 
+        pt: { xs: 18, sm: 20, md: 24 }, 
+        pb: { xs: 6, md: 12 }, 
+        textAlign: "center", 
+        zIndex: 10, 
+        px: 2,
+        position: "relative"
+      }}>
+        <Typography variant="h3" component="h1" sx={{ 
+          fontWeight: 800, 
+          mb: 2,
+          fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
+          background: "linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%)",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent"
+        }}>
           Welcome, {auth.user ? auth.user.name || "User" : "Please Login"}!
         </Typography>
-        <Typography variant="h6" sx={{ color: "rgba(255,255,255,0.8)" }}>
-          Manage your bookings and explore your dashboard.
+        <Typography variant="h6" sx={{ 
+          color: "rgba(255,255,255,0.8)", 
+          maxWidth: 600, 
+          mx: "auto",
+          fontSize: { xs: '1rem', sm: '1.1rem' }
+        }}>
+          Manage your bookings and explore your dashboard
         </Typography>
       </Box>
 
-      <Box component="section" sx={{ py: 12, position: "relative", zIndex: 10, px: 2 }}>
-        <Box sx={{ maxWidth: 1000, mx: "auto" }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
-            <Typography variant="h4" component="h2" sx={{ fontWeight: "bold" }}>
+      <Box component="section" sx={{ 
+        py: { xs: 6, md: 12 }, 
+        position: "relative", 
+        zIndex: 10, 
+        px: 2,
+        backdropFilter: "blur(4px)"
+      }}>
+        <Box sx={{ maxWidth: 1400, mx: "auto" }}>
+          <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems="center" sx={{ mb: 4, gap: 2 }}>
+            <Typography variant="h4" component="h2" sx={{ 
+              fontWeight: 700,
+              fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' }
+            }}>
               Your Bookings
             </Typography>
             <TextField
@@ -323,101 +393,120 @@ const UserHome = () => {
               value={filter}
               size="small"
               onChange={(e) => setFilter(e.target.value)}
-              sx={{ bgcolor: "#fff", borderRadius: 1 }}
+              sx={{ 
+                bgcolor: "rgba(255,255,255,0.1)", 
+                borderRadius: 2,
+                minWidth: 140,
+                "& .MuiInputBase-input": { color: "#fff" },
+                "& .MuiInputLabel-root": { color: "rgba(255,255,255,0.7)" },
+                "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255,255,255,0.2)" },
+                "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255,255,255,0.4)" }
+              }}
             >
               <MenuItem value="all">All</MenuItem>
               <MenuItem value="accepted">Accepted</MenuItem>
               <MenuItem value="completed">Completed</MenuItem>
+              <MenuItem value="cancelled">Cancelled</MenuItem>
             </TextField>
           </Stack>
 
           {filteredBookings.length === 0 ? (
-            <Box sx={{ textAlign: "center", py: 12 }}>
+            <Box sx={{ 
+              textAlign: "center", 
+              py: 12,
+              bgcolor: "rgba(15,23,42,0.6)",
+              borderRadius: 4,
+              backdropFilter: "blur(8px)"
+            }}>
               <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.6)" }}>
-                No bookings found.
+                No bookings found
               </Typography>
             </Box>
           ) : (
             <Box sx={{ position: "relative" }}>
               <Slider ref={sliderRef} {...carouselSettings}>
                 {filteredBookings.map((bk) => {
-                 const id = bk._id.toString()
+                  const id = bk._id.toString();
                   const statusLower = bk.status?.toLowerCase();
+                  const addressData = addresses[id] || {};
+                  
                   return (
-                    <Box key={id} sx={{ px: { xs: 1, sm: 2 } }}>
-                      {/* Booking Card */}
+                    <Box key={id} sx={{ px: { xs: 0.5, sm: 1.5 }, py: 1 }}>
                       <Box
                         sx={{
-                          bgcolor: "rgba(31,41,55,0.8)",
-                          backdropFilter: "blur(8px)",
-                          borderRadius: 3,
+                          bgcolor: "rgba(30,41,59,0.7)",
+                          backdropFilter: "blur(10px)",
+                          borderRadius: 4,
                           overflow: "hidden",
-                          boxShadow: 3,
-                          border: "1px solid rgba(255,255,255,0.1)",
-                          transition: "box-shadow 0.3s ease, border-color 0.3s ease",
+                          boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+                          border: "1px solid rgba(255,255,255,0.08)",
+                          transition: "transform 0.3s ease, box-shadow 0.3s ease",
+                          height: "100%",
+                          display: "flex",
+                          flexDirection: "column",
                           "&:hover": {
-                            boxShadow: "0 0 20px rgba(67,56,202,0.3)",
-                            borderColor: "rgba(67,56,202,0.3)",
+                            transform: "translateY(-5px)",
+                            boxShadow: "0 15px 35px rgba(99,102,241,0.25)",
                           },
                         }}
                       >
-                        {/* Header */}
-                        <Box sx={{ display: "flex", alignItems: "center", p: 4, pb: 2, borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
-                          <Box sx={{ position: "relative" }}>
+                        <Box sx={{ 
+                          p: { xs: 2, sm: 3 }, 
+                          borderBottom: "1px solid rgba(255,255,255,0.08)",
+                          display: "flex",
+                          alignItems: "center"
+                        }}>
+                          <Box sx={{ position: "relative", flexShrink: 0 }}>
                             <Box
                               component="img"
-                              src={`${API_BASE}/${bk.profileImage}` || "/placeholder.svg"}
+                              src={bk.driver?.profileImage ? `${API_BASE}/${bk.driver.profileImage}` : "/placeholder.svg"}
                               alt="Driver"
                               onError={(e) => {
                                 e.currentTarget.src = "/placeholder.svg";
                               }}
                               sx={{
-                                width: 64,
-                                height: 64,
+                                width: 60,
+                                height: 60,
                                 borderRadius: "50%",
                                 objectFit: "cover",
                                 border: "2px solid rgba(99,102,241,0.5)",
-                                boxShadow: 2,
+                                boxShadow: "0 0 15px rgba(99,102,241,0.3)",
                               }}
                             />
                             {bk.driver?.avgRating != null && (
-                              <Box
+                              <Chip
+                                size="small"
+                                icon={<Star size={14} />}
+                                label={bk.driver.avgRating.toFixed(1)}
                                 sx={{
                                   position: "absolute",
                                   bottom: -8,
                                   left: "50%",
                                   transform: "translateX(-50%)",
-                                  bgcolor: "rgba(99,102,241,0.8)",
+                                  bgcolor: "rgba(99,102,241,0.9)",
                                   color: "#fff",
-                                  px: 1.5,
-                                  py: 0.5,
-                                  borderRadius: "16px",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  typography: "caption",
-                                  fontWeight: "bold",
+                                  fontWeight: 700,
                                   boxShadow: 1,
+                                  "& .MuiChip-icon": { color: "#fff", ml: 0.5 }
                                 }}
-                              >
-                                <Star size={12} />
-                                <Box component="span" sx={{ ml: 0.5 }}>
-                                  {bk.driver.avgRating.toFixed(1)}
-                                </Box>
-                              </Box>
+                              />
                             )}
                           </Box>
-                          <Box sx={{ ml: 3 }}>
-                            <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                          <Box sx={{ ml: 2.5, overflow: "hidden" }}>
+                            <Typography variant="h6" sx={{ 
+                              fontWeight: 700,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis"
+                            }}>
                               {bk.driver?.name || "Driver"}
                             </Typography>
-                            <Box
-                              component="span"
+                            <Chip
+                              label={bk.status}
+                              size="small"
                               sx={{
-                                typography: "caption",
-                                fontWeight: "medium",
-                                px: 1,
-                                py: 0.25,
-                                borderRadius: 1,
+                                mt: 0.5,
+                                fontWeight: 600,
                                 bgcolor:
                                   statusLower === "completed"
                                     ? "rgba(16,185,129,0.2)"
@@ -428,106 +517,164 @@ const UserHome = () => {
                                     : "rgba(99,102,241,0.2)",
                                 color:
                                   statusLower === "completed"
-                                    ? "rgba(16,185,129,0.8)"
+                                    ? "rgba(16,185,129,0.9)"
                                     : statusLower === "in-progress"
-                                    ? "rgba(234,179,8,0.8)"
+                                    ? "rgba(234,179,8,0.9)"
                                     : statusLower === "cancelled"
-                                    ? "rgba(239,68,68,0.8)"
-                                    : "rgba(99,102,241,0.8)",
+                                    ? "rgba(239,68,68,0.9)"
+                                    : "rgba(99,102,241,0.9)",
                               }}
-                            >
-                              {bk.status}
-                            </Box>
+                            />
                           </Box>
                         </Box>
 
-                        {/* Body */}
-                        <Box sx={{ p: 4, pt: 2 }}>
-                          <Box sx={{ mb: 4 }}>
-                            <Box sx={{ display: "flex", alignItems: "flex-start", mb: 1 }}>
-                              <Box sx={{ bgcolor: "rgba(99,102,241,0.2)", p: 1, borderRadius: 1, mr: 2 }}>
-                                <MapPin size={20} color="rgba(147,197,253,1)" />
+                        <Box sx={{ 
+                          p: { xs: 2, sm: 3 },
+                          flexGrow: 1
+                        }}>
+                          <Stack spacing={2.5} sx={{ mb: 3 }}>
+                            <Box sx={{ display: "flex" }}>
+                              <Box sx={{ 
+                                bgcolor: "rgba(99,102,241,0.15)", 
+                                p: 1.5, 
+                                borderRadius: 2, 
+                                mr: 2,
+                                flexShrink: 0
+                              }}>
+                                <MapPin size={20} color="#93c5fd" />
                               </Box>
-                              <Box>
-                                <Typography variant="overline" sx={{ color: "rgba(147,197,253,0.8)", mb: 0.5 }}>
+                              <Box sx={{ overflow: "hidden" }}>
+                                <Typography variant="overline" sx={{ 
+                                  color: "#93c5fd", 
+                                  fontWeight: 600,
+                                  letterSpacing: 1,
+                                  display: "block",
+                                  mb: 0.5
+                                }}>
                                   Pickup Location
                                 </Typography>
-                                <Typography variant="body1" sx={{ fontWeight: "medium" }}>
-                                  {addresses[id]?.pickupAddress ||
-                                    (filteredBookings.indexOf(bk) === currentIndex ? "Loading address..." : "–")}
+                                <Typography variant="body1" sx={{ 
+                                  fontWeight: 500,
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis"
+                                }}>
+                                  {addressData.pickupAddress || "Loading..."}
                                 </Typography>
                               </Box>
                             </Box>
-                            <Box sx={{ display: "flex", alignItems: "flex-start" }}>
-                              <Box sx={{ bgcolor: "rgba(99,102,241,0.2)", p: 1, borderRadius: 1, mr: 2 }}>
-                                <MapPin size={20} color="rgba(147,197,253,1)" />
+                            <Box sx={{ display: "flex" }}>
+                              <Box sx={{ 
+                                bgcolor: "rgba(99,102,241,0.15)", 
+                                p: 1.5, 
+                                borderRadius: 2, 
+                                mr: 2,
+                                flexShrink: 0
+                              }}>
+                                <MapPin size={20} color="#93c5fd" />
                               </Box>
-                              <Box>
-                                <Typography variant="overline" sx={{ color: "rgba(147,197,253,0.8)", mb: 0.5 }}>
+                              <Box sx={{ overflow: "hidden" }}>
+                                <Typography variant="overline" sx={{ 
+                                  color: "#93c5fd", 
+                                  fontWeight: 600,
+                                  letterSpacing: 1,
+                                  display: "block",
+                                  mb: 0.5
+                                }}>
                                   Destination
                                 </Typography>
-                                <Typography variant="body1" sx={{ fontWeight: "medium" }}>
-                                  {addresses[id]?.destinationAddress ||
-                                    (filteredBookings.indexOf(bk) === currentIndex ? "Loading address..." : "–")}
+                                <Typography variant="body1" sx={{ 
+                                  fontWeight: 500,
+                                  whiteSpace: "nowrap",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis"
+                                }}>
+                                  {addressData.destinationAddress || "Loading..."}
                                 </Typography>
                               </Box>
                             </Box>
+                          </Stack>
+                          
+                          <Box sx={{ 
+                            display: "flex", 
+                            alignItems: "center", 
+                            justifyContent: "space-between",
+                            bgcolor: "rgba(15,23,42,0.4)",
+                            borderRadius: 2,
+                            p: 1.5,
+                            mt: "auto"
+                          }}>
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                              {new Date(bk.createdAt).toLocaleDateString()}
+                            </Typography>
+                            <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                              ${bk.price?.toFixed(2) || "0.00"}
+                            </Typography>
                           </Box>
                         </Box>
 
-                        {/* Footer */}
-                        {statusLower === "completed" ? (
-                          <Button
-                            fullWidth
-                            variant="contained"
-                            color="primary"
-                            onClick={() => setReviewVisible(id)}
-                            startIcon={<Star size={20} />}
-                            sx={{
-                              borderRadius: 2,
-                              py: 1.5,
-                              bgcolor: "rgba(99,102,241,0.9)",
-                              "&:hover": { bgcolor: "rgba(79,84,230,0.9)" },
-                            }}
-                          >
-                            Leave a Review
-                          </Button>
-                        ) : (
-                          <Box sx={{ display: "flex", gap: 2, p: 4, pt: 2 }}>
+                        <Box sx={{ 
+                          p: { xs: 2, sm: 3 }, 
+                          pt: 0,
+                          display: "flex",
+                          gap: 2
+                        }}>
+                          {statusLower === "completed" ? (
                             <Button
                               fullWidth
                               variant="contained"
-                              color="info"
-                              onClick={() => handleShowRideDetails(bk)}
-                              startIcon={<Eye size={20} />}
+                              onClick={() => setReviewVisible(id)}
+                              startIcon={<Star size={20} />}
                               sx={{
                                 borderRadius: 2,
                                 py: 1.5,
-                                bgcolor: "rgba(99,102,241,0.7)",
-                                "&:hover": { bgcolor: "rgba(79,84,230,0.7)" },
+                                bgcolor: "rgba(139,92,246,0.9)",
+                                "&:hover": { bgcolor: "rgba(124,58,237,0.9)" },
+                                fontWeight: 600,
+                                fontSize: "0.9rem"
                               }}
                             >
-                              Details
+                              Leave Review
                             </Button>
-                                                       {statusLower !== "cancelled" && (
+                          ) : (
+                            <>
                               <Button
                                 fullWidth
                                 variant="contained"
-                                color="error"
-                                onClick={() => handleCancelBooking(id)}
-                                startIcon={<CloseIcon size={20} />}
+                                onClick={() => handleShowRideDetails(bk)}
+                                startIcon={<Eye size={20} />}
                                 sx={{
                                   borderRadius: 2,
                                   py: 1.5,
-                                  bgcolor: "rgba(239,68,68,0.8)",
-                                  "&:hover": { bgcolor: "rgba(220,38,38,0.8)" },
+                                  bgcolor: "rgba(99,102,241,0.9)",
+                                  "&:hover": { bgcolor: "rgba(79,70,229,0.9)" },
+                                  fontWeight: 600,
+                                  fontSize: "0.9rem"
                                 }}
                               >
-                                Cancel
+                                Details
                               </Button>
-                            )}
-                          </Box>
-                        )}
+                              {statusLower !== "cancelled" && (
+                                <Button
+                                  fullWidth
+                                  variant="contained"
+                                  onClick={() => handleCancelBooking(id)}
+                                  startIcon={<CloseIcon size={20} />}
+                                  sx={{
+                                    borderRadius: 2,
+                                    py: 1.5,
+                                    bgcolor: "rgba(239,68,68,0.9)",
+                                    "&:hover": { bgcolor: "rgba(220,38,38,0.9)" },
+                                    fontWeight: 600,
+                                    fontSize: "0.9rem"
+                                  }}
+                                >
+                                  Cancel
+                                </Button>
+                              )}
+                            </>
+                          )}
+                        </Box>
                       </Box>
                     </Box>
                   );
@@ -547,48 +694,131 @@ const UserHome = () => {
         aria-labelledby="ride-details-title"
         fullWidth
         maxWidth="sm"
+        PaperProps={{
+          sx: {
+            borderRadius: 4,
+            bgcolor: "#0f172a",
+            backgroundImage: "none",
+            border: "1px solid rgba(255,255,255,0.1)"
+          }
+        }}
       >
-        <DialogTitle id="ride-details-title">Ride Details</DialogTitle>
-        <DialogContent dividers>
+        <DialogTitle id="ride-details-title" sx={{ 
+          bgcolor: "rgba(15,23,42,0.6)", 
+          borderBottom: "1px solid rgba(255,255,255,0.1)",
+          fontWeight: 700,
+          color: "#e2e8f0"
+        }}>
+          Ride Details
+        </DialogTitle>
+        <DialogContent dividers sx={{ bgcolor: "rgba(15,23,42,0.4)", color: "#cbd5e1" }}>
           {rideDetails && (
-            <Box sx={{ color: "#000" }}>
-              <Typography variant="body1" gutterBottom>
-                <strong>Driver:</strong> {rideDetails.driver?.name || "N/A"}
-              </Typography>
-              <Typography variant="body1" gutterBottom>
-                <strong>Status:</strong> {rideDetails.status}
-              </Typography>
-              <Typography variant="body1" gutterBottom>
-                <strong>Price:</strong> $
-                {rideDetails.price?.toFixed(2) || "0.00"}
-              </Typography>
-              <Typography variant="body1" gutterBottom>
-                <strong>Pickup:</strong>{" "}
-                {addresses[rideDetails._id]?.pickupAddress || "Loading..."}
-              </Typography>
-              <Typography variant="body1" gutterBottom>
-                <strong>Destination:</strong>{" "}
-                {addresses[rideDetails._id]?.destinationAddress || "Loading..."}
-              </Typography>
-              <Typography variant="body1" gutterBottom>
-                <strong>Booked At:</strong>{" "}
-                {new Date(rideDetails.createdAt).toLocaleString()}
-              </Typography>
-              {rideDetails.rating != null && (
-                <Typography variant="body1" gutterBottom>
-                  <strong>Your Rating:</strong> {rideDetails.rating} / 5
-                </Typography>
-              )}
-              {rideDetails.review && (
-                <Typography variant="body1" gutterBottom>
-                  <strong>Your Review:</strong> “{rideDetails.review}”
-                </Typography>
-              )}
+            <Box sx={{ py: 2 }}>
+              <Stack spacing={2}>
+                <Box>
+                  <Typography variant="subtitle2" sx={{ color: "#94a3b8", fontWeight: 600 }}>Driver</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 500 }}>{rideDetails.driver?.name || "N/A"}</Typography>
+                </Box>
+                
+                <Box>
+                  <Typography variant="subtitle2" sx={{ color: "#94a3b8", fontWeight: 600 }}>Status</Typography>
+                  <Chip 
+                    label={rideDetails.status} 
+                    size="small"
+                    sx={{
+                      fontWeight: 600,
+                      bgcolor:
+                        rideDetails.status?.toLowerCase() === "completed"
+                          ? "rgba(16,185,129,0.2)"
+                          : rideDetails.status?.toLowerCase() === "in-progress"
+                          ? "rgba(234,179,8,0.2)"
+                          : rideDetails.status?.toLowerCase() === "cancelled"
+                          ? "rgba(239,68,68,0.2)"
+                          : "rgba(99,102,241,0.2)",
+                      color:
+                        rideDetails.status?.toLowerCase() === "completed"
+                          ? "rgba(16,185,129,0.9)"
+                          : rideDetails.status?.toLowerCase() === "in-progress"
+                          ? "rgba(234,179,8,0.9)"
+                          : rideDetails.status?.toLowerCase() === "cancelled"
+                          ? "rgba(239,68,68,0.9)"
+                          : "rgba(99,102,241,0.9)",
+                    }}
+                  />
+                </Box>
+                
+                <Box>
+                  <Typography variant="subtitle2" sx={{ color: "#94a3b8", fontWeight: 600 }}>Price</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                    ${rideDetails.price?.toFixed(2) || "0.00"}
+                  </Typography>
+                </Box>
+                
+                <Box>
+                  <Typography variant="subtitle2" sx={{ color: "#94a3b8", fontWeight: 600 }}>Pickup</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                    {addresses[rideDetails._id]?.pickupAddress || "Loading..."}
+                  </Typography>
+                </Box>
+                
+                <Box>
+                  <Typography variant="subtitle2" sx={{ color: "#94a3b8", fontWeight: 600 }}>Destination</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                    {addresses[rideDetails._id]?.destinationAddress || "Loading..."}
+                  </Typography>
+                </Box>
+                
+                <Box>
+                  <Typography variant="subtitle2" sx={{ color: "#94a3b8", fontWeight: 600 }}>Booked At</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                    {new Date(rideDetails.createdAt).toLocaleString()}
+                  </Typography>
+                </Box>
+                
+                {rideDetails.rating != null && (
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ color: "#94a3b8", fontWeight: 600 }}>Your Rating</Typography>
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                      <Star size={18} color="#fbbf24" fill="#fbbf24" />
+                      <Typography variant="body1" sx={{ fontWeight: 500, ml: 0.5 }}>
+                        {rideDetails.rating} / 5
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+                
+                {rideDetails.review && (
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ color: "#94a3b8", fontWeight: 600 }}>Your Review</Typography>
+                    <Typography variant="body1" sx={{ 
+                      fontWeight: 500, 
+                      fontStyle: "italic",
+                      p: 1.5,
+                      bgcolor: "rgba(255,255,255,0.05)",
+                      borderRadius: 2,
+                      mt: 1
+                    }}>
+                      “{rideDetails.review}”
+                    </Typography>
+                  </Box>
+                )}
+              </Stack>
             </Box>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setRideDetails(null)} color="primary">
+        <DialogActions sx={{ 
+          bgcolor: "rgba(15,23,42,0.6)", 
+          borderTop: "1px solid rgba(255,255,255,0.1)",
+          p: 2
+        }}>
+          <Button 
+            onClick={() => setRideDetails(null)} 
+            sx={{
+              fontWeight: 600,
+              color: "#94a3b8",
+              "&:hover": { color: "#e2e8f0" }
+            }}
+          >
             Close
           </Button>
         </DialogActions>
@@ -601,22 +831,44 @@ const UserHome = () => {
         aria-labelledby="review-dialog-title"
         fullWidth
         maxWidth="sm"
+        PaperProps={{
+          sx: {
+            borderRadius: 4,
+            bgcolor: "#0f172a",
+            backgroundImage: "none",
+            border: "1px solid rgba(255,255,255,0.1)"
+          }
+        }}
       >
-        <DialogTitle id="review-dialog-title">Leave a Review</DialogTitle>
-        <DialogContent dividers>
+        <DialogTitle id="review-dialog-title" sx={{ 
+          bgcolor: "rgba(15,23,42,0.6)", 
+          borderBottom: "1px solid rgba(255,255,255,0.1)",
+          fontWeight: 700,
+          color: "#e2e8f0"
+        }}>
+          Leave a Review
+        </DialogTitle>
+        <DialogContent dividers sx={{ bgcolor: "rgba(15,23,42,0.4)" }}>
           <Box component="form" noValidate
            onSubmit={e => e.preventDefault()}
           >
-            <TextField
-              type="number"
-              label="Rating (1–5)"
-              inputProps={{ min: 1, max: 5 }}
-              fullWidth
-              variant="outlined"
-              value={rating}
-              onChange={(e) => setRating(Number(e.target.value))}
-              sx={{ mb: 3 }}
-            />
+            <Box sx={{ mb: 3, display: "flex", alignItems: "center" }}>
+              <Typography variant="body1" sx={{ mr: 2, color: "#cbd5e1", fontWeight: 500 }}>Rating:</Typography>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                  key={star}
+                  size={32}
+                  onClick={() => setRating(star)}
+                  style={{
+                    cursor: "pointer",
+                    margin: "0 2px",
+                    color: star <= rating ? "#fbbf24" : "#64748b",
+                    fill: star <= rating ? "#fbbf24" : "transparent",
+                    transition: "all 0.2s"
+                  }}
+                />
+              ))}
+            </Box>
             <TextField
               label="Review"
               fullWidth
@@ -625,23 +877,56 @@ const UserHome = () => {
               variant="outlined"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              sx={{ mb: 2 }}
+              sx={{ 
+                mb: 2,
+                "& .MuiInputBase-root": {
+                  bgcolor: "rgba(30,41,59,0.5)",
+                  borderRadius: 2,
+                  color: "#e2e8f0",
+                  "& fieldset": {
+                    borderColor: "rgba(255,255,255,0.1)"
+                  },
+                  "&:hover fieldset": {
+                    borderColor: "rgba(99,102,241,0.5)"
+                  }
+                },
+                "& .MuiInputLabel-root": {
+                  color: "rgba(255,255,255,0.7)"
+                }
+              }}
             />
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setReviewVisible(null)} color="secondary">
+        <DialogActions sx={{ 
+          bgcolor: "rgba(15,23,42,0.6)", 
+          borderTop: "1px solid rgba(255,255,255,0.1)",
+          p: 2
+        }}>
+          <Button 
+            onClick={() => setReviewVisible(null)} 
+            sx={{
+              fontWeight: 600,
+              color: "#94a3b8",
+              "&:hover": { color: "#e2e8f0" }
+            }}
+          >
             Cancel
           </Button>
-         <Button
-  type="button"
-  onClick={() => handleSubmitReview(reviewVisible)}
-  color="primary"
-  variant="contained"
->
-  Submit Review
-</Button>
-
+          <Button
+            type="button"
+            onClick={() => handleSubmitReview(reviewVisible)}
+            variant="contained"
+            sx={{
+              fontWeight: 600,
+              borderRadius: 2,
+              bgcolor: "rgba(139,92,246,0.9)",
+              "&:hover": { bgcolor: "rgba(124,58,237,0.9)" },
+              px: 3,
+              py: 1
+            }}
+          >
+            Submit Review
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
@@ -649,4 +934,3 @@ const UserHome = () => {
 };
 
 export default UserHome;
-
