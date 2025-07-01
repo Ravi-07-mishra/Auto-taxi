@@ -404,7 +404,7 @@ const Navbar2 = () => {
                       >
                         <Logout fontSize="small" sx={{ color: "#34d399" }} />
                         <RouterNavLink
-                          to="/usersignup"
+                          to="/send-otp"
                           style={{ 
                             textDecoration: "none", 
                             color: "#34d399",
@@ -643,7 +643,7 @@ const Navbar2 = () => {
                 <ListItem disablePadding onClick={toggleMobileMenu}>
                   <ListItemButton
                     component={RouterNavLink}
-                    to="/usersignup"
+                    to="/send-otp"
                     sx={{
                       borderRadius: 1,
                       mx: 1,
