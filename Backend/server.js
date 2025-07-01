@@ -30,25 +30,36 @@ const allowedOrigins = [
   /^http:\/\/localhost(:\d+)?$/,
   /^http:\/\/127\.0\.0\.1(:\d+)?$/,
   'https://auto-taxi-1.onrender.com',
-  'https://*.vercel.app',
+  'https://*.vercel.app',  // Keep this as a string pattern
   ...(process.env.ALLOWED_ORIGINS?.split(',') || [])
 ];
+
 const corsOptions = {
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
+    
+    // Improved wildcard handling
     const isAllowed = allowedOrigins.some(pattern => {
+      // Handle string patterns with wildcards
       if (typeof pattern === 'string' && pattern.includes('*')) {
-        const domain = pattern.replace('*.', '');
-        return origin.endsWith(domain);
+        const domainPattern = pattern
+          .replace(/[.+?^${}()|[\]\\]/g, '\\$&')  // Escape regex special chars
+          .replace('*', '.*');                    // Convert to regex wildcard
+        return new RegExp(`^${domainPattern}$`).test(origin);
       }
-      if (typeof pattern === 'string') return origin === pattern;
+      
+      // Handle regex patterns
       if (pattern instanceof RegExp) return pattern.test(origin);
-      return false;
+      
+      // Handle exact string matches
+      return origin === pattern;
     });
+
     callback(null, isAllowed);
   },
   credentials: true,
-  methods: ['GET', 'POST', 'OPTIONS']
+  methods: ['GET', 'POST', 'OPTIONS', 'PATCH', 'DELETE', 'PUT'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 };
 // ─── CORS CONFIGURATION ───────────────────────────────────────────
 // Temporarily allow all origins for testing
@@ -72,7 +83,7 @@ const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
     credentials: true,
-    methods: ['GET', 'POST']
+    methods: ['GET', 'POST','DELETE','PATCH']
   },
   transports: ['websocket'],
   allowUpgrades: false,
