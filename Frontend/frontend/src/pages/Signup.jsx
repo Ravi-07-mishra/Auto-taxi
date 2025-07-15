@@ -1,3 +1,4 @@
+// Signup.jsx
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../Context/userContext";
@@ -12,7 +13,7 @@ import {
 } from "@mui/material";
 import Divider from '@mui/material/Divider';
 
-import { RiUser3Line, RiMailLine, RiLockLine, RiShieldCheckLine } from "react-icons/ri";
+import { RiUser3Line, RiMailLine, RiLockLine } from "react-icons/ri";
 import GoogleSignInButton from "../Component/Googlesigninbutton";
 
 const Signup = () => {
@@ -23,7 +24,6 @@ const Signup = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState(location.state?.email || "");
   const [password, setPassword] = useState("");
-  const [otp, setOtp] = useState("");
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -33,7 +33,7 @@ const Signup = () => {
     setIsLoading(true);
 
     try {
-      await signup(name, email, password, otp);
+      await signup(name, email, password); // Removed OTP parameter
       navigate("/userhome");
     } catch (err) {
       setError(err.message || "Something went wrong. Please try again.");
@@ -227,7 +227,7 @@ const Signup = () => {
           />
         </Box>
 
-        <Box mb={3}>
+        <Box mb={4}> {/* Removed OTP section */}
           <Typography variant="subtitle2" sx={{ color: "#94a3b8", mb: 1, fontWeight: 500 }}>
             PASSWORD
           </Typography>
@@ -242,49 +242,6 @@ const Signup = () => {
               startAdornment: (
                 <InputAdornment position="start">
                   <RiLockLine color="#94a3b8" size={20} />
-                </InputAdornment>
-              ),
-              sx: {
-                borderRadius: "10px",
-                background: "rgba(30, 41, 59, 0.5)",
-                "& input": { 
-                  color: "#f1f5f9", 
-                  padding: "14px",
-                  fontSize: "1rem"
-                },
-              },
-            }}
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                "& fieldset": { 
-                  borderColor: "rgba(148, 163, 184, 0.2)",
-                },
-                "&:hover fieldset": { 
-                  borderColor: "rgba(203, 229, 87, 0.3)" 
-                },
-                "&.Mui-focused fieldset": { 
-                  borderColor: "#cbe557",
-                  borderWidth: "1px"
-                },
-              },
-            }}
-          />
-        </Box>
-
-        <Box mb={4}>
-          <Typography variant="subtitle2" sx={{ color: "#94a3b8", mb: 1, fontWeight: 500 }}>
-            OTP CODE
-          </Typography>
-          <TextField
-            fullWidth
-            placeholder="Enter OTP"
-            value={otp}
-            onChange={(e) => setOtp(e.target.value)}
-            required
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <RiShieldCheckLine color="#94a3b8" size={20} />
                 </InputAdornment>
               ),
               sx: {

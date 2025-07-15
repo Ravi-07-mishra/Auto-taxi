@@ -20,23 +20,25 @@ const COOKIE_OPTS_COMMON = {
 };
 
 const Usersignup = async (req, res) => {
-  const { name, email, password, otp } = req.body;
+  const { name, email, password } = req.body; // Removed OTP
   try {
-    if (!email || !name || !password || !otp) {
+    if (!email || !name || !password) { // Removed OTP check
       return res.status(400).json({ error: "All fields are required" });
     }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: "Invalid email format" });
+    }
+    
     const exist = await User.findOne({ email });
     if (exist) {
       return res
         .status(400)
         .json({ error: `${email} already registered.` });
     }
-    const latestOtp = await OTP.find({ email }).sort({ createdAt: -1 }).limit(1);
-    if (!latestOtp.length || otp !== latestOtp[0].otp) {
-      return res
-        .status(400)
-        .json({ success: false, error: "The OTP is not valid" });
-    }
+    
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(password, salt);
     const newUser = await User.create({ name, email, password: hash });

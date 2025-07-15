@@ -1,10 +1,11 @@
+// Context/userContext.js
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
   checkAuthStatus,
   loginUser,
-  signupUser,
+  signupUser, // Updated import
 } from "../helpers/help-tools";
 
 const AuthContext = createContext(null);
@@ -47,9 +48,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const signup = async (name, email, password, otp) => {
+  const signup = async (name, email, password) => { // Removed OTP
     try {
-      const data = await signupUser(name, email, password, otp);
+      const data = await signupUser(name, email, password); // Removed OTP
       if (data?.user) {
         localStorage.setItem("auth_token", data.token);
         setUser(data.user);

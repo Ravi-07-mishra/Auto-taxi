@@ -404,7 +404,7 @@ const Navbar2 = () => {
                       >
                         <Logout fontSize="small" sx={{ color: "#34d399" }} />
                         <RouterNavLink
-                          to="/send-otp"
+                          to="/usersignup"
                           style={{ 
                             textDecoration: "none", 
                             color: "#34d399",

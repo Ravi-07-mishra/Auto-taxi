@@ -68,7 +68,7 @@ const App = () => {
         {/* Conditionally render the appropriate navbar */}
         <Navbar />
         <Routes>
-          <Route path="/send-otp" element={<Sendotp />} />
+          
           <Route path="/userhome" element={<UserHome />} />
           <Route path="/userlogin" element={<LoginPage />} />
           <Route path="/usersignup" element={<Signup />} />

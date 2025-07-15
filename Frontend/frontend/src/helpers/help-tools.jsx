@@ -11,9 +11,9 @@ export const loginUser = async (email, password) => {
     }
 };
 
-export const signupUser = async (name, email, password, otp) => {
+export const signupUser = async (name, email, password) => { // Removed OTP
     try {
-        const res = await instance.post('/user/usersignup', { name, email, password, otp });
+        const res = await instance.post('/user/usersignup', { name, email, password }); // Removed OTP
         if (res.status !== 201) throw new Error('Unable to signup');
         return res.data;
     } catch (error) {
