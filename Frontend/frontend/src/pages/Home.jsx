@@ -344,7 +344,7 @@ const Home = () => {
       
       {/* User Card */}
       <Link 
-        to="/send-otp" 
+        to="/usersignup" 
         className="w-full md:w-1/2 h-1/2 md:h-full relative overflow-hidden transition-all duration-500 group-hover:md:w-2/5 hover:md:w-3/5"
       >
         <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a] to-transparent z-10"></div>

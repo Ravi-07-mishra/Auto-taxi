@@ -300,7 +300,7 @@ const LoginPage = () => {
                   textDecoration: "underline",
                 },
               }}
-              onClick={() => navigate("/send-otp")}
+              onClick={() => navigate("/usersignup")}
             >
               Sign up here
             </Button>
